@@ -179,10 +179,11 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget
                         await AskNext(false);
                         break;
                     }
-                    _status.Text = "Твоя очередь — говори!";
+                    _status.Text = "Твоя очередь — включаю микрофон…";
                     using var rec = new Recorder();
+                    rec.Started += () => Dispatcher.BeginInvoke(() => _status.Text = "Твоя очередь — говори!");
                     _meter.Attach(rec);
-                    var (check, _) = await SpeechUi.RecordAndScore(line.Jp, line.KanaPlain, rec, ct);
+                    var (check, _) = await SpeechUi.RecordAndScore(line.Jp, line.KanaPlain, rec, ct, s => _status.Text = s);
                     _meter.Attach(null);
                     if (check.Error != null) { _status.Text = check.Error; if (await AskNext(true)) break; continue; }
                     MarkScore(i, check.Score);

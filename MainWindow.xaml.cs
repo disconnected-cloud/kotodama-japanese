@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -56,6 +56,8 @@ public partial class MainWindow : Window
             if (oi > 0 && oi + 1 < args.Length) DebugOpen(args[oi + 1]);
             int ti = Array.IndexOf(args, "--selftest");
             if (ti > 0 && ti + 1 < args.Length) DebugSelfTest(args[ti + 1]);
+            int ai = Array.IndexOf(args, "--speechaudit");
+            if (ai > 0 && ai + 1 < args.Length) DebugSpeechAudit(args[ai + 1]);
             int si = Array.IndexOf(args, "--snap");
             if (si > 0 && si + 1 < args.Length) DebugSnap(args[si + 1]);
 #endif
@@ -315,6 +317,41 @@ public partial class MainWindow : Window
         t.Start();
     }
 
+    /// <summary>Аудит говорения: каждая фраза уроков и диалогов озвучивается двумя голосами и проверяется той же логикой, что и запись с микрофона.</summary>
+    async void DebugSpeechAudit(string outPath)
+    {
+        var log = new List<string>();
+        void L(string x) { log.Add(x); System.IO.File.WriteAllLines(outPath, log); }
+        var items = Db.SpeechLessons.SelectMany(l => l.Items.Select(i => (i.Jp, i.KanaPlain)))
+            .Concat(Db.Dialogs.SelectMany(d => d.Lines.Select(x => (x.Jp, x.KanaPlain)))).Distinct().ToList();
+        int n = 0, low = 0; long sum = 0;
+        foreach (var male in new[] { false, true })
+            foreach (var (jp, kana) in items)
+            {
+                try
+                {
+                    var mp3 = await Tts.GetAsync(jp, false, male);
+                    if (mp3 == null) { L($"TTS FAIL {jp}"); continue; }
+                    byte[] pcm;
+                    using (var reader = new NAudio.Wave.MediaFoundationReader(mp3))
+                    using (var res = new NAudio.Wave.MediaFoundationResampler(reader, new NAudio.Wave.WaveFormat(16000, 16, 1)))
+                    using (var ms = new System.IO.MemoryStream())
+                    {
+                        var buf = new byte[8192]; int k;
+                        while ((k = res.Read(buf, 0, buf.Length)) > 0) ms.Write(buf, 0, k);
+                        pcm = ms.ToArray();
+                    }
+                    var rec = new Recording(Recorder.ToWav(pcm), true, Array.Empty<float>(), pcm.Length / 32000.0, 0.5f, 0.001f);
+                    var sc = await Views.SpeechUi.ScoreRecording(jp, kana, rec, CancellationToken.None);
+                    n++; sum += sc.Score;
+                    if (sc.Score < 80) { low++; L($"{sc.Score,3} {(male ? "M" : "F")} {jp} | heard '{sc.Heard}' kana '{sc.HeardKana}' target '{kana}'"); }
+                }
+                catch (Exception ex) { L($"ERR {jp}: {ex.Message}"); }
+            }
+        L($"DONE n={n} avg={(n > 0 ? sum / n : 0)} below80={low}");
+        Environment.Exit(0);
+    }
+
     /// <summary>Проверка цепочки без микрофона: нейро-голос → WAV 16 кГц → Whisper → оценка; плюс поиск по словарю.</summary>
     async void DebugSelfTest(string outPath)
     {
@@ -333,7 +370,7 @@ public partial class MainWindow : Window
                 var r = JDict.Search(q);
                 L($"  search '{q}': {r.Count} results in {sw.ElapsedMilliseconds} ms; top: " + string.Join(" | ", r.Take(3).Select(e => $"{e.Jp}({e.Kana}) {e.Ru[..Math.Min(30, e.Ru.Length)]}")));
             }
-            foreach (var (jp, kana) in new[] { ("おはようございます", "おはようございます"), ("駅はどこですか", "えきはどこですか"), ("日本語を勉強しています", "にほんごをべんきょうしています") })
+            foreach (var (jp, kana) in new[] { ("おはようございます", "おはようございます"), ("駅はどこですか", "えきはどこですか"), ("日本語を勉強しています", "にほんごをべんきょうしています"), ("はい", "はい"), ("きって", "きって") })
             {
                 sw.Restart();
                 var mp3 = await Tts.GetAsync(jp);
@@ -352,6 +389,8 @@ public partial class MainWindow : Window
                 var (text, conf) = await Asr.TranscribeAsync(wav, CancellationToken.None);
                 var sc = Speech.Score(text, conf, jp, kana);
                 L($"  whisper: '{text}' conf={conf:0.00} score={sc.Score} in {sw.ElapsedMilliseconds} ms");
+                var (pt, pcf) = await Asr.TranscribeAsync(wav, CancellationToken.None, jp);
+                L($"  prompted: '{pt}' score={Speech.Score(pt, pcf, jp, kana).Score} · kana='{sc.HeardKana}'");
             }
             L("mic devices: " + (Recorder.HasMicrophone ? "yes" : "no"));
             var pa = await Tts.GetAsync("おはようございます"); var pb = await Tts.GetAsync("駅はどこですか"); var pc = await Tts.GetAsync("おはようございます", true);
@@ -394,6 +433,7 @@ public partial class MainWindow : Window
             case "reader": Push(new ReaderPage()); break;
             case "writing": Push(new WritingPage()); break;
             case "mic": Push(new MicCheckPage()); break;
+            case "pairs": Push(new PairsPage()); break;
             case "quiz":
                 var w = Db.Words.Take(8).ToArray();
                 Push(new Controls.QuizSession("Демо", w.Select(x => new Controls.QuizQ { Prompt = x.Jp, Sub = x.Kana, Answer = x.Ru, Options = Controls.QuizSession.MakeOptions(x.Ru, w.Select(y => y.Ru)) })));

@@ -20,11 +20,12 @@ public static class JDict
 {
     static string[] _kanji = Array.Empty<string>(), _kana = Array.Empty<string>(), _ru = Array.Empty<string>(), _ruLower = Array.Empty<string>(), _hira = Array.Empty<string>();
     static bool[] _common = Array.Empty<bool>();
-    static Task? _load;
+    // Lazy: при одновременном первом обращении из разных потоков загрузка запускается ровно один раз
+    static readonly Lazy<Task> _load = new(() => Task.Run(Load));
     public static int Count => _kana.Length;
-    public static bool Loaded => _load?.IsCompletedSuccessfully == true;
+    public static bool Loaded => _load.IsValueCreated && _load.Value.IsCompletedSuccessfully;
 
-    public static Task LoadAsync() => _load ??= Task.Run(Load);
+    public static Task LoadAsync() => _load.Value;
 
     static void Load()
     {
@@ -114,7 +115,8 @@ public static class JDict
     public static DictEntry? Lookup(string form)
     {
         if (!Loaded || string.IsNullOrEmpty(form)) return null;
-        if (_forms == null)
+        var forms = _forms;
+        if (forms == null)
         {
             var d = new Dictionary<string, int>(140000);
             for (int i = 0; i < _kana.Length; i++)   // массивы уже отсортированы: частотные первыми
@@ -122,9 +124,9 @@ public static class JDict
                 foreach (var k in _kanji[i].Split('、', StringSplitOptions.RemoveEmptyEntries)) d.TryAdd(k, i);
                 d.TryAdd(_kana[i], i);
             }
-            _forms = d;
+            _forms = forms = d;
         }
-        return _forms.TryGetValue(form, out var idx) ? Entry(idx) : null;
+        return forms.TryGetValue(form, out var idx) ? Entry(idx) : null;
     }
 
     /// <summary>Самое длинное слово словаря, начинающееся с позиции pos (для разбора произвольного текста).</summary>

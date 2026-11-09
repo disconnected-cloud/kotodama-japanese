@@ -73,7 +73,7 @@ public sealed class SettingsPage : UserControl, IPage
             U.T("Иллюстрации: Microsoft Fluent Emoji (MIT).", "Muted"),
             U.T("Офлайн-синтез: VOICEVOX (голоса — по условиям персонажей). Примеры фраз: Tatoeba (CC BY 2.0 FR).", "Muted"),
             U.T("Морфологический разбор при подготовке латиницы: MeCab + UniDic.", "Muted"))));
-        root.Children.Add(U.T("Kotodama 1.0 · 言霊 — «душа слова»: правильно произнесённое слово обретает силу.", "Muted").M(0, 8, 0, 0));
+        root.Children.Add(U.T("Kotodama 1.1 · 言霊 — «душа слова»: правильно произнесённое слово обретает силу.", "Muted").M(0, 8, 0, 0));
         Content = U.Page(root);
         Anim.Stagger(root, 50);
     }

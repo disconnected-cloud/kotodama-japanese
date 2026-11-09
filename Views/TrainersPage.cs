@@ -265,6 +265,7 @@ public sealed class TrainersPage : UserControl, IPage
         grid.Children.Add(Tile("誤", "Тетрадь ошибок", Mistakes.Count > 0 ? $"{Mistakes.Count} ошибок ждут исправления" : "Ошибок нет — отлично!", () => { var q = MistakesQuiz(); if (q != null) Shell.Open(q); else Shell.Toast("Ошибок пока нет", "完璧"); }));
         grid.Children.Add(Tile("活", "Спряжение глаголов", "11 форм: ます, て, ない, потенциальная…", () => Shell.Open(Conj.Quiz())));
         grid.Children.Add(Tile("数", "Счётные суффиксы", "本・枚・匹・人… с особыми чтениями", () => Shell.Open(new CountersPage())));
+        grid.Children.Add(Tile("対", "Минимальные пары", "おばさん или おばあさん? Слух и произношение", () => Shell.Open(new PairsPage())));
         grid.Children.Add(Tile("聞", "Диктант", "Слушай и записывай слово", () => Shell.Open(Dictation())));
         grid.Children.Add(Tile("組", "Собери предложение", "Расставь слова по порядку", () => Shell.Open(new BuilderSession())));
         grid.Children.Add(Tile("書", "Прописи", "Пиши кандзи мышью или пером — проверка порядка черт", () => Shell.Open(new WritingPage())));

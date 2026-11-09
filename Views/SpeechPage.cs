@@ -25,10 +25,55 @@ public sealed class SpeechPage : UserControl, IPage
 
         root.Children.Add(U.T("Уроки", "H2").M(0, 26, 0, 12));
         var grid = new UniformGrid { Columns = 3, Margin = new Thickness(-6, 0, -6, 0) };
+        grid.Children.Add(PersonalCard());
+        grid.Children.Add(PairsCard());
         foreach (var l in Db.SpeechLessons) grid.Children.Add(LessonCard(l));
         root.Children.Add(grid);
         Anim.Stagger(grid, 35, 80);
         Content = U.Page(root);
+    }
+
+    /// <summary>
+    /// «Мои слова вслух»: 10 слов из своих карточек. Сначала те, что ещё ни разу не удалось сказать
+    /// на 70+, затем ближайшие к повторению. Если карточек мало — слова текущего уровня.
+    /// </summary>
+    public static SpeechLesson PersonalLesson()
+    {
+        var p = ProgressStore.P;
+        var byId = Db.Words.GroupBy(w => w.Id).ToDictionary(g => g.Key, g => g.First());
+        var mine = p.Cards.Where(kv => byId.ContainsKey(kv.Key)).OrderBy(kv => kv.Value.Due).Select(kv => byId[kv.Key]).ToList();
+        if (mine.Count < 10) mine.AddRange(Db.WordsOf(p.Level).Where(w => !mine.Contains(w)).Take(10 - mine.Count));
+        int Best(Word w) => p.SpeechBest.TryGetValue("sw:" + w.Id, out var s) ? s : -1;
+        var pick = mine.OrderBy(w => Best(w) >= 70 ? 1 : 0).ThenBy(_ => Random.Shared.Next()).Take(10).ToArray();
+        var items = pick.Select(w => new Phrase("sw:" + w.Id, w.Jp, w.Kana, w.Ru, w.ExJp.Length > 0 ? $"В речи: {w.ExJp} — {w.ExRu}" : null)).ToArray();
+        return new SpeechLesson(900, "Мои слова вслух", "声", "10 слов из твоих карточек", items);
+    }
+
+    static Border PersonalCard()
+    {
+        int cards = ProgressStore.P.Cards.Count;
+        var sp = new StackPanel();
+        sp.Children.Add(Emoji.Img(Emoji.For("Мои слова", "speaking_head"), 40).Also(e => e.HorizontalAlignment = HorizontalAlignment.Left));
+        sp.Children.Add(U.T("Мои слова вслух", "H3", 15).M(0, 12, 0, 3));
+        sp.Children.Add(U.T(cards > 0 ? "10 слов из твоих карточек — каждый раз новые" : "10 слов твоего уровня", "Muted").Also(t => t.MinHeight = 36));
+        sp.Children.Add(U.Pill("Новое", U.B("AccentSoft"), U.B("Accent")).Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 10, 0, 0); }));
+        var card = new Border { Style = U.St("Card"), Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
+        HomePage.Hover(card);
+        card.MouseLeftButtonUp += (_, _) => Shell.OpenFrom(card, new SpeechLessonPage(PersonalLesson()));
+        return card;
+    }
+
+    static Border PairsCard()
+    {
+        var sp = new StackPanel();
+        sp.Children.Add(U.Jp("対", 30, U.B("Accent"), true).Also(t => t.HorizontalAlignment = HorizontalAlignment.Left));
+        sp.Children.Add(U.T("Минимальные пары", "H3", 15).M(0, 12, 0, 3));
+        sp.Children.Add(U.T("おばさん или おばあさん? Долгота, っ, звонкость", "Muted").Also(t => t.MinHeight = 36));
+        sp.Children.Add(U.Pill("Новое", U.B("AccentSoft"), U.B("Accent")).Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 10, 0, 0); }));
+        var card = new Border { Style = U.St("Card"), Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
+        HomePage.Hover(card);
+        card.MouseLeftButtonUp += (_, _) => Shell.OpenFrom(card, new PairsPage());
+        return card;
     }
 
     static Border LessonCard(SpeechLesson l)
@@ -193,12 +238,14 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
         _cts = new CancellationTokenSource();
         _rec = new Recorder();
         SetMic(true);
-        _status.Text = ProgressStore.P.MicMode == "manual" ? "Слушаю… говори, затем нажми на микрофон (или пробел), чтобы закончить" : "Слушаю… говори! Запись остановится сама после паузы";
+        _status.Text = "Включаю микрофон…";
+        string listen = ProgressStore.P.MicMode == "manual" ? "Говори! Затем нажми на микрофон (или пробел), чтобы закончить" : "Говори! Запись остановится сама после паузы";
+        _rec.Started += () => Dispatcher.BeginInvoke(() => { if (_busy) _status.Text = listen; });
         _result.Content = null;
         var p = P;
         try
         {
-            var (check, rec) = await SpeechUi.RecordAndScore(p.Jp, p.KanaPlain, _rec, _cts.Token);
+            var (check, rec) = await SpeechUi.RecordAndScore(p.Jp, p.KanaPlain, _rec, _cts.Token, s => _status.Text = s);
             _last = rec;
             ProsodyResult? pr = null;
             int textScore = check.Score;
@@ -207,11 +254,7 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
                 _status.Text = "Анализирую интонацию…";
                 pr = await SpeechUi.AnalyzeProsody(p.Jp, rec);
             }
-            if (pr != null)
-            {
-                int total = SpeechUi.Combine(check.Score, pr);
-                check = check with { Score = total, Ok = total >= 70 };
-            }
+            if (pr != null) check = check.WithScore(SpeechUi.Combine(check.Score, pr));
             ShowResult(p, check, rec, pr, textScore);
         }
         catch (OperationCanceledException) { _status.Text = "Остановлено"; }
@@ -246,10 +289,11 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
             _rec.Stop();
             var rec = await task;
             _last = rec;
-            var check = await SpeechUi.ScoreRecording(p.Jp, p.KanaPlain, rec, _cts.Token);
+            _status.Text = "Распознаю…";
+            var check = await SpeechUi.ScoreRecording(p.Jp, p.KanaPlain, rec, _cts.Token, s => _status.Text = s);
             int textScore = check.Score;
             var pr = rec.Heard ? await SpeechUi.AnalyzeProsody(p.Jp, rec) : null;
-            if (pr != null) { int total = SpeechUi.Combine(check.Score, pr); check = check with { Score = total, Ok = total >= 70 }; }
+            if (pr != null) check = check.WithScore(SpeechUi.Combine(check.Score, pr));
             ShowResult(p, check, rec, pr, textScore);
         }
         catch (OperationCanceledException) { _status.Text = "Остановлено"; }
@@ -296,10 +340,11 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
         if (r.Heard.Length > 0)
         {
             info.Children.Add(U.T("РАСПОЗНАНО", "Overline").M(0, 10, 0, 3));
-            info.Children.Add(Diff(p.Jp, p.KanaPlain, r.Heard));
+            info.Children.Add(Diff(p.Jp, p.KanaPlain, r.Heard, r.HeardKana));
         }
         top.Children.Add(info.Col(1));
         sp.Children.Add(top);
+        if (SpeechUi.HintsPanel(r) is { } hints) sp.Children.Add(hints);
         if (pr != null)
         {
             sp.Children.Add(new Border { Height = 1, Background = U.B("Stroke"), Margin = new Thickness(0, 16, 0, 12) });
@@ -356,26 +401,35 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
     }
 
     /// <summary>Посимвольная подсветка: зелёный — совпало, красный — пропущено, жёлтый — лишнее.</summary>
-    public static FrameworkElement Diff(string jp, string kanaPlain, string heard)
+    /// <param name="heardKana">Распознанное, переведённое в кану: сравнение идёт по звучанию, а не по написанию.</param>
+    public static FrameworkElement Diff(string jp, string kanaPlain, string heard, string heardKana = "")
     {
         string h = Speech.Normalize(heard);
         string a = Speech.Normalize(jp), b = Speech.Normalize(Kana.ToHiragana(kanaPlain));
-        string target = Speech.Similarity(h, a) >= Speech.Similarity(Kana.ToHiragana(h), b) ? a : b;
-        string hh = target == b ? Kana.ToHiragana(h) : h;
+        string hk = heardKana.Length > 0 ? heardKana : Kana.ToHiragana(h);
+        bool bySound = Speech.Similarity(h, a) < Speech.Similarity(Reading.Phon(hk), Reading.Phon(b));
+        string target = bySound ? b : a;
+        string hh = bySound ? hk : h;
+        static char F(char c) => c switch { 'は' => 'わ', 'を' => 'お', 'へ' => 'え', 'づ' => 'ず', 'ぢ' => 'じ', _ => c };
+        bool Eq(char p, char q) => p == q || F(p) == F(q);
         int n = target.Length, m = hh.Length;
         var dp = new int[n + 1, m + 1];
         for (int i = n - 1; i >= 0; i--)
             for (int j = m - 1; j >= 0; j--)
-                dp[i, j] = target[i] == hh[j] ? dp[i + 1, j + 1] + 1 : Math.Max(dp[i + 1, j], dp[i, j + 1]);
+                dp[i, j] = Eq(target[i], hh[j]) ? dp[i + 1, j + 1] + 1 : Math.Max(dp[i + 1, j], dp[i, j + 1]);
         var tb = new TextBlock { FontFamily = U.R<FontFamily>("JpFont"), FontSize = 20, TextWrapping = TextWrapping.Wrap };
         int x = 0, y = 0;
         while (x < n || y < m)
         {
-            if (x < n && y < m && target[x] == hh[y]) { tb.Inlines.Add(new Run(target[x].ToString()) { Foreground = U.B("Good") }); x++; y++; }
+            if (x < n && y < m && Eq(target[x], hh[y])) { tb.Inlines.Add(new Run(target[x].ToString()) { Foreground = U.B("Good") }); x++; y++; }
             else if (y < m && (x >= n || dp[x, y + 1] >= dp[x + 1, y])) { tb.Inlines.Add(new Run(hh[y].ToString()) { Foreground = U.B("Gold"), TextDecorations = TextDecorations.Strikethrough }); y++; }
             else { tb.Inlines.Add(new Run(target[x].ToString()) { Foreground = U.B("Bad"), TextDecorations = TextDecorations.Underline }); x++; }
         }
-        return tb;
+        var sp = new StackPanel();
+        sp.Children.Add(tb);
+        if (bySound && h != hk) sp.Children.Add(U.T($"Whisper записал: {heard.Trim()}", "Muted", 12).M(0, 4, 0, 0));
+        sp.Children.Add(U.T("зелёный — верно · красный — пропущено · зачёркнуто — лишнее", "Muted", 11).M(0, 4, 0, 0));
+        return sp;
     }
 
     public bool HandleKey(Key key)

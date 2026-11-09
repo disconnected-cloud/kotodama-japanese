@@ -112,6 +112,69 @@ public class FsrsTests
     }
 }
 
+public class SpeechBySoundTests
+{
+    public SpeechBySoundTests() => JDict.LoadAsync().Wait();
+
+    // Правильно сказанное, но записанное Whisper иначе, должно засчитываться
+    [Theory]
+    [InlineData("お願いします", "おねがいします", "おねがいします")]
+    [InlineData("こんにちわ", "こんにちは", "こんにちは")]
+    [InlineData("3時です", "三時です", "さんじです")]
+    [InlineData("にほんごをべんきょうしています", "日本語を勉強しています", "にほんごをべんきょうしています")]
+    [InlineData("日本語を勉強しています", "にほんごをべんきょうしています", "にほんごをべんきょうしています")]
+    [InlineData("スシを食べます", "すしをたべます", "すしをたべます")]
+    [InlineData("東京に行きます", "とうきょうにいきます", "とうきょうにいきます")]
+    [InlineData("おはよございます", "おはようございます", "おはようございます")]
+    [InlineData("ここは", "ここ", "ここ")]
+    [InlineData("じゃね", "じゃあね", "じゃあね")]
+    [InlineData("真っ直ぐですね。", "まっすぐですね。", "まっすぐですね。")]    public void SameSoundIsAccepted(string heard, string jp, string kana) =>
+        Assert.True(Speech.Score(heard, 0.6f, jp, kana).Score >= 75, Speech.Score(heard, 0.6f, jp, kana).ToString());
+
+    [Fact]
+    public void AlignMapsKanjiRuns()
+    {
+        var m = Reading.Align("日本語を勉強しています", "にほんごをべんきょうしています");
+        Assert.Equal("にほんご", m["日本語"]);
+        Assert.Equal("べんきょう", m["勉強"]);
+    }
+
+    [Fact]
+    public void OkuriganaUsesDictionaryForm() => Assert.Equal("たべます", Reading.Of("食べます"));
+
+    [Theory]
+    [InlineData("切って", "きって")]
+    [InlineData("話して", "はなして")]
+    [InlineData("書いた", "かいた")]
+    [InlineData("飲んで", "のんで")]
+    public void ConjugatedVerbsReadCorrectly(string text, string reading) => Assert.Equal(reading, Reading.Of(text));
+
+    [Fact]
+    public void NumbersBecomeKanji() => Assert.Equal("二十五", Reading.NumberKanji(25));
+
+    [Fact]
+    public void SingleKanjiReadingFollowsTarget() => Assert.StartsWith("ま", Reading.Of("真っ", null, "まっすぐ"));
+
+    [Fact]
+    public void LongVowelHint() => Assert.Contains(Reading.Hints("おばあさん", "おばさん"), t => t.Contains("долг"));
+
+    [Fact]
+    public void SmallTsuHint() => Assert.Contains(Reading.Hints("きって", "きて"), t => t.Contains("っ"));
+
+    [Fact]
+    public void WrongWordStillLow() => Assert.True(Speech.Score("さようなら", 0.9f, "ありがとう", "ありがとう").Score < 40);
+
+    [Fact]
+    public void HallucinationIsDropped() => Assert.Equal(0, Speech.Score("ご視聴ありがとうございました", 0.9f, "はい", "はい").Score);
+
+    [Fact]
+    public void PaddingMakesWhisperInputLongEnough()
+    {
+        var wav = Recorder.ToWav(new byte[16000]); // 0,5 с
+        Assert.True((Asr.Pad(wav).Length - 44) / 32000.0 >= 1.6);
+    }
+}
+
 public class SpeechScoringTests
 {
     [Fact]

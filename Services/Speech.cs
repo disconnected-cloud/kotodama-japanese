@@ -6,7 +6,11 @@ using Windows.Media.SpeechSynthesis;
 
 namespace Matsubakira.Services;
 
-public sealed record SpeechCheck(bool Ok, int Score, string Heard, string Verdict, string? Error = null);
+public sealed record SpeechCheck(bool Ok, int Score, string Heard, string Verdict, string? Error = null, string HeardKana = "", string[]? Hints = null)
+{
+    /// <summary>Тот же результат с другим баллом (вердикт пересчитывается).</summary>
+    public SpeechCheck WithScore(int score) => this with { Score = score, Ok = score >= 70, Verdict = Speech.VerdictFor(score, Heard) };
+}
 
 /// <summary>
 /// Единая точка для звука: озвучка фраз (нейро-голос с кэшем → голос Windows, если есть),
@@ -136,18 +140,46 @@ public static class Speech
     }
 
     // ─────────── Оценка произношения ───────────
-    /// <summary>Сравнивает распознанное Whisper с целевой фразой (по кандзи и по кане), учитывает уверенность модели.</summary>
-    public static SpeechCheck Score(string heardRaw, float confidence, string targetJp, string targetKana)
+    /// <summary>
+    /// Сравнивает распознанное Whisper с целевой фразой. Главное — звучание: распознанный текст переводится
+    /// в кану (кандзи, цифры) и сравнивается с чтением фразы по латинице, поэтому «お願いします» и «おねがいします»,
+    /// «3時» и «さんじ», «こんにちわ» и «こんにちは» — одно и то же. cap ограничивает балл (защита от подсказки модели).
+    /// </summary>
+    public static SpeechCheck Score(string heardRaw, float confidence, string targetJp, string targetKana, int cap = 100)
     {
+        heardRaw = DropHallucination(heardRaw, targetJp);
         var heard = Normalize(heardRaw);
         if (heard.Length == 0) return new SpeechCheck(false, 0, "", "Ничего не распознано — попробуй громче и ближе к микрофону.");
-        double sim = Math.Max(Similarity(heard, Normalize(targetJp)),
-                              Similarity(Kana.ToHiragana(heard), Normalize(Kana.ToHiragana(targetKana))));
-        double conf = confidence <= 0.001 ? 1 : 0.8 + 0.2 * Math.Clamp(confidence, 0, 1);
+        var tKana = Kana.ToHiragana(Normalize(targetKana.Length > 0 ? targetKana : targetJp));
+        var hKana = Reading.Of(heard, Reading.Align(targetJp, targetKana), tKana);
+        double surface = Similarity(heard, Normalize(targetJp));
+        string ph = Reading.Phon(hKana), pt = Reading.Phon(tKana);
+        double sound = Reading.SoundSimilarity(ph, pt);
+        // Whisper любит дописывать частицу или междометие в конце («ここ» → «ここは»): фраза целиком внутри — почти зачёт
+        if (pt.Length >= 2 && ph.Contains(pt, StringComparison.Ordinal))
+        {
+            int extra = ph.Length - pt.Length;
+            sound = Math.Max(sound, extra <= 3 ? 0.95 : 1 - 0.5 * extra / ph.Length);
+        }
+        double sim = Math.Max(surface, sound);
+        double conf = confidence <= 0.001 ? 1 : 0.85 + 0.15 * Math.Clamp(confidence, 0, 1);
         int score = (int)Math.Round(100 * Math.Pow(sim, 1.3) * conf);
         if (sim > 0.999) score = Math.Max(score, 92); // полное совпадение — всегда высокий балл
-        return new SpeechCheck(score >= 70, score, heardRaw.Trim(), Verdict(score, sim < 0.999 ? heardRaw.Trim() : null));
+        score = Math.Min(score, cap);
+        var hints = sim > 0.999 ? new List<string>() : Reading.Hints(tKana, hKana);
+        return new SpeechCheck(score >= 70, score, heardRaw.Trim(), Verdict(score, sim < 0.999 ? heardRaw.Trim() : null), null, hKana, hints.ToArray());
     }
+
+    /// <summary>Whisper на тишине и шуме «досочиняет» фразы из субтитров YouTube — такие ответы отбрасываем.</summary>
+    static readonly string[] Hallucinations = { "ご視聴", "チャンネル登録", "字幕", "おやすみなさい。おやすみなさい", "次回", "ありがとうございました。ありがとうございました" };
+    public static string DropHallucination(string heard, string target)
+    {
+        foreach (var h in Hallucinations)
+            if (heard.Contains(h, StringComparison.Ordinal) && !target.Contains(h, StringComparison.Ordinal)) return "";
+        return heard;
+    }
+
+    public static string VerdictFor(int score, string heard) => Verdict(score, score < 90 && heard.Length > 0 ? heard : null);
 
     static string Verdict(int score, string? heardOther) => score switch
     {

@@ -21,9 +21,12 @@ public sealed class Recorder : IDisposable
     readonly MemoryStream _pcm = new();
     TaskCompletionSource<Recording>? _tcs;
     DateTime _start, _lastLoud, _speechStart;
-    bool _heard, _stopping;
-    readonly Queue<float> _recent = new();   // уровни последних ~1,5 с для оценки шума
+    bool _heard, _stopping, _started, _noiseInit;
+    int _loudRun;                            // сколько буферов подряд громче порога (щелчок ≠ речь)
     float _noise = 0.004f;
+
+    /// <summary>Микрофон реально начал отдавать звук (Bluetooth-гарнитура может включаться до секунды) — можно говорить.</summary>
+    public event Action? Started;
     readonly bool _manual;
     readonly double _maxSeconds;
     readonly double _endSilence;
@@ -58,7 +61,8 @@ public sealed class Recorder : IDisposable
         _in = new WaveInEvent
         {
             WaveFormat = Fmt, BufferMilliseconds = 40, NumberOfBuffers = 4,
-            DeviceNumber = dev >= 0 && dev < WaveInEvent.DeviceCount ? dev : 0,
+            // -1 = микрофон, выбранный по умолчанию в Windows (раньше бралось просто первое устройство в списке)
+            DeviceNumber = dev >= 0 && dev < WaveInEvent.DeviceCount ? dev : -1,
         };
         _in.DataAvailable += OnData;
         _in.RecordingStopped += (_, e) =>
@@ -90,30 +94,41 @@ public sealed class Recorder : IDisposable
             sum += v * v;
         }
         float rms = n > 0 ? (float)Math.Sqrt(sum / n) : 0;
-        Level = Math.Min(1f, rms * 7f);
-
-        // Шум = 15-й перцентиль уровней за последние ~1,5 с (устойчиво к речи с первой секунды)
-        _recent.Enqueue(rms);
-        if (_recent.Count > 38) _recent.Dequeue();
-        var sorted = _recent.OrderBy(x => x).ToArray();
-        _noise = Math.Clamp(sorted[sorted.Length * 15 / 100], 0.0015f, 0.05f);
-        float speechThr = Math.Max(0.012f, _noise * 3.2f);
-        float silenceThr = speechThr * 0.65f; // гистерезис: тише порога речи ещё не значит «тишина»
+        Level = Math.Min(1f, (float)Math.Sqrt(rms) * 2.2f); // корень — тихий микрофон тоже заметно «шевелит» индикатор
 
         var now = DateTime.UtcNow;
+        if (!_started)
+        {
+            _started = true; _start = _lastLoud = now; // отсчёт времени — с первого реального звука, а не с нажатия
+            Started?.Invoke();
+        }
+
+        // Шум: быстро опускается к тишине и медленно растёт только на «не-речи».
+        // Раньше брался перцентиль за 1,5 с — на длинной фразе он доходил до уровня голоса, и запись обрывалась.
+        if (!_noiseInit) { _noise = Math.Clamp(rms, 0.001f, 0.01f); _noiseInit = true; }
+        float speechThr = Math.Max(0.006f, _noise * 3f);
+        if (rms < _noise) _noise = _noise * 0.6f + rms * 0.4f;
+        else if (rms < speechThr) _noise = _noise * 0.97f + rms * 0.03f;
+        _noise = Math.Clamp(_noise, 0.0008f, 0.05f);
+        float silenceThr = speechThr * 0.6f; // гистерезис: тише порога речи ещё не значит «тишина»
+
         if (rms > speechThr)
         {
-            if (!_heard) _speechStart = now;
-            _heard = true;
+            if (++_loudRun == 1 && !_heard) _speechStart = now;
+            if (_loudRun >= 2) _heard = true; // ≥ 80 мс подряд — это голос, а не щелчок
             _lastLoud = now;
         }
-        else if (rms > silenceThr && _heard) _lastLoud = now;
+        else
+        {
+            if (!_heard) _loudRun = 0;
+            if (rms > silenceThr && _heard) _lastLoud = now;
+        }
 
         double elapsed = (now - _start).TotalSeconds;
         if (elapsed > _maxSeconds) { Stop(); return; }
         if (_manual) return;
-        bool longEnough = _heard && (now - _speechStart).TotalSeconds > 0.6;
-        if ((longEnough && (now - _lastLoud).TotalSeconds > _endSilence) || (!_heard && elapsed > 8))
+        bool longEnough = _heard && (now - _speechStart).TotalSeconds > 0.5;
+        if ((longEnough && (now - _lastLoud).TotalSeconds > _endSilence) || (!_heard && elapsed > 10))
             Stop();
     }
 
@@ -123,7 +138,7 @@ public sealed class Recorder : IDisposable
         int samples = pcm.Length / 2;
         const int frame = 320; // 20 мс
         int frames = samples / frame;
-        float thr = Math.Max(0.01f, _noise * 2.8f);
+        float thr = Math.Max(0.005f, _noise * 2.5f);
         int first = -1, last = -1;
         float peak = 0;
         for (int f = 0; f < frames; f++)
@@ -149,7 +164,7 @@ public sealed class Recorder : IDisposable
         // Автоусиление тихого микрофона (до ×8), чтобы Whisper и анализ интонации получили нормальный уровень
         if (peak > 0.002f && peak < 0.45f)
         {
-            float gain = Math.Min(8f, 0.7f / peak);
+            float gain = Math.Min(10f, 0.7f / peak);
             for (int i = 0; i + 1 < trimmed.Length; i += 2)
             {
                 int v = (int)(BitConverter.ToInt16(trimmed, i) * gain);

@@ -29,10 +29,11 @@ public sealed class MicCheckPage : UserControl, IPage
         var devs = Recorder.Devices();
         var devPanel = new WrapPanel();
         if (devs.Count == 0) devPanel.Children.Add(U.T("Микрофон не найден. Подключи его и открой страницу снова.", "Body", 14, U.B("Bad")));
-        for (int i = 0; i < devs.Count; i++)
+        if (p.MicDevice >= devs.Count) p.MicDevice = -1;
+        for (int i = devs.Count > 0 ? -1 : 0; i < devs.Count; i++)
         {
             int idx = i;
-            var rb = new RadioButton { Style = U.St("ChipRadio"), Content = devs[i], GroupName = "mic", IsChecked = (p.MicDevice < 0 ? 0 : p.MicDevice) == i, Margin = new Thickness(0, 0, 8, 8) };
+            var rb = new RadioButton { Style = U.St("ChipRadio"), Content = i < 0 ? "Как в Windows (по умолчанию)" : devs[i], GroupName = "mic", IsChecked = p.MicDevice == i, Margin = new Thickness(0, 0, 8, 8) };
             rb.Checked += (_, _) => { p.MicDevice = idx; ProgressStore.Notify(); };
             devPanel.Children.Add(rb);
         }
@@ -100,7 +101,8 @@ public sealed class MicCheckPage : UserControl, IPage
         _result.Content = null;
         _rec = new Recorder(manual: false, maxSeconds: 8);
         _meter.Attach(_rec);
-        _status.Text = "Слушаю… говори фразу (или нажми «Записать» ещё раз, чтобы остановить)";
+        _status.Text = "Включаю микрофон…";
+        _rec.Started += () => Dispatcher.BeginInvoke(() => { if (_busy) _status.Text = "Говори фразу (или нажми «Записать» ещё раз, чтобы остановить)"; });
         _status.Foreground = U.B("Text");
         try
         {
@@ -146,9 +148,8 @@ public sealed class MicCheckPage : UserControl, IPage
         if (r.Heard && Asr.Ready)
         {
             _status.Text = "Проверяю распознавание…";
-            var (text, conf) = await Asr.TranscribeAsync(r.Wav, CancellationToken.None);
-            var sc = Speech.Score(text, conf, TestJp, TestKana);
-            _status.Text = text.Length == 0 ? "Распознать не удалось." : $"Распознано: «{text}» — совпадение {sc.Score}%";
+            var sc = await SpeechUi.ScoreRecording(TestJp, TestKana, r, CancellationToken.None, s => _status.Text = s);
+            _status.Text = sc.Heard.Length == 0 ? "Распознать не удалось." : $"Распознано: «{sc.Heard}» — совпадение {sc.Score}%";
             _status.Foreground = U.B(sc.Score >= 70 ? "Good" : "Gold");
             if (sc.Score >= 70) Shell.Toast("Микрофон и распознавание работают отлично", "完璧");
         }

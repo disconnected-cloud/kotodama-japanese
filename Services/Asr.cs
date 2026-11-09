@@ -57,6 +57,7 @@ public static class Asr
     /// <summary>Заранее загрузить модель в память, чтобы первое распознавание было быстрым.</summary>
     public static void Warmup()
     {
+        _ = JDict.LoadAsync(); // словарь нужен, чтобы читать распознанные кандзи
         if (!Ready) return;
         Task.Run(async () =>
         {
@@ -78,23 +79,26 @@ public static class Asr
     /// Ускорение: Whisper по умолчанию кодирует 30-секундное окно; для короткой фразы
     /// уменьшаем аудиоконтекст под реальную длину (в разы быстрее) и отключаем повторные проходы.
     /// </summary>
-    public static async Task<(string text, float confidence)> TranscribeAsync(byte[] wav, CancellationToken ct)
+    /// <param name="prompt">Ожидаемая фраза: подсказывает модели словарь и написание (короткие слова распознаются намного надёжнее).</param>
+    public static async Task<(string text, float confidence)> TranscribeAsync(byte[] wav, CancellationToken ct, string? prompt = null)
     {
         await Gate.WaitAsync(ct);
         try
         {
             EnsureLoaded();
-            double sec = Math.Max(0.5, (wav.Length - 44) / 32000.0);
+            wav = Pad(wav);
+            double sec = (wav.Length - 44) / 32000.0;
             int ctx = Math.Clamp((int)(sec * 50) + 128, 256, 1500);
-            using var proc = _factory!.CreateBuilder()
+            var b = _factory!.CreateBuilder()
                 .WithLanguage("ja")
                 .WithThreads(Math.Clamp(Environment.ProcessorCount - 1, 2, 8))
                 .WithAudioContextSize(ctx)
                 .WithSingleSegment()
                 .WithNoContext()
                 .WithProbabilities()
-                .WithTemperatureInc(0)
-                .Build();
+                .WithTemperatureInc(0);
+            if (!string.IsNullOrWhiteSpace(prompt)) b = b.WithPrompt(prompt);
+            using var proc = b.Build();
             var sb = new StringBuilder();
             float p = 0; int n = 0;
             using var ms = new MemoryStream(wav);
@@ -106,6 +110,22 @@ public static class Asr
             return (sb.ToString().Trim(), n > 0 ? p / n : 0);
         }
         finally { Gate.Release(); ScheduleUnload(); }
+    }
+
+    /// <summary>
+    /// Тишина по краям (0,35 с) и минимум 1,6 с: whisper.cpp отбрасывает записи короче секунды,
+    /// а короткие слова («はい», «え») без запаса тишины часто превращаются в пустую строку.
+    /// </summary>
+    public static byte[] Pad(byte[] wav)
+    {
+        if (wav.Length < 44) return wav;
+        const int edge = 16000 * 2 * 35 / 100, min = 16000 * 2 * 16 / 10;
+        int pcmLen = wav.Length - 44;
+        int total = Math.Max(min, pcmLen + 2 * edge);
+        total += total & 1;
+        var pcm = new byte[total];
+        Buffer.BlockCopy(wav, 44, pcm, edge, pcmLen);
+        return Recorder.ToWav(pcm);
     }
 
     public static void Unload()

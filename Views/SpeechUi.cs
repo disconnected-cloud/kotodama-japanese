@@ -10,7 +10,7 @@ namespace Matsubakira.Views;
 /// <summary>Общие элементы для практики произношения: запись → Whisper → оценка; карточка модели; индикатор громкости.</summary>
 public static class SpeechUi
 {
-    public static async Task<(SpeechCheck check, Recording? rec)> RecordAndScore(string jp, string kana, Recorder recorder, CancellationToken ct)
+    public static async Task<(SpeechCheck check, Recording? rec)> RecordAndScore(string jp, string kana, Recorder recorder, CancellationToken ct, Action<string>? status = null)
     {
         if (!Recorder.HasMicrophone) return (new SpeechCheck(false, 0, "", "", "Микрофон не найден. Подключи микрофон и попробуй снова."), null);
         if (!Asr.Ready) return (new SpeechCheck(false, 0, "", "", "Модель распознавания ещё не скачана."), null);
@@ -19,15 +19,32 @@ public static class SpeechUi
         try { r = await recorder.RecordAsync(ct); }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { return (new SpeechCheck(false, 0, "", "", "Не удалось включить микрофон: " + ex.Message), null); }
-        return (await ScoreRecording(jp, kana, r, ct), r);
+        status?.Invoke("Распознаю…");
+        return (await ScoreRecording(jp, kana, r, ct, status), r);
     }
 
-    public static async Task<SpeechCheck> ScoreRecording(string jp, string kana, Recording r, CancellationToken ct)
+    /// <summary>
+    /// Два прохода Whisper. Первый — без подсказки (честно: что модель слышит сама). Если совпадение
+    /// неполное, второй проход получает целевую фразу как подсказку: короткие слова и правильная речь
+    /// с акцентом распознаются намного надёжнее. Чтобы подсказка не «дорисовала» ошибку, второй балл
+    /// не может уйти далеко от первого, если первый проход услышал совсем другое.
+    /// </summary>
+    public static async Task<SpeechCheck> ScoreRecording(string jp, string kana, Recording r, CancellationToken ct, Action<string>? status = null)
     {
-        if (!r.Heard || r.Seconds < 0.25)
+        // Тихий голос мог не пройти порог детектора, но быть в записи — тогда всё равно пробуем распознать
+        if (r.Seconds < 0.2 || (!r.Heard && r.PeakLevel < 0.02f))
             return new SpeechCheck(false, 0, "", "Ничего не услышано. Говори громче или открой «Проверка микрофона» в разделе «Говорение».");
-        var (text, conf) = await Asr.TranscribeAsync(r.Wav, ct);
-        return Speech.Score(text, conf, jp, kana);
+        await JDict.LoadAsync();
+        var (t1, c1) = await Asr.TranscribeAsync(r.Wav, ct);
+        var s1 = Speech.Score(t1, c1, jp, kana);
+        if (s1.Score >= 88) return s1;
+        status?.Invoke("Уточняю распознавание…");
+        var (t2, c2) = await Asr.TranscribeAsync(r.Wav, ct, jp);
+        // Без подсказки Whisper часто слышит ерунду на гласных и коротких словах («あいうえお», «こうこう»),
+        // поэтому потолок щадящий: правильно сказанное проходит, а явная подмена всё же не получает высший балл.
+        int cap = s1.Heard.Length == 0 ? 90 : Math.Max(s1.Score + 45, 86);
+        var s2 = Speech.Score(t2, c2, jp, kana, cap);
+        return s2.Score > s1.Score ? s2 : s1;
     }
 
     /// <summary>Сравнение интонации и ритма с образцом (тот же голос, что звучит в приложении).</summary>
@@ -38,9 +55,28 @@ public static class SpeechUi
         return await Task.Run(() => Prosody.Compare(Prosody.DecodeFile(path), Prosody.FromWav(rec.Wav)));
     }
 
-    /// <summary>Итог: звуки 60% + интонация 25% + ритм 15% (если фраза в целом распознана).</summary>
-    public static int Combine(int text, ProsodyResult? pr) =>
-        pr == null || text < 40 ? text : (int)Math.Round(text * 0.6 + pr.Intonation * 0.25 + pr.Rhythm * 0.15);
+    /// <summary>
+    /// Итог: звуки 60% + интонация 25% + ритм 15%. Интонация сравнивается с синтезированным голосом,
+    /// поэтому она не может «завалить» правильно сказанную фразу: если звуки ≥ 70, итог не ниже 70
+    /// и не ниже «звуки − 15».
+    /// </summary>
+    public static int Combine(int text, ProsodyResult? pr)
+    {
+        if (pr == null || text < 40) return text;
+        int t = (int)Math.Round(text * 0.6 + pr.Intonation * 0.25 + pr.Rhythm * 0.15);
+        return text >= 70 ? Math.Max(t, Math.Max(70, text - 15)) : t;
+    }
+
+    /// <summary>Подсказки по ошибкам (っ, долгота, ん, звонкость) — под результатом.</summary>
+    public static FrameworkElement? HintsPanel(SpeechCheck r)
+    {
+        if (r.Hints is not { Length: > 0 }) return null;
+        var sp = new StackPanel { Margin = new Thickness(0, 12, 0, 0) };
+        foreach (var tip in r.Hints.Take(3))
+            sp.Children.Add(U.Row(8, new TextBlock { Text = "", FontFamily = U.R<FontFamily>("Icons"), Foreground = U.B("Gold"), VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 3, 0, 0) },
+                U.T(tip, "Body", 13).Also(t => t.MaxWidth = 620)).M(0, 0, 0, 6));
+        return sp;
+    }
 
     public static FrameworkElement ProsodyPanel(int text, ProsodyResult pr)
     {
