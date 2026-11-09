@@ -81,16 +81,16 @@ public static class Conj
     public static QuizSession Quiz()
     {
         var verbs = Db.Words.Where(w => (w.Topic.StartsWith("Глаголы") && w.Level is "N5" or "N4") && All(w.Jp, w.Kana) != null).ToList();
-        var qs = verbs.Shuffle().Take(15).Select(w =>
+        var qs = verbs.Shuffled().Take(15).Select(w =>
         {
             var forms = All(w.Jp, w.Kana)!;
             var (key, name) = Conj.Forms[U.Rng.Next(Conj.Forms.Length)];
             var correct = forms[key];
-            var wrong = forms.Where(kv => kv.Key != key && kv.Value != correct).Select(kv => kv.Value).Distinct().Shuffle().Take(3);
+            var wrong = forms.Where(kv => kv.Key != key && kv.Value != correct).Select(kv => kv.Value).Distinct().Shuffled().Take(3);
             return new QuizQ
             {
                 Prompt = w.Jp, PromptSize = 60, Sub = $"→ {name}   ·   «{w.Ru}»", Answer = correct, OptionsJp = true,
-                Options = wrong.Append(correct).Shuffle().ToArray(), Speak = correct, Key = w.Id,
+                Options = wrong.Append(correct).Shuffled().ToArray(), Speak = correct, Key = w.Id,
                 Explain = $"{w.Jp} → {correct}  ({Kana.ToRomaji(correct)})",
             };
         });
@@ -132,7 +132,7 @@ public static class Counters
             var other = Data[U.Rng.Next(Data.Length)].r[n].Split('/')[0];
             pool.Add(other);
             pool.AddRange(Data.Select(d => d.r[n].Split('/')[0]));
-            var opts = pool.Where(x => x != correct).Distinct().Shuffle().Take(3).Append(correct).Shuffle().ToArray();
+            var opts = pool.Where(x => x != correct).Distinct().Shuffled().Take(3).Append(correct).Shuffled().ToArray();
             return new QuizQ { Prompt = Nums[n] + c, PromptSize = 72, Sub = $"Как прочитать? ({use})", Answer = correct, OptionsJp = true, Options = opts, Speak = correct, Explain = $"{Nums[n]}{c} — {correct} ({Kana.ToRomaji(correct)})" };
         });
         return new QuizSession("Счётные суффиксы", qs);
@@ -180,7 +180,7 @@ public sealed class BuilderSession : Grid, IPage, IKeyTarget
             .Concat(Db.SpeechLessons.SelectMany(l => l.Items).Select(p => (p.Kana, p.Jp, p.Ru)))
             .Select(x => (tokens: x.Kana.Replace("、", " ").Replace("。", "").Replace("！", "").Replace("？", "").Split(' ', StringSplitOptions.RemoveEmptyEntries), x.Jp, x.Ru))
             .Where(x => x.tokens.Length is >= 3 and <= 8).ToList();
-        _items = src.Shuffle().Take(10).ToList();
+        _items = src.Shuffled().Take(10).ToList();
         Margin = new Thickness(40, 10, 40, 24);
         var sp = new StackPanel { MaxWidth = 820, HorizontalAlignment = HorizontalAlignment.Center };
         sp.Children.Add(_bar.M(0, 0, 0, 24));
@@ -368,7 +368,7 @@ public sealed class TrainersPage : UserControl, IPage
                 if (parts.Length == 3 && int.TryParse(parts[1], out var lid) && int.TryParse(parts[2], out var qi) && lid >= 1 && lid <= Db.Grammar.Length && qi < Db.Grammar[lid - 1].Quiz.Length)
                 {
                     var q = Db.Grammar[lid - 1].Quiz[qi];
-                    qs.Add(new QuizQ { Prompt = q.Question, PromptSize = 32, Sub = q.Ru, Answer = q.Answer, Options = q.Options.Shuffle().ToArray(), OptionsJp = true, Key = k, Speak = q.Question.Replace("＿", q.Answer) });
+                    qs.Add(new QuizQ { Prompt = q.Question, PromptSize = 32, Sub = q.Ru, Answer = q.Answer, Options = q.Options.Shuffled().ToArray(), OptionsJp = true, Key = k, Speak = q.Question.Replace("＿", q.Answer) });
                 }
             }
         }
@@ -379,7 +379,7 @@ public sealed class TrainersPage : UserControl, IPage
     public static QuizSession Dictation()
     {
         var pool = Db.Words.Where(w => w.Level is "N5" or "N4" or "1000" && w.Kana.Length is >= 2 and <= 6).ToList();
-        var qs = pool.Shuffle().Take(12).Select(w => new QuizQ
+        var qs = pool.Shuffled().Take(12).Select(w => new QuizQ
         {
             Prompt = "聞いて書いて", PromptSize = 44, Sub = "Послушай и напиши слово латиницей или каной · 🔊 повторить", Typing = true, SpeakOnShow = true,
             Answer = string.Join("|", new[] { w.Romaji.Replace("'", ""), w.Romaji, Kana.ToHiragana(w.Kana), w.Kana }.Distinct()), Speak = w.Kana, Key = w.Id,
@@ -395,13 +395,13 @@ public sealed class TrainersPage : UserControl, IPage
         var words = Db.WordsOf(level).ToList();
         var ruPool = words.Select(w => w.Ru).ToArray();
         var qs = new List<QuizQ>();
-        qs.AddRange(words.Shuffle().Take(10).Select(w => new QuizQ { Prompt = w.Jp, PromptSize = 56, Sub = "Лексика: выбери значение", Answer = w.Ru, Options = QuizSession.MakeOptions(w.Ru, ruPool), Speak = w.Kana, Key = w.Id }));
+        qs.AddRange(words.Shuffled().Take(10).Select(w => new QuizQ { Prompt = w.Jp, PromptSize = 56, Sub = "Лексика: выбери значение", Answer = w.Ru, Options = QuizSession.MakeOptions(w.Ru, ruPool), Speak = w.Kana, Key = w.Id }));
         var exs = Db.KanjiOf(level).SelectMany(k => k.Examples).ToList();
         var kanaPool = exs.Select(e => e.Kana).ToArray();
-        qs.AddRange(exs.Shuffle().Take(6).Select(e => new QuizQ { Prompt = e.Jp, PromptSize = 60, Sub = "Кандзи: выбери чтение", Answer = e.Kana, OptionsJp = true, Options = QuizSession.MakeOptions(e.Kana, kanaPool), Speak = e.Kana }));
-        var gq = Db.Grammar.Where(g => g.Level == level).SelectMany(g => g.Quiz.Select((q, i) => (g, q, i))).Shuffle().Take(8);
-        qs.AddRange(gq.Select(x => new QuizQ { Prompt = x.q.Question, PromptSize = 30, Sub = "Грамматика: " + x.q.Ru, Answer = x.q.Answer, OptionsJp = true, Options = x.q.Options.Shuffle().ToArray(), Key = $"g:{x.g.Id}:{x.i}", Speak = x.q.Question.Replace("＿", x.q.Answer) }));
-        qs.AddRange(words.Shuffle().Take(6).Select(w => new QuizQ { Prompt = "聞いて", PromptSize = 52, Sub = "Аудирование: что прозвучало? · 🔊 повторить", SpeakOnShow = true, Answer = w.Ru, Options = QuizSession.MakeOptions(w.Ru, ruPool), Speak = w.Kana, Key = w.Id }));
+        qs.AddRange(exs.Shuffled().Take(6).Select(e => new QuizQ { Prompt = e.Jp, PromptSize = 60, Sub = "Кандзи: выбери чтение", Answer = e.Kana, OptionsJp = true, Options = QuizSession.MakeOptions(e.Kana, kanaPool), Speak = e.Kana }));
+        var gq = Db.Grammar.Where(g => g.Level == level).SelectMany(g => g.Quiz.Select((q, i) => (g, q, i))).Shuffled().Take(8);
+        qs.AddRange(gq.Select(x => new QuizQ { Prompt = x.q.Question, PromptSize = 30, Sub = "Грамматика: " + x.q.Ru, Answer = x.q.Answer, OptionsJp = true, Options = x.q.Options.Shuffled().ToArray(), Key = $"g:{x.g.Id}:{x.i}", Speak = x.q.Question.Replace("＿", x.q.Answer) }));
+        qs.AddRange(words.Shuffled().Take(6).Select(w => new QuizQ { Prompt = "聞いて", PromptSize = 52, Sub = "Аудирование: что прозвучало? · 🔊 повторить", SpeakOnShow = true, Answer = w.Ru, Options = QuizSession.MakeOptions(w.Ru, ruPool), Speak = w.Kana, Key = w.Id }));
         return new QuizSession($"Пробный тест {level}", qs, (ok, total) =>
             Shell.Toast(total > 0 && ok * 100 / total >= 60 ? $"Тест сдан: {ok * 100 / total}%! 合格" : "Пока не сдан — порог 60%. Повтори ошибки!", "試"));
     }

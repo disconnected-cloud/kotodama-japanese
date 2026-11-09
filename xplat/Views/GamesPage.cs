@@ -190,7 +190,7 @@ public sealed class MemoryGame : Grid, IPage
     {
         if (Children.Count > 2) Children.RemoveAt(2);
         var pool = Db.Words.Where(w => w.Level is "N5" or "N4" && w.Ru.Length < 26).OrderBy(w => ProgressStore.Card(w.Id) == null ? 1 : 0).ThenBy(_ => U.Rng.Next()).Take(6).ToList();
-        var cards = pool.SelectMany(w => new[] { (w, jp: true), (w, jp: false) }).Shuffle();
+        var cards = pool.SelectMany(w => new[] { (w, jp: true), (w, jp: false) }).Shuffled();
         _grid.Children.Clear();
         _moves = 0; _pairs = 0; _open = null; _start = Environment.TickCount64;
         foreach (var (w, jp) in cards) _grid.Children.Add(Card(w, jp));

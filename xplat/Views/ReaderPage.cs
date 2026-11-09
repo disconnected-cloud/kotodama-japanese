@@ -204,7 +204,7 @@ public sealed class TextPage : UserControl, IPage
             sp.Children.Add(U.T(q, "H3", 15).M(0, 8, 0, 6));
             var wrap = new WrapPanel();
             bool locked = false;
-            foreach (var o in opts.Shuffle())
+            foreach (var o in opts.Shuffled())
             {
                 var b = new Button { Content = o, Margin = new Thickness(0, 0, 8, 8), Padding = new Thickness(14, 8, 14, 8) };
                 var opt = o;

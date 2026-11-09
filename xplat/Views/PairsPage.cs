@@ -296,7 +296,7 @@ public sealed class PairsPage : UserControl, IPage, IKeyTarget
             {
                 Prompt = "聞いて", PromptSize = 52, Sub = "Какое слово прозвучало? · 🔊 повторить",
                 SpeakOnShow = true, Speak = w.Kana, Answer = w.Kana,
-                Options = new[] { p.A.Kana, p.B.Kana }.Shuffle().ToArray(), OptionsJp = true,
+                Options = new[] { p.A.Kana, p.B.Kana }.Shuffled().ToArray(), OptionsJp = true,
                 Explain = $"{p.A.Kana} — {p.A.Ru} · {p.B.Kana} — {p.B.Ru}",
             });
         }

@@ -23,7 +23,7 @@ public static class ReviewPage
     {
         var cards = Db.Words.Where(w => ProgressStore.IsDue(w.Id)).Select(FlashSession.FromWord)
             .Concat(Db.Kanji.Where(k => ProgressStore.IsDue(k.Id)).Select(FlashSession.FromKanji))
-            .Shuffle()
+            .Shuffled()
             .Take(100);
         return new FlashSession("Повторение", cards);
     }

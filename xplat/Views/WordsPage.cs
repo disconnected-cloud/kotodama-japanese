@@ -117,7 +117,7 @@ public sealed class WordsPage : UserControl, IPage
         int due = words.Count(w => ProgressStore.IsDue(w.Id));
         var acts = new WrapPanel();
         acts.Children.Add(U.Btn($"Учить новые ({ProgressStore.P.NewPerSession})", LearnNew, "Primary", "").M(0, 0, 10, 10));
-        var rev = U.Btn($"Повторить ({due})", () => Shell.Open(new FlashSession("Повторение слов", words.Where(w => ProgressStore.IsDue(w.Id)).Shuffle().Select(FlashSession.FromWord))), "", "").M(0, 0, 10, 10);
+        var rev = U.Btn($"Повторить ({due})", () => Shell.Open(new FlashSession("Повторение слов", words.Where(w => ProgressStore.IsDue(w.Id)).Shuffled().Select(FlashSession.FromWord))), "", "").M(0, 0, 10, 10);
         rev.IsEnabled = due > 0;
         acts.Children.Add(rev);
         acts.Children.Add(U.Btn("Квиз: перевод", () => Quiz(0), "", "").M(0, 0, 10, 10));

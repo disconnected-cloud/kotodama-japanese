@@ -10,6 +10,12 @@ public static class CrashReport
 {
     static string LogPath => Path.Combine(ProgressStore.Folder, "crash.log");
 
+    /// <summary>Записать ошибку в журнал (папка данных, crash.log).</summary>
+    public static void Log(Exception? ex)
+    {
+        try { File.AppendAllText(LogPath, $"[{DateTime.Now}] {ex}\n\n"); } catch { }
+    }
+
     public static string? LastEntry()
     {
         try

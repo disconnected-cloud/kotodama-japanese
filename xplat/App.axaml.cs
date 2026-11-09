@@ -22,7 +22,7 @@ public partial class App : Application
 
         Dispatcher.UIThread.UnhandledException += (_, e) =>
         {
-            Program.LogCrash(e.Exception);
+            CrashReport.Log(e.Exception);
             ProgressStore.Save();
             e.Handled = true;
             // Некритичные ошибки — коротким уведомлением, без модального окна
@@ -31,12 +31,14 @@ public partial class App : Application
 
         if (ApplicationLifetime is ISingleViewApplicationLifetime single)
             single.MainView = new MainView(); // телефон: интерфейс без окна
+#if !MOBILE
         else if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow();
             desktop.ShutdownRequested += (_, _) => ProgressStore.Save();
             desktop.Exit += (_, _) => ProgressStore.Save();
         }
+#endif
         // Тяжёлое — в фоне, чтобы окно появилось сразу
         Task.Run(Db.Preload);
         _ = JDict.LoadAsync(); // словарь нужен латинице, распознаванию речи и чтению — грузим в фоне сразу

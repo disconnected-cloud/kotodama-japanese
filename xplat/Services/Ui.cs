@@ -391,7 +391,7 @@ public static class U
 
     public static Random Rng { get; } = new();
 
-    public static List<T> Shuffle<T>(this IEnumerable<T> src)
+    public static List<T> Shuffled<T>(this IEnumerable<T> src)
     {
         var l = src.ToList();
         for (int i = l.Count - 1; i > 0; i--) { int j = Rng.Next(i + 1); (l[i], l[j]) = (l[j], l[i]); }

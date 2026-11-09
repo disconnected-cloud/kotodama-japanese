@@ -47,7 +47,7 @@ public sealed class KanjiPage : UserControl, IPage
 
         var acts = new WrapPanel { Margin = new Thickness(0, 0, 0, 16) };
         acts.Children.Add(U.Btn("Учить новые (5)", LearnNew, "Primary", "").M(0, 0, 10, 0));
-        var rev = U.Btn($"Повторить ({due})", () => Shell.Open(new FlashSession("Повторение кандзи", kanji.Where(k => ProgressStore.IsDue(k.Id)).Shuffle().Select(FlashSession.FromKanji))), "", "").M(0, 0, 10, 0);
+        var rev = U.Btn($"Повторить ({due})", () => Shell.Open(new FlashSession("Повторение кандзи", kanji.Where(k => ProgressStore.IsDue(k.Id)).Shuffled().Select(FlashSession.FromKanji))), "", "").M(0, 0, 10, 0);
         rev.IsEnabled = due > 0;
         acts.Children.Add(rev);
         acts.Children.Add(U.Btn("Квиз: значение", () => Quiz(false), "", "").M(0, 0, 10, 0));
@@ -176,7 +176,7 @@ public sealed class KanjiPage : UserControl, IPage
         var ruPool = all.Select(k => k.Ru).ToArray();
         IEnumerable<QuizQ> qs;
         if (!reading)
-            qs = pool.Shuffle().Take(15).Select(k => new QuizQ
+            qs = pool.Shuffled().Take(15).Select(k => new QuizQ
             {
                 Prompt = k.Char, PromptSize = 130, Sub = "Что означает этот иероглиф?", Answer = k.Ru,
                 Options = QuizSession.MakeOptions(k.Ru, ruPool), Speak = k.Examples.FirstOrDefault()?.Kana,
@@ -186,7 +186,7 @@ public sealed class KanjiPage : UserControl, IPage
         {
             var exs = pool.SelectMany(k => k.Examples).ToList();
             var kanaPool = exs.Select(e => e.Kana).ToArray();
-            qs = exs.Shuffle().Take(15).Select(e => new QuizQ
+            qs = exs.Shuffled().Take(15).Select(e => new QuizQ
             {
                 Prompt = e.Jp, PromptSize = 72, Sub = "Как читается это слово?", Answer = e.Kana, OptionsJp = true,
                 Options = QuizSession.MakeOptions(e.Kana, kanaPool), Speak = e.Kana, Explain = $"{e.Kana} ({Kana.ToRomaji(e.Kana)}) — {e.Ru}",

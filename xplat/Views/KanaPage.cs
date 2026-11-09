@@ -137,7 +137,7 @@ public sealed class KanaPage : UserControl, IPage
     public static QuizSession QuizFor(IList<KanaCell> cells, bool kata, string title, Action<int, int>? finished)
     {
         int n = Math.Clamp(cells.Count * 2, 15, 20);
-        var chosen = Enumerable.Range(0, n / Math.Max(1, cells.Count) + 1).SelectMany(_ => cells.Shuffle()).Take(n).ToList();
+        var chosen = Enumerable.Range(0, n / Math.Max(1, cells.Count) + 1).SelectMany(_ => cells.Shuffled()).Take(n).ToList();
         var pool = cells.Count >= 6 ? cells.ToList() : cells.Concat(Kana.All.Where(c => c.Group == Kana.Basic)).ToList();
         return Build(chosen, pool, kata, false, title, finished);
     }

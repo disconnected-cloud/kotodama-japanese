@@ -128,7 +128,7 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
     void Start()
     {
         Children.Clear(); Children.Add(_main);
-        _queue = _all.Shuffle();
+        _queue = _all.Shuffled();
         _retried.Clear();
         _idx = _correct = _answered = _combo = _bestCombo = _xp = 0;
         Render();
@@ -313,7 +313,7 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
     /// <summary>Собирает вопрос с 4 вариантами: правильный + 3 случайных отвлекающих.</summary>
     public static string[] MakeOptions(string answer, IEnumerable<string> pool, int count = 4)
     {
-        var wrong = pool.Where(p => p != answer).Distinct().Shuffle().Take(count - 1);
-        return wrong.Append(answer).Shuffle().ToArray();
+        var wrong = pool.Where(p => p != answer).Distinct().Shuffled().Take(count - 1);
+        return wrong.Append(answer).Shuffled().ToArray();
     }
 }

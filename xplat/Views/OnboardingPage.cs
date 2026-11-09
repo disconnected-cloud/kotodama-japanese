@@ -90,7 +90,7 @@ public sealed class OnboardingPage : UserControl, IPage
     {
         var score = new int[4];
         var qs = new List<QuizQ>();
-        var basic = Kana.All.Where(c => c.Group == Kana.Basic).Shuffle().Take(6).ToList();
+        var basic = Kana.All.Where(c => c.Group == Kana.Basic).Shuffled().Take(6).ToList();
         var romajiPool = Kana.All.Select(c => c.Romaji).ToArray();
         for (int i = 0; i < 6; i++)
         {
@@ -99,11 +99,11 @@ public sealed class OnboardingPage : UserControl, IPage
         }
         foreach (var (lvl, sec) in new[] { ("N5", 2), ("N4", 3) })
         {
-            var words = Db.WordsOf(lvl).Shuffle().Take(2).ToList();
+            var words = Db.WordsOf(lvl).Shuffled().Take(2).ToList();
             var ru = Db.WordsOf(lvl).Select(w => w.Ru).ToArray();
             foreach (var w in words) qs.Add(new QuizQ { Prompt = w.Jp, PromptSize = 56, Sub = "Что значит?", Answer = w.Ru, Options = QuizSession.MakeOptions(w.Ru, ru), OnResult = ok => { if (ok) score[sec]++; } });
-            var g = Db.Grammar.Where(x => x.Level == lvl).SelectMany(x => x.Quiz).Shuffle().First();
-            qs.Add(new QuizQ { Prompt = g.Question, PromptSize = 30, Sub = g.Ru, Answer = g.Answer, Options = g.Options.Shuffle().ToArray(), OptionsJp = true, OnResult = ok => { if (ok) score[sec]++; } });
+            var g = Db.Grammar.Where(x => x.Level == lvl).SelectMany(x => x.Quiz).Shuffled().First();
+            qs.Add(new QuizQ { Prompt = g.Question, PromptSize = 30, Sub = g.Ru, Answer = g.Answer, Options = g.Options.Shuffled().ToArray(), OptionsJp = true, OnResult = ok => { if (ok) score[sec]++; } });
         }
         Shell.Open(new QuizSession("Тест уровня", qs, (_, _) =>
         {
