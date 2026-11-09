@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Kotodama</AssemblyName>
+    <Product>Kotodama</Product>
+    <RootNamespace>Matsubakira</RootNamespace>
+    <Version>0.5.0</Version>
+    <ApplicationIcon>Assets/app.ico</ApplicationIcon>
+    <!-- Скорость: PGO + быстрый старт -->
+    <TieredPGO>true</TieredPGO>
+    <TieredCompilation>true</TieredCompilation>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <SatelliteResourceLanguages>ru</SatelliteResourceLanguages>
+    <!-- Тесты и готовые сборки не входят в основной проект -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);tests/**;dist/**;dist-portable/**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <!-- Release-публикация: один exe, предкомпиляция (ReadyToRun) для мгновенного запуска -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <!-- Нативные DLL Whisper должны лежать рядом с exe (runtimes/win-x64), иначе загрузчик их не найдёт -->
+    <IncludeNativeLibrariesForSelfExtract>false</IncludeNativeLibrariesForSelfExtract>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Data/*.json;Data/*.gz" LogicalName="%(Filename)%(Extension)" />
+    <Resource Include="Assets/app.ico" />
+    <Resource Include="Assets/emoji/*.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="Whisper.net" Version="1.9.1" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
+  </ItemGroup>
+
+  <!-- Оставляем только x64-версию нативных библиотек Whisper -->
+  <Target Name="TrimWhisperRuntimes" AfterTargets="Publish">
+    <RemoveDir Directories="$(PublishDir)runtimes/win-arm64;$(PublishDir)runtimes/win-x86" />
+  </Target>
+
+</Project>

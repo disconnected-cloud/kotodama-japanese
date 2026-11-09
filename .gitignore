@@ -1,0 +1,11 @@
+bin/
+obj/
+dist/
+dist-portable/
+release/
+.vs/
+*.user
+tests/**/bin/
+tests/**/obj/
+start.txt
+*.zip

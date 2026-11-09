@@ -1,0 +1,394 @@
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Shapes;
+using Matsubakira.Controls;
+using Matsubakira.Services;
+
+namespace Matsubakira.Views;
+
+public sealed class SpeechPage : UserControl, IPage
+{
+    public string Title => "Говорение";
+
+    public void OnShown()
+    {
+        var root = new StackPanel();
+        root.Children.Add(U.Header("話", "Говорение", "Слушай носителя, повторяй вслух — Whisper распознает речь и оценит произношение."));
+        root.Children.Add(SpeechUi.ModelCard(OnShown));
+        var mic = U.Btn("Проверка и настройка микрофона", () => Shell.Open(new MicCheckPage()), "", "\uE720");
+        mic.HorizontalAlignment = HorizontalAlignment.Left; mic.Margin = new Thickness(0, 12, 0, 0);
+        root.Children.Add(mic);
+
+        root.Children.Add(U.T("Уроки", "H2").M(0, 26, 0, 12));
+        var grid = new UniformGrid { Columns = 3, Margin = new Thickness(-6, 0, -6, 0) };
+        foreach (var l in Db.SpeechLessons) grid.Children.Add(LessonCard(l));
+        root.Children.Add(grid);
+        Anim.Stagger(grid, 35, 80);
+        Content = U.Page(root);
+    }
+
+    static Border LessonCard(SpeechLesson l)
+    {
+        int done = l.Items.Count(i => ProgressStore.P.SpeechBest.TryGetValue(i.Id, out var s) && s >= 70);
+        double avg = l.Items.Average(i => ProgressStore.P.SpeechBest.TryGetValue(i.Id, out var s) ? s : 0);
+        var sp = new StackPanel();
+        var head = U.Cols("auto", "*", "auto");
+        head.Children.Add(Emoji.Img(Emoji.For(l.Title, "speaking_head"), 40));
+        head.Children.Add(U.T($"{done}/{l.Items.Length}", "Muted", 12).CenterV().Col(2));
+        sp.Children.Add(head);
+        sp.Children.Add(U.T(l.Title, "H3", 15).M(0, 12, 0, 3));
+        sp.Children.Add(U.T(l.Desc, "Muted").Also(t => t.MinHeight = 36));
+        sp.Children.Add(new ProgressBar { Maximum = 100, Value = avg, Height = 4, Margin = new Thickness(0, 12, 0, 0) });
+        var card = new Border { Style = U.St("Card"), Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
+        HomePage.Hover(card);
+        card.MouseLeftButtonUp += (_, _) => Shell.OpenFrom(card, new SpeechLessonPage(l));
+        return card;
+    }
+}
+
+/// <summary>Урок говорения: образец → запись → распознавание → оценка, волны «образец / ты».</summary>
+public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
+{
+    readonly SpeechLesson _l;
+    int _i;
+    CancellationTokenSource? _cts;
+    Recorder? _rec;
+    bool _busy;
+    Recording? _last;
+    public string Title => _l.Title;
+    Phrase P => _l.Items[_i];
+
+    readonly StackPanel _dots = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+    readonly ContentControl _phrase = new();
+    readonly Border _micBtn;
+    readonly TextBlock _micIcon = new() { Text = "", FontSize = 26, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+    readonly Ellipse _ring = new() { Width = 84, Height = 84, StrokeThickness = 2, IsHitTestVisible = false, Opacity = 0 };
+    readonly SpeechUi.LevelMeter _meter = new();
+    readonly TextBlock _status = new() { FontSize = 13, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0) };
+    readonly ContentControl _result = new();
+    readonly Grid _wrap = new();
+
+    public SpeechLessonPage(SpeechLesson l)
+    {
+        _l = l;
+        _micIcon.FontFamily = U.R<FontFamily>("Icons");
+        _micIcon.Foreground = new SolidColorBrush(Color.FromRgb(0x1A, 0x0B, 0x11));
+        _status.Foreground = U.B("Muted");
+        _ring.Stroke = U.B("Accent");
+        _micBtn = new Border { Width = 84, Height = 84, CornerRadius = new CornerRadius(42), Background = U.B("Accent"), Cursor = Cursors.Hand, Child = _micIcon, ToolTip = "Говорить (пробел)" };
+        _micBtn.MouseLeftButtonUp += (_, _) => ToggleRecord();
+        var mic = new Grid { Width = 140, Height = 120, HorizontalAlignment = HorizontalAlignment.Center };
+        mic.Children.Add(_ring); mic.Children.Add(_micBtn);
+
+        var root = new StackPanel { MaxWidth = 820, HorizontalAlignment = HorizontalAlignment.Center };
+        root.Children.Add(_dots);
+        root.Children.Add(_phrase.M(0, 16, 0, 0));
+        root.Children.Add(mic.M(0, 10, 0, 0));
+        root.Children.Add(_meter);
+        var shadow = U.Btn("Шэдоуинг: говори вместе с носителем", Shadow, "Ghost", "\uE7F5");
+        shadow.HorizontalAlignment = HorizontalAlignment.Center; shadow.ToolTip = "Лучше в наушниках: запись начнётся одновременно с образцом";
+        root.Children.Add(shadow);
+        root.Children.Add(_status);
+        root.Children.Add(_result.M(0, 16, 0, 0));
+
+        var nav = U.Cols("auto", "*", "auto");
+        nav.Margin = new Thickness(0, 20, 0, 0);
+        nav.Children.Add(U.Btn("Назад", () => Go(-1), "Ghost", ""));
+        nav.Children.Add(U.T("Пробел — говорить · L — слушать · S — медленно · M — моя запись", "Muted", 12).Center().CenterV().Col(1));
+        nav.Children.Add(U.Btn("Дальше", () => Go(1), "", "").Col(2));
+        root.Children.Add(nav);
+
+        _wrap.Children.Add(root);
+        Content = U.Page(_wrap);
+        Unloaded += (_, _) => { _cts?.Cancel(); _rec?.Stop(); };
+        Asr.Warmup();
+        Render();
+    }
+
+    void Render()
+    {
+        RenderDots();
+        var p = P;
+        var sp = new StackPanel();
+        var top = U.Cols("*", "auto");
+        top.Children.Add(U.T($"Фраза {_i + 1} из {_l.Items.Length}", "Muted", 12).CenterV());
+        top.Children.Add(U.Row(4, U.SpeakBtn(() => p.Jp, true), U.SpeakBtn(() => p.Jp)).Col(1));
+        sp.Children.Add(top);
+        sp.Children.Add(U.Jp(p.Jp, p.Jp.Length > 12 ? 32 : 40, null, true).Center().M(0, 6, 0, 0));
+        if (p.KanaPlain != p.Jp) sp.Children.Add(U.Jp(p.KanaPlain, 17, U.B("Accent")).Center().M(0, 6, 0, 0));
+        sp.Children.Add(U.T(p.Romaji, "Body", 15, U.B("Muted")).Center().M(0, 2, 0, 0));
+        sp.Children.Add(U.T(p.Ru, "H3", 17).Center().M(0, 12, 0, 0));
+        if (p.Tip != null)
+            sp.Children.Add(new Border
+            {
+                Background = U.B("Surface2"), CornerRadius = new CornerRadius(10), Padding = new Thickness(14, 9, 14, 9), Margin = new Thickness(0, 14, 0, 0), HorizontalAlignment = HorizontalAlignment.Center,
+                Child = U.Row(10, new TextBlock { Text = "", FontFamily = U.R<FontFamily>("Icons"), Foreground = U.B("Gold"), VerticalAlignment = VerticalAlignment.Center }, U.T(p.Tip, "Body", 13).Also(t => t.MaxWidth = 620)),
+            });
+        var card = U.Card(sp, new Thickness(26, 18, 26, 22));
+        _phrase.Content = card;
+        if (Voicevox.Installed)
+        {
+            var jp = p.Jp;
+            Task.Run(() => Voicevox.Accent(jp)).ContinueWith(t =>
+            {
+                if (t.Result is { Count: > 0 } moras && P.Jp == jp)
+                {
+                    var av = new AccentView(moras) { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 10, 0, 0), ToolTip = "Питч-акцент: линия показывает высокий и низкий тон каждой моры" };
+                    sp.Children.Insert(2, av);
+                    Anim.FadeUp(av, 0, 6, 300);
+                }
+            }, TaskScheduler.FromCurrentSynchronizationContext());
+        }
+        Anim.FadeUp(card, 0, 10, 300);
+
+        int best = ProgressStore.P.SpeechBest.TryGetValue(p.Id, out var b0) ? b0 : -1;
+        _status.Text = !Asr.Ready ? "Скачай модель распознавания в разделе «Говорение», чтобы проверять произношение. Слушать можно уже сейчас."
+                     : best >= 0 ? $"Лучший результат: {best}. Нажми на микрофон и повтори" : "Послушай образец, затем нажми на микрофон и повтори";
+        _result.Content = null;
+        _last = null;
+        if (ProgressStore.P.AutoSpeak) Speech.Say(p.Jp);
+        _ = Tts.GetAsync(p.Jp, true); // заранее готовим медленный вариант
+    }
+
+    void RenderDots()
+    {
+        _dots.Children.Clear();
+        for (int i = 0; i < _l.Items.Length; i++)
+        {
+            int best = ProgressStore.P.SpeechBest.TryGetValue(_l.Items[i].Id, out var s) ? s : -1;
+            _dots.Children.Add(new Border
+            {
+                Width = i == _i ? 22 : 8, Height = 8, CornerRadius = new CornerRadius(4), Margin = new Thickness(3),
+                Background = i == _i ? U.B("Accent") : best >= 70 ? U.B("Good") : best >= 0 ? U.B("Gold") : U.B("Surface3"),
+            });
+        }
+    }
+
+    void Go(int d)
+    {
+        _cts?.Cancel();
+        int n = _i + d;
+        if (n < 0) return;
+        if (n >= _l.Items.Length)
+        {
+            ProgressStore.P.Flags.Add("speech:" + _l.Id);
+            ProgressStore.Notify();
+            Shell.Toast("Урок пройден! お疲れ様でした", "話");
+            Shell.Back();
+            return;
+        }
+        _i = n;
+        Render();
+    }
+
+    async void ToggleRecord()
+    {
+        if (_busy) { _rec?.Stop(); return; }
+        if (!Asr.Ready) { Shell.Toast("Сначала скачай модель распознавания (раздел «Говорение»)", "!"); return; }
+        _busy = true;
+        _cts = new CancellationTokenSource();
+        _rec = new Recorder();
+        SetMic(true);
+        _status.Text = ProgressStore.P.MicMode == "manual" ? "Слушаю… говори, затем нажми на микрофон (или пробел), чтобы закончить" : "Слушаю… говори! Запись остановится сама после паузы";
+        _result.Content = null;
+        var p = P;
+        try
+        {
+            var (check, rec) = await SpeechUi.RecordAndScore(p.Jp, p.KanaPlain, _rec, _cts.Token);
+            _last = rec;
+            ProsodyResult? pr = null;
+            int textScore = check.Score;
+            if (check.Error == null && rec is { Heard: true } && check.Score >= 40)
+            {
+                _status.Text = "Анализирую интонацию…";
+                pr = await SpeechUi.AnalyzeProsody(p.Jp, rec);
+            }
+            if (pr != null)
+            {
+                int total = SpeechUi.Combine(check.Score, pr);
+                check = check with { Score = total, Ok = total >= 70 };
+            }
+            ShowResult(p, check, rec, pr, textScore);
+        }
+        catch (OperationCanceledException) { _status.Text = "Остановлено"; }
+        catch (Exception ex) { _status.Text = "Ошибка: " + ex.Message; }
+        finally
+        {
+            _busy = false;
+            SetMic(false);
+            _rec?.Dispose(); _rec = null;
+        }
+    }
+
+    /// <summary>Шэдоуинг: образец звучит, и одновременно идёт запись — затем сравнение интонации и ритма.</summary>
+    async void Shadow()
+    {
+        if (_busy || !Asr.Ready) { if (!Asr.Ready) Shell.Toast("Сначала скачай модель распознавания", "!"); return; }
+        var p = P;
+        var path = await Tts.GetAsync(p.Jp);
+        if (path == null) return;
+        double dur = await Task.Run(() => Prosody.DecodeFile(path).Length / 16000.0);
+        _busy = true;
+        _cts = new CancellationTokenSource();
+        _rec = new Recorder(manual: true, maxSeconds: dur + 2.5);
+        SetMic(true);
+        _status.Text = "Говори вместе с голосом!";
+        try
+        {
+            var task = _rec.RecordAsync(_cts.Token);
+            await Task.Delay(120);
+            _ = Speech.SayAsync(p.Jp);
+            await Task.Delay(TimeSpan.FromSeconds(dur + 1.0));
+            _rec.Stop();
+            var rec = await task;
+            _last = rec;
+            var check = await SpeechUi.ScoreRecording(p.Jp, p.KanaPlain, rec, _cts.Token);
+            int textScore = check.Score;
+            var pr = rec.Heard ? await SpeechUi.AnalyzeProsody(p.Jp, rec) : null;
+            if (pr != null) { int total = SpeechUi.Combine(check.Score, pr); check = check with { Score = total, Ok = total >= 70 }; }
+            ShowResult(p, check, rec, pr, textScore);
+        }
+        catch (OperationCanceledException) { _status.Text = "Остановлено"; }
+        catch (Exception ex) { _status.Text = "Ошибка: " + ex.Message; }
+        finally { _busy = false; SetMic(false); _rec?.Dispose(); _rec = null; }
+    }
+
+    void SetMic(bool on)
+    {
+        _micIcon.Text = on ? "" : "";
+        _micBtn.Background = on ? U.B("Gold") : U.B("Accent");
+        _meter.Attach(on ? _rec : null);
+        Anim.Pulse(_ring, on);
+        if (!on) _ring.Opacity = 0;
+    }
+
+    void ShowResult(Phrase p, SpeechCheck r, Recording? rec, ProsodyResult? pr = null, int textScore = 0)
+    {
+        if (r.Error != null)
+        {
+            _status.Text = "";
+            var err = U.Stack(U.T(r.Error, "Body").Center(), U.Btn("Доступ к микрофону", Speech.OpenMicPrivacy, "", "").Center().M(0, 12, 0, 0));
+            var ec = U.Card(err); ec.BorderBrush = U.B("Bad");
+            _result.Content = ec;
+            return;
+        }
+        if (r.Heard.Length > 0) ProgressStore.SpeechResult(p.Id, r.Score);
+        _status.Text = "";
+        var sp = new StackPanel();
+
+        var top = U.Cols("auto", "*");
+        var ring = new Grid { Width = 92, Height = 92 };
+        ring.Children.Add(new Ellipse { Stroke = U.B("Surface3"), StrokeThickness = 7 });
+        var arc = Results.Ring(46, 42.5, r.Score / 100.0);
+        arc.Stroke = U.B(r.Score >= 75 ? "Good" : r.Score >= 50 ? "Gold" : "Bad");
+        arc.StrokeThickness = 7; arc.StrokeStartLineCap = arc.StrokeEndLineCap = PenLineCap.Round;
+        ring.Children.Add(arc);
+        var num = U.T("0", "H1", 26);
+        ring.Children.Add(num.Center().CenterV());
+        Anim.CountUp(num, r.Score);
+        top.Children.Add(ring);
+        var info = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(20, 0, 0, 0) };
+        info.Children.Add(U.T(r.Verdict, "H3", 15, U.B(r.Score >= 75 ? "Good" : r.Score >= 50 ? "Gold" : "Bad")));
+        if (r.Heard.Length > 0)
+        {
+            info.Children.Add(U.T("РАСПОЗНАНО", "Overline").M(0, 10, 0, 3));
+            info.Children.Add(Diff(p.Jp, p.KanaPlain, r.Heard));
+        }
+        top.Children.Add(info.Col(1));
+        sp.Children.Add(top);
+        if (pr != null)
+        {
+            sp.Children.Add(new Border { Height = 1, Background = U.B("Stroke"), Margin = new Thickness(0, 16, 0, 12) });
+            sp.Children.Add(SpeechUi.ProsodyPanel(textScore, pr));
+        }
+
+        // Волны «образец / ты»: видно длину и ритм — долгие гласные и паузы っ
+        if (rec != null && rec.Heard)
+        {
+            sp.Children.Add(new Border { Height = 1, Background = U.B("Stroke"), Margin = new Thickness(0, 16, 0, 12) });
+            var sample = new WaveView(U.B("Accent"));
+            var mine = new WaveView(U.B("Info"));
+            mine.SetPeaks(rec.Peaks, rec.Seconds);
+            sp.Children.Add(WaveRow("Образец", sample, () => Speech.Say(p.Jp), out var sampleSec));
+            sp.Children.Add(WaveRow("Ты", mine, () => _ = Speech.PlayWavAsync(rec.Wav), out var mineSec).M(0, 8, 0, 0));
+            mineSec.Text = $"{rec.Seconds:0.0} с";
+            _ = LoadSampleWave(p.Jp, sample, sampleSec);
+        }
+
+        var acts = U.Row(8,
+            U.Btn("Ещё раз", ToggleRecord, "", ""),
+            U.Btn("Медленный образец", () => Speech.Say(p.Jp, true), "", ""),
+            U.Btn(_i + 1 < _l.Items.Length ? "Следующая" : "Завершить", () => Go(1), r.Ok ? "Primary" : "", ""));
+        acts.Margin = new Thickness(0, 16, 0, 0);
+        sp.Children.Add(acts);
+
+        var card = U.Card(sp);
+        _result.Content = card;
+        Anim.FadeUp(card, 0, 10, 300);
+        if (r.Score >= 90) Results.Confetti(_wrap);
+        RenderDots();
+    }
+
+    public static FrameworkElement WaveRow(string label, WaveView wave, Action play, out TextBlock sec)
+    {
+        var g = U.Cols("70", "auto", "*", "56");
+        g.Children.Add(U.T(label, "Muted", 12.5).CenterV());
+        var pb = new Button { Style = U.St("IconButton"), Content = "", Width = 30, Height = 30, FontSize = 11, ToolTip = "Воспроизвести" };
+        pb.Click += (_, _) => play();
+        g.Children.Add(pb.Col(1));
+        g.Children.Add(wave.M(8, 0, 8, 0).Col(2));
+        sec = U.T("", "Muted", 12).CenterV();
+        g.Children.Add(sec.Col(3));
+        return g;
+    }
+
+    public static async Task LoadSampleWave(string jp, WaveView view, TextBlock sec, bool? male = null)
+    {
+        var path = await Tts.GetAsync(jp, false, male);
+        if (path == null) return;
+        var (peaks, seconds) = await Task.Run(() => Waveform.PeaksFromFile(path, 90));
+        view.SetPeaks(peaks, seconds);
+        sec.Text = $"{seconds:0.0} с";
+    }
+
+    /// <summary>Посимвольная подсветка: зелёный — совпало, красный — пропущено, жёлтый — лишнее.</summary>
+    public static FrameworkElement Diff(string jp, string kanaPlain, string heard)
+    {
+        string h = Speech.Normalize(heard);
+        string a = Speech.Normalize(jp), b = Speech.Normalize(Kana.ToHiragana(kanaPlain));
+        string target = Speech.Similarity(h, a) >= Speech.Similarity(Kana.ToHiragana(h), b) ? a : b;
+        string hh = target == b ? Kana.ToHiragana(h) : h;
+        int n = target.Length, m = hh.Length;
+        var dp = new int[n + 1, m + 1];
+        for (int i = n - 1; i >= 0; i--)
+            for (int j = m - 1; j >= 0; j--)
+                dp[i, j] = target[i] == hh[j] ? dp[i + 1, j + 1] + 1 : Math.Max(dp[i + 1, j], dp[i, j + 1]);
+        var tb = new TextBlock { FontFamily = U.R<FontFamily>("JpFont"), FontSize = 20, TextWrapping = TextWrapping.Wrap };
+        int x = 0, y = 0;
+        while (x < n || y < m)
+        {
+            if (x < n && y < m && target[x] == hh[y]) { tb.Inlines.Add(new Run(target[x].ToString()) { Foreground = U.B("Good") }); x++; y++; }
+            else if (y < m && (x >= n || dp[x, y + 1] >= dp[x + 1, y])) { tb.Inlines.Add(new Run(hh[y].ToString()) { Foreground = U.B("Gold"), TextDecorations = TextDecorations.Strikethrough }); y++; }
+            else { tb.Inlines.Add(new Run(target[x].ToString()) { Foreground = U.B("Bad"), TextDecorations = TextDecorations.Underline }); x++; }
+        }
+        return tb;
+    }
+
+    public bool HandleKey(Key key)
+    {
+        switch (key)
+        {
+            case Key.Space: ToggleRecord(); return true;
+            case Key.L: Speech.Say(P.Jp); return true;
+            case Key.S: Speech.Say(P.Jp, true); return true;
+            case Key.M: if (_last != null) _ = Speech.PlayWavAsync(_last.Wav); return true;
+            case Key.Right: Go(1); return true;
+            case Key.Left: Go(-1); return true;
+        }
+        return false;
+    }
+}

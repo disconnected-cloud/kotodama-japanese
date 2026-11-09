@@ -1,0 +1,169 @@
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+using Matsubakira.Controls;
+using Matsubakira.Services;
+
+namespace Matsubakira.Views;
+
+public sealed class KanjiPage : UserControl, IPage
+{
+    public string Title => "Кандзи";
+    KanjiInfo? _sel;
+    string _level = ProgressStore.P.Level is "N4" or "N3" ? ProgressStore.P.Level : "N5";
+    readonly ContentControl _detail = new();
+    Border? _selTile;
+
+    public void OnShown()
+    {
+        var kanji = Db.KanjiOf(_level).ToArray();
+        if (_sel == null || _sel.Level != _level) _sel = kanji[0];
+        int learning = kanji.Count(k => ProgressStore.Card(k.Id)?.Reps > 0);
+        int due = kanji.Count(k => ProgressStore.IsDue(k.Id));
+
+        var root = new Grid { Margin = new Thickness(40, 12, 40, 16), MaxWidth = 1240 };
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition());
+        var lv = new StackPanel { Orientation = Orientation.Horizontal };
+        foreach (var l in new[] { "N5", "N4", "N3" })
+        {
+            var rb = new RadioButton { Style = U.St("ChipRadio"), Content = l, GroupName = "klevel", IsChecked = _level == l };
+            var ll = l;
+            rb.Checked += (_, _) => { _level = ll; _selTile = null; OnShown(); };
+            lv.Children.Add(rb);
+        }
+        root.Children.Add(U.Header("漢", "Кандзи", $"{kanji.Length} иероглифов уровня {_level}  ·  {learning} в изучении", lv));
+
+        var acts = new WrapPanel { Margin = new Thickness(0, 0, 0, 16) };
+        acts.Children.Add(U.Btn("Учить новые (5)", LearnNew, "Primary", "").M(0, 0, 10, 0));
+        var rev = U.Btn($"Повторить ({due})", () => Shell.Open(new FlashSession("Повторение кандзи", kanji.Where(k => ProgressStore.IsDue(k.Id)).Shuffle().Select(FlashSession.FromKanji))), "", "").M(0, 0, 10, 0);
+        rev.IsEnabled = due > 0;
+        acts.Children.Add(rev);
+        acts.Children.Add(U.Btn("Квиз: значение", () => Quiz(false), "", "").M(0, 0, 10, 0));
+        acts.Children.Add(U.Btn("Квиз: чтение слов", () => Quiz(true), "", ""));
+        root.Children.Add(acts.RowAt(1));
+
+        var body = U.Cols("*", "20", "400");
+        var tiles = new WrapPanel();
+        foreach (var k in kanji) tiles.Children.Add(Tile(k));
+        body.Children.Add(new ScrollViewer { Content = tiles, Padding = new Thickness(0, 0, 8, 0) });
+        if (_detail.Parent is ScrollViewer oldSv) oldSv.Content = null; // панель переиспользуется между показами
+        body.Children.Add(new ScrollViewer { Content = _detail }.Col(2));
+        root.Children.Add(body.RowAt(2));
+        Content = root;
+        ShowDetail(_sel);
+        Anim.Stagger(tiles, 12, 0, 60);
+    }
+
+    Border Tile(KanjiInfo k)
+    {
+        var c = ProgressStore.Card(k.Id);
+        var g = new Grid();
+        g.Children.Add(U.Jp(k.Char, 38, null, true).Center().CenterV());
+        if (c != null)
+            g.Children.Add(new System.Windows.Shapes.Ellipse
+            {
+                Width = 7, Height = 7, Fill = c.Mastered ? U.B("Good") : c.Due <= DateTime.Now ? U.B("Accent") : U.B("Gold"),
+                HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 9, 9, 0),
+            });
+        var b = new Border
+        {
+            Width = 84, Height = 84, Margin = new Thickness(0, 0, 10, 10), CornerRadius = new CornerRadius(18),
+            Background = U.B("Surface"), BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(1), Child = g, Cursor = Cursors.Hand,
+            ToolTip = k.Ru,
+        };
+        if (k == _sel) Select(b);
+        b.MouseEnter += (_, _) => { if (b != _selTile) b.BorderBrush = U.B("StrokeStrong"); };
+        b.MouseLeave += (_, _) => { if (b != _selTile) b.BorderBrush = U.B("Stroke"); };
+        b.MouseLeftButtonUp += (_, _) => { _sel = k; Select(b); ShowDetail(k); };
+        return b;
+    }
+
+    void Select(Border b)
+    {
+        if (_selTile != null) { _selTile.BorderBrush = U.B("Stroke"); _selTile.Background = U.B("Surface"); }
+        _selTile = b;
+        b.BorderBrush = U.B("Accent");
+        b.Background = U.B("AccentSoft");
+    }
+
+    void ShowDetail(KanjiInfo k)
+    {
+        var sp = new StackPanel();
+        var strokes = new StrokeView(k.Char, 210) { HorizontalAlignment = HorizontalAlignment.Center };
+        sp.Children.Add(strokes);
+        if (strokes.HasData)
+        {
+            var ctl = U.Row(8,
+                U.Btn("Порядок черт", () => strokes.Play(), "", ""),
+                U.Btn("Медленно", () => strokes.Play(0.5), "Ghost", ""),
+                U.Btn("Номера", () => strokes.ShowAll(true), "Ghost", ""));
+            ctl.HorizontalAlignment = HorizontalAlignment.Center; ctl.Margin = new Thickness(0, 10, 0, 16);
+            sp.Children.Add(ctl);
+            strokes.Loaded += (_, _) => strokes.Play(1.3);
+        }
+        var head = U.Cols("*", "auto");
+        head.Children.Add(U.Stack(U.T(k.Ru, "H2", 22), U.T($"{k.Strokes} {MainWindow.Plural(k.Strokes, "черта", "черты", "черт")}", "Muted").M(0, 4, 0, 0)));
+        head.Children.Add(U.SpeakBtn(() => k.Examples.Length > 0 ? k.Examples[0].Kana : k.Char).Col(1));
+        sp.Children.Add(head);
+
+        sp.Children.Add(Reading("ОН-ЁМИ · китайское чтение", k.On, "Accent2"));
+        sp.Children.Add(Reading("КУН-ЁМИ · японское чтение", k.Kun.Length > 0 ? k.Kun : "—", "Accent"));
+
+        sp.Children.Add(U.T("ПРИМЕРЫ", "Overline").M(0, 20, 0, 8));
+        foreach (var ex in k.Examples)
+        {
+            var row = U.Cols("*", "auto");
+            row.Children.Add(U.Stack(
+                U.Jp(ex.Jp, 20),
+                U.T($"{ex.Kana} · {ex.Romaji}", "Muted", 12.5),
+                U.T(ex.Ru, "Body", 13.5)));
+            row.Children.Add(U.SpeakBtnSmall(ex.Kana).Col(1));
+            sp.Children.Add(new Border { Background = U.B("Surface2"), CornerRadius = new CornerRadius(14), Padding = new Thickness(14, 10, 10, 10), Margin = new Thickness(0, 0, 0, 8), Child = row });
+        }
+
+        var c = ProgressStore.Card(k.Id);
+        sp.Children.Add(U.T(c == null ? "Ещё не изучается" : c.Mastered ? "Выучен ✓" : $"Следующее повторение: {c.Due:d MMM, HH:mm}", "Muted").M(0, 10, 0, 0));
+        _detail.Content = U.Card(sp);
+        Anim.FadeUp((UIElement)_detail.Content, 0, 10, 260);
+    }
+
+    static FrameworkElement Reading(string label, string value, string brush) =>
+        U.Stack(U.T(label, "Overline").M(0, 16, 0, 4), U.Jp(value, 18, U.B(brush)));
+
+    void LearnNew()
+    {
+        var fresh = Db.KanjiOf(_level).Where(k => ProgressStore.Card(k.Id) == null).Take(5).ToList();
+        if (fresh.Count == 0) { Shell.Toast("Все кандзи N5 уже в изучении!", "完了"); return; }
+        Shell.Open(new FlashSession("Новые кандзи", fresh.Select(FlashSession.FromKanji)));
+    }
+
+    void Quiz(bool reading)
+    {
+        var all = Db.KanjiOf(_level).ToArray();
+        var started = all.Where(k => ProgressStore.Card(k.Id) != null).ToList();
+        var pool = started.Count >= 8 ? started : all.Take(Math.Max(12, started.Count)).ToList();
+        var ruPool = all.Select(k => k.Ru).ToArray();
+        IEnumerable<QuizQ> qs;
+        if (!reading)
+            qs = pool.Shuffle().Take(15).Select(k => new QuizQ
+            {
+                Prompt = k.Char, PromptSize = 130, Sub = "Что означает этот иероглиф?", Answer = k.Ru,
+                Options = QuizSession.MakeOptions(k.Ru, ruPool), Speak = k.Examples.FirstOrDefault()?.Kana,
+                Explain = $"он: {k.On}  ·  кун: {(k.Kun.Length > 0 ? k.Kun : "—")}", Key = k.Id,
+            });
+        else
+        {
+            var exs = pool.SelectMany(k => k.Examples).ToList();
+            var kanaPool = exs.Select(e => e.Kana).ToArray();
+            qs = exs.Shuffle().Take(15).Select(e => new QuizQ
+            {
+                Prompt = e.Jp, PromptSize = 72, Sub = "Как читается это слово?", Answer = e.Kana, OptionsJp = true,
+                Options = QuizSession.MakeOptions(e.Kana, kanaPool), Speak = e.Kana, Explain = $"{e.Kana} ({Kana.ToRomaji(e.Kana)}) — {e.Ru}",
+            });
+        }
+        Shell.Open(new QuizSession(reading ? "Чтение кандзи" : "Значения кандзи", qs));
+    }
+}

@@ -1,0 +1,44 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:po="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    mc:Ignorable="po">
+    <!-- ═══════════ Палитра: тихий минимализм, один акцент (сакура) ═══════════ -->
+    <SolidColorBrush x:Key="Bg" Color="#0F1014" po:Freeze="True"/>
+    <SolidColorBrush x:Key="Sidebar" Color="#0F1014" po:Freeze="True"/>
+    <SolidColorBrush x:Key="Surface" Color="#16171C" po:Freeze="True"/>
+    <SolidColorBrush x:Key="SurfaceSolid" Color="#16171C" po:Freeze="True"/>
+    <SolidColorBrush x:Key="Surface2" Color="#1D1F25" po:Freeze="True"/>
+    <SolidColorBrush x:Key="Surface3" Color="#272A31" po:Freeze="True"/>
+    <SolidColorBrush x:Key="Stroke" Color="#22242B" po:Freeze="True"/>
+    <SolidColorBrush x:Key="StrokeStrong" Color="#33363F" po:Freeze="True"/>
+    <SolidColorBrush x:Key="Text" Color="#EDEDF0" po:Freeze="True"/>
+    <SolidColorBrush x:Key="Muted" Color="#8E919B" po:Freeze="True"/>
+    <SolidColorBrush x:Key="Faint" Color="#5B5F69" po:Freeze="True"/>
+    <SolidColorBrush x:Key="Accent" Color="#F07AA0" po:Freeze="True"/>
+    <SolidColorBrush x:Key="Accent2" Color="#9D8CFF" po:Freeze="True"/>
+    <SolidColorBrush x:Key="AccentSoft" Color="#1FF07AA0" po:Freeze="True"/>
+    <SolidColorBrush x:Key="Gold" Color="#E8B860" po:Freeze="True"/>
+    <SolidColorBrush x:Key="Good" Color="#5CC99A" po:Freeze="True"/>
+    <SolidColorBrush x:Key="GoodSoft" Color="#1F5CC99A" po:Freeze="True"/>
+    <SolidColorBrush x:Key="Bad" Color="#EF6F6F" po:Freeze="True"/>
+    <SolidColorBrush x:Key="BadSoft" Color="#1FEF6F6F" po:Freeze="True"/>
+    <SolidColorBrush x:Key="Info" Color="#6FA8F0" po:Freeze="True"/>
+
+    <!-- «Плитки»: почти плоские цвета вместо кислотных градиентов -->
+    <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,1" po:Freeze="True">
+        <GradientStop Color="#F584A8" Offset="0"/>
+        <GradientStop Color="#E86F98" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="GoldGradient" Color="#E2B15E" po:Freeze="True"/>
+    <SolidColorBrush x:Key="CoolGradient" Color="#6F94E8" po:Freeze="True"/>
+    <SolidColorBrush x:Key="GreenGradient" Color="#55BE90" po:Freeze="True"/>
+    <SolidColorBrush x:Key="GlassStroke" Color="#22242B" po:Freeze="True"/>
+    <SolidColorBrush x:Key="CardFill" Color="#16171C" po:Freeze="True"/>
+    <SolidColorBrush x:Key="HoverTint" Color="#FFFFFF" po:Freeze="True"/>
+    <SolidColorBrush x:Key="SelectedTint" Color="#0FFFFFFF" po:Freeze="True"/>
+    <SolidColorBrush x:Key="Thumb" Color="#1FFFFFFF" po:Freeze="True"/>
+    <SolidColorBrush x:Key="ThumbHover" Color="#40FFFFFF" po:Freeze="True"/>
+    <SolidColorBrush x:Key="CaptionHover" Color="#12FFFFFF" po:Freeze="True"/>
+    <SolidColorBrush x:Key="OnAccent" Color="#1A0B11" po:Freeze="True"/>
+</ResourceDictionary>
