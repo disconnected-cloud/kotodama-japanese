@@ -58,32 +58,32 @@ public sealed class HomePage : UserControl, IPage
         rev.Children.Add(U.T("ПОВТОРЕНИЕ", "Overline"));
         var dueNum = U.T("0", "H1", 34);
         Anim.CountUp(dueNum, due);
-        rev.Children.Add(U.Row(8, dueNum, U.T(MainWindow.Plural(due, "карточка", "карточки", "карточек"), "Muted").CenterV().M(0, 10, 0, 0)).M(0, 4, 0, 0));
+        rev.Children.Add(U.Row(8, dueNum, U.T(MainView.Plural(due, "карточка", "карточки", "карточек"), "Muted").CenterV().M(0, 10, 0, 0)).M(0, 4, 0, 0));
         var rb = U.Btn(due > 0 ? "Повторить" : "Всё повторено", () => Shell.Go("review"), "", "");
         rb.IsEnabled = due > 0; rb.HorizontalAlignment = HorizontalAlignment.Left; rb.Margin = new Thickness(0, 10, 0, 0);
         rev.Children.Add(rb);
         row.Children.Add(U.Card(rev, new Thickness(22)).Col(2));
-        root.Children.Add(row);
+        root.Children.Add(U.Stackify(row));
 
         // ─────────── Статистика ───────────
         int wordsKnown = Db.Words.Count(w => ProgressStore.Card(w.Id)?.Reps > 0);
         int kanjiKnown = Db.Kanji.Count(k => ProgressStore.Card(k.Id)?.Reps > 0);
-        var stats = new UniformGrid { Columns = 4, Margin = new Thickness(-6, 16, -6, 0) };
-        stats.Children.Add(Stat("Серия", p.Streak, MainWindow.Plural(p.Streak, "день", "дня", "дней"), "Gold"));
+        var stats = new UniformGrid { Columns = U.Columns(4, 2), Margin = new Thickness(-6, 16, -6, 0) };
+        stats.Children.Add(Stat("Серия", p.Streak, MainView.Plural(p.Streak, "день", "дня", "дней"), "Gold"));
         stats.Children.Add(Stat("Сегодня", ProgressStore.TodayXp, $"из {p.DailyGoal} XP", "Accent"));
         stats.Children.Add(Stat("Слова", wordsKnown, "в изучении", "Info"));
         stats.Children.Add(Stat("Кандзи", kanjiKnown, $"из {Db.Kanji.Length}", "Good"));
         root.Children.Add(stats);
         root.Children.Add(TrainersPage.PlanCard().M(0, 16, 0, 0));
         root.Children.Add(Report.Build().M(0, 16, 0, 0));
-        var hint = U.T("Совет: Ctrl+K — быстрый поиск по всему приложению", "Muted", 12);
+        var hint = U.T("Совет: Ctrl+K — быстрый поиск по всему приложению", "Muted", 12).DesktopOnly();
         hint.Margin = new Thickness(2, 10, 0, 0);
         root.Children.Add(hint);
 
         // ─────────── Разделы ───────────
         root.Children.Add(U.T("Разделы", "H2").M(0, 28, 0, 12));
         int kanaKnown = Kana.All.Count(k => ProgressStore.KanaScore("h:" + k.Hira) >= 3) + Kana.All.Count(k => ProgressStore.KanaScore("k:" + k.Kata) >= 3);
-        var sections = new UniformGrid { Columns = 4, Margin = new Thickness(-6, 0, -6, 0) };
+        var sections = new UniformGrid { Columns = U.Columns(4, 2), Margin = new Thickness(-6, 0, -6, 0) };
         sections.Children.Add(Section("あ", "Кана", $"{kanaKnown * 100 / (Kana.All.Count * 2)}% освоено", "kana"));
         sections.Children.Add(Section("語", "Слова", $"{Db.Words.Length} слов", "words"));
         sections.Children.Add(Section("漢", "Кандзи", $"{Db.Kanji.Length} знаков", "kanji"));
@@ -100,7 +100,7 @@ public sealed class HomePage : UserControl, IPage
         bottom.Margin = new Thickness(0, 28, 0, 0);
         bottom.Children.Add(Activity());
         bottom.Children.Add(WordOfDay().Col(2));
-        root.Children.Add(bottom);
+        root.Children.Add(U.Stackify(bottom));
 
         Anim.FadeUp(row, 40, 12, 380);
         Anim.FadeUp(stats, 90, 12, 380);

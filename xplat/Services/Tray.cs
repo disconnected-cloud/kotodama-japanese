@@ -82,7 +82,7 @@ public static class Tray
     /// <summary>Новая картинка значка (PNG) и подсказка с числом карточек.</summary>
     public static void SetIcon(byte[] png, int due)
     {
-        string tip = due > 0 ? $"Kotodama — {due} {MainWindow.Plural(due, "карточка", "карточки", "карточек")} к повторению" : "Kotodama — японский";
+        string tip = due > 0 ? $"Kotodama — {due} {MainView.Plural(due, "карточка", "карточки", "карточек")} к повторению" : "Kotodama — японский";
         if (OperatingSystem.IsWindows())
         {
             if (!_added) return;
@@ -161,7 +161,7 @@ public static class Tray
         int due = p.Cards.Values.Count(c => c.Due <= DateTime.Now);
         if (DateTime.Now.Hour >= 20 && p.Streak > 0 && ProgressStore.TodayXp == 0)
         {
-            Notify("Серия под угрозой 🔥", $"Серия {p.Streak} {MainWindow.Plural(p.Streak, "день", "дня", "дней")} сгорит в полночь. Хватит 5 минут!");
+            Notify("Серия под угрозой 🔥", $"Серия {p.Streak} {MainView.Plural(p.Streak, "день", "дня", "дней")} сгорит в полночь. Хватит 5 минут!");
             _lastReminder = DateTime.Now;
         }
         else if (due >= 10)

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <color name="kotodama_bg">#0F1014</color>
+  <style name="KotodamaTheme" parent="@style/Theme.AppCompat.NoActionBar">
+    <item name="android:windowBackground">@color/kotodama_bg</item>
+    <item name="android:statusBarColor">@color/kotodama_bg</item>
+    <item name="android:navigationBarColor">@color/kotodama_bg</item>
+  </style>
+</resources>

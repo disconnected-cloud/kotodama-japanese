@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Kotodama для Android: общий код из ../xplat (без ИИ-собеседника, трея и окна компьютера) -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Matsubakira</RootNamespace>
+    <AssemblyName>Kotodama</AssemblyName>
+    <ApplicationId>io.github.disconnectedcloud.kotodama</ApplicationId>
+    <ApplicationTitle>Kotodama</ApplicationTitle>
+    <ApplicationVersion>120</ApplicationVersion>
+    <ApplicationDisplayVersion>1.2.0</ApplicationDisplayVersion>
+    <Version>1.2.0</Version>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
+    <DefineConstants>$(DefineConstants);MOBILE</DefineConstants>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <SatelliteResourceLanguages>ru</SatelliteResourceLanguages>
+    <NoWarn>$(NoWarn);CA1416;CS0618</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <AndroidLinkMode>SdkOnly</AndroidLinkMode>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <!-- Подпись: ключ передаётся из CI (секреты), иначе — отладочный ключ -->
+  <PropertyGroup Condition="'$(KotodamaKeyStore)' != ''">
+    <AndroidKeyStore>true</AndroidKeyStore>
+    <AndroidSigningKeyStore>$(KotodamaKeyStore)</AndroidSigningKeyStore>
+    <AndroidSigningStorePass>$(KotodamaKeyPass)</AndroidSigningStorePass>
+    <AndroidSigningKeyAlias>$(KotodamaKeyAlias)</AndroidSigningKeyAlias>
+    <AndroidSigningKeyPass>$(KotodamaKeyPass)</AndroidSigningKeyPass>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../xplat/**/*.cs" LinkBase="Shared"
+             Exclude="../xplat/obj/**;../xplat/bin/**;../xplat/Program.cs;../xplat/MainWindow.cs;../xplat/Services/Llm.cs;../xplat/Services/Tray.cs;../xplat/Services/Badge.cs;../xplat/Views/ChatPage.cs;../xplat/Views/ChatPrompts.cs" />
+    <AvaloniaXaml Include="../xplat/App.axaml" Link="App.axaml" />
+    <EmbeddedResource Include="../Data/*.json;../Data/*.gz" LogicalName="%(Filename)%(Extension)" />
+    <AvaloniaResource Include="../Assets/app.png" Link="Assets/app.png" />
+    <AvaloniaResource Include="../Assets/app.ico" Link="Assets/app.ico" />
+    <AvaloniaResource Include="../Assets/emoji/*.png" Link="Assets/emoji/%(Filename)%(Extension)" />
+    <AvaloniaResource Include="../xplat/Assets/fonts/*.ttf" Link="Assets/fonts/%(Filename)%(Extension)" />
+    <AndroidResource Include="Resources/**/*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Android" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="NAudio.Core" Version="2.2.1" />
+    <PackageReference Include="NAudio.WinMM" Version="2.2.1" />
+    <PackageReference Include="NLayer" Version="3.0.1" />
+    <PackageReference Include="Whisper.net" Version="1.9.1" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
+  </ItemGroup>
+
+</Project>

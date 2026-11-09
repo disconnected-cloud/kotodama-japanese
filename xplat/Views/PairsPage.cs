@@ -142,7 +142,7 @@ public sealed class PairsPage : UserControl, IPage, IKeyTarget
         var nav = U.Cols("auto", "*", "auto");
         nav.Margin = new Thickness(0, 18, 0, 0);
         nav.Children.Add(_scoreText.CenterV());
-        nav.Children.Add(U.T("Пробел — говорить · L — послушать · → — другая пара", "Muted", 12).Center().CenterV().Col(1));
+        nav.Children.Add(U.T("Пробел — говорить · L — послушать · → — другая пара", "Muted", 12).DesktopOnly().Center().CenterV().Col(1));
         nav.Children.Add(U.Btn("Другая пара", NextPair, "", "").Col(2));
         _root.Children.Add(nav);
         Content = U.Page(_root);

@@ -28,7 +28,7 @@ public sealed class DialogsPage : UserControl, IPage
         foreach (var level in new[] { "N5", "N4" })
         {
             root.Children.Add(U.T(level == "N5" ? "Начальный уровень · N5" : "Продолжающий уровень · N4", "H2").M(0, 6, 0, 12));
-            var grid = new UniformGrid { Columns = 2, Margin = new Thickness(-6, 0, -6, 14) };
+            var grid = new UniformGrid { Columns = U.Columns(2), Margin = new Thickness(-6, 0, -6, 14) };
             foreach (var d in Db.Dialogs.Where(x => x.Level == level)) grid.Children.Add(Card(d));
             root.Children.Add(grid);
             Anim.Stagger(grid, 35, 60);

@@ -107,6 +107,8 @@ public static class Tts
             data = Voicevox.Synthesize(text, Voicevox.PickStyle(male), slow ? 0.72 : 1.0);
             if (data is { Length: > 1000 }) path = Path.ChangeExtension(path, ".wav");
         }
+        if (data is not { Length: > 600 } && Platform.Hooks.SystemTts is { } sys)
+            return await sys(text, slow); // телефон: системный японский голос
         if (data is not { Length: > 600 }) return null;
         Directory.CreateDirectory(CacheDir);
         try

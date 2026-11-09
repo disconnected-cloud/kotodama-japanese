@@ -89,8 +89,11 @@ public static class ProgressStore
 
     static Timer? _saveTimer;
 
+    public static bool IsLoaded { get; private set; }
+
     public static void Load()
     {
+        IsLoaded = true;
         Directory.CreateDirectory(Folder);
         try
         {

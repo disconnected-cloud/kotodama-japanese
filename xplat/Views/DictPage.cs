@@ -100,10 +100,26 @@ public sealed class DictPage : UserControl, IPage
             : $"Найдено: {res.Count}{(res.Count >= 120 ? "+" : "")}";
     }
 
+    /// <summary>Телефон: слово с чтением и кнопками сверху, перевод ниже.</summary>
+    static Control CompactRow(DictRow r)
+    {
+        var top = U.Cols("*", "auto");
+        top.Children.Add(U.Row(10, new TextBlock { Text = r.Jp, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 20 },
+            U.Stack(new TextBlock { Text = r.Kana, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 13, Foreground = U.B("Accent") }, new TextBlock { Text = r.Romaji, FontSize = 11, Foreground = U.B("Muted") }).CenterV()));
+        var speak = new Button { Content = "\uE767", Width = 34, Height = 34, Classes = { "IconButton" } };
+        speak.Click += (_, _) => Speech.Say(r.E.Kana);
+        var add = new Button { Content = r.AddGlyph, Width = 34, Height = 34, Classes = { "IconButton" } };
+        add.Click += (_, _) => { if (JDict.AddToStudy(r.E)) { add.Content = "\uE73E"; Shell.Toast($"«{r.E.Jp}» добавлено в «Мои слова»", "追加"); } };
+        top.Children.Add(U.Row(0, speak, add).Col(1));
+        var sp = U.Stack(top, new TextBlock { Text = r.Ru, FontSize = 13.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) });
+        return new Border { Margin = new Thickness(0, 0, 0, 6), Padding = new Thickness(14, 8), CornerRadius = new CornerRadius(12), Background = U.B("Surface"), BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(1), Child = sp };
+    }
+
     /// <summary>Строка словаря (аналог WPF DataTemplate «DictRow»).</summary>
     static Control RowView(DictRow? r)
     {
         if (r == null) return new Border();
+        if (Shell.Compact) return CompactRow(r);
         var g = U.Cols("190", "190", "*", "auto");
         var left = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         left.Children.Add(new TextBlock { Text = r.Jp, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 22, TextTrimming = TextTrimming.CharacterEllipsis });

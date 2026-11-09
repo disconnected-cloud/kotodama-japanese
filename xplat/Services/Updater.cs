@@ -25,7 +25,8 @@ public static class Updater
     static bool SelfContained => false;
 #endif
     /// <summary>Архив своей сборки: Linux — tar.gz (права на запуск сохраняются), Windows — обычная или портативная.</summary>
-    static string AssetName => OperatingSystem.IsLinux() ? "Kotodama-linux-x64.tar.gz"
+    static string AssetName => OperatingSystem.IsAndroid() ? "Kotodama-android.apk"
+        : OperatingSystem.IsLinux() ? "Kotodama-linux-x64.tar.gz"
         : SelfContained ? "Kotodama-portable-win-x64.zip" : "Kotodama-win-x64.zip";
     public static Release? Available { get; private set; }
 
@@ -69,6 +70,13 @@ public static class Updater
 
     public static async Task InstallAsync(Release r, IProgress<double> progress)
     {
+        // Телефон: APK ставит сама система — открываем страницу релиза, там файл для скачивания
+        if (OperatingSystem.IsAndroid())
+        {
+            var launcher = Avalonia.Controls.TopLevel.GetTopLevel(Shell.Main)?.Launcher;
+            if (launcher != null) await launcher.LaunchUriAsync(new Uri($"https://github.com/{Repo}/releases/latest"));
+            return;
+        }
         var work = Path.Combine(Path.GetTempPath(), "kotodama-update");
         if (Directory.Exists(work)) Directory.Delete(work, true);
         Directory.CreateDirectory(work);

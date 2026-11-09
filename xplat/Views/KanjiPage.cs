@@ -60,7 +60,7 @@ public sealed class KanjiPage : UserControl, IPage
         body.Children.Add(new ScrollViewer { Content = tiles, Padding = new Thickness(0, 0, 8, 0) });
         if (_detail.Parent is ScrollViewer oldSv) oldSv.Content = null; // панель переиспользуется между показами
         body.Children.Add(new ScrollViewer { Content = _detail }.Col(2));
-        root.Children.Add(body.RowAt(2));
+        root.Children.Add(U.Stackify(body, starRows: true).RowAt(2));
         Content = root;
         ShowDetail(_sel);
         Anim.Stagger(tiles, 12, 0, 60);
@@ -114,7 +114,7 @@ public sealed class KanjiPage : UserControl, IPage
             strokes.Loaded += (_, _) => strokes.Play(1.3);
         }
         var head = U.Cols("*", "auto");
-        head.Children.Add(U.Stack(U.T(k.Ru, "H2", 22), U.T($"{k.Strokes} {MainWindow.Plural(k.Strokes, "черта", "черты", "черт")}", "Muted").M(0, 4, 0, 0)));
+        head.Children.Add(U.Stack(U.T(k.Ru, "H2", 22), U.T($"{k.Strokes} {MainView.Plural(k.Strokes, "черта", "черты", "черт")}", "Muted").M(0, 4, 0, 0)));
         head.Children.Add(U.SpeakBtn(() => k.Examples.Length > 0 ? k.Examples[0].Kana : k.Char).Col(1));
         sp.Children.Add(head);
 

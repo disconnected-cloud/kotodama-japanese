@@ -37,10 +37,26 @@ public sealed class WordsPage : UserControl, IPage
         ScrollViewer.SetHorizontalScrollBarVisibility(_list, ScrollBarVisibility.Disabled);
     }
 
+    /// <summary>Телефон: слово и чтение сверху, перевод и пример ниже.</summary>
+    static Control CompactRow(WordRow r)
+    {
+        var top = U.Cols("auto", "*", "auto");
+        top.Children.Add(new Ellipse { Width = 8, Height = 8, Fill = r.StatusBrush, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) });
+        top.Children.Add(U.Row(10, new TextBlock { Text = r.W.Jp, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 22 },
+            U.Stack(new TextBlock { Text = r.W.Kana, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 13, Foreground = U.B("Accent") }, new TextBlock { Text = r.W.Romaji, FontSize = 11, Foreground = U.B("Muted") }).CenterV()).Col(1));
+        top.Children.Add(new TextBlock { Text = "\uE767", FontFamily = U.R<FontFamily>("Icons"), FontSize = 16, Foreground = U.B("Muted"), VerticalAlignment = VerticalAlignment.Center }.Col(2));
+        var sp = U.Stack(top, new TextBlock { Text = r.W.Ru, FontSize = 14, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(18, 4, 0, 0) });
+        if (r.ExVis) sp.Children.Add(new TextBlock { Text = r.W.ExJp, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 12.5, Foreground = U.B("Muted"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(18, 3, 0, 0) });
+        var bd = new Border { Margin = new Thickness(0, 0, 0, 8), Padding = new Thickness(14, 10), CornerRadius = new CornerRadius(14), Background = U.B("Surface"), BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(1), Child = sp };
+        bd.OnClick(() => Speech.Say(r.W.Kana));
+        return bd;
+    }
+
     /// <summary>Строка списка слов (аналог WPF DataTemplate «WordRow»).</summary>
     static Control RowView(WordRow? r)
     {
         if (r == null) return new Border();
+        if (Shell.Compact) return CompactRow(r);
         var g = U.Cols("22", "200", "230", "*", "auto");
         g.Children.Add(new Ellipse { Width = 9, Height = 9, Fill = r.StatusBrush, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center });
         g.Children.Add(new TextBlock { Text = r.W.Jp, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 24, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis }.Col(1));
@@ -112,7 +128,7 @@ public sealed class WordsPage : UserControl, IPage
         g.Children.Add(actCard.RowAt(1));
 
         // Фильтр по темам + поиск
-        var filter = U.Cols("*", "auto");
+        var filter = Shell.Compact ? new Grid { RowDefinitions = new RowDefinitions("auto,auto") } : U.Cols("*", "auto");
         filter.Margin = new Thickness(0, 18, 0, 12);
         var chips = new WrapPanel();
         foreach (var t in new string?[] { null }.Concat(words.Select(w => w.Topic).Distinct()))
@@ -122,9 +138,9 @@ public sealed class WordsPage : UserControl, IPage
             rb.Checked += (_, _) => { _topic = topic; Refill(); };
             chips.Children.Add(rb);
         }
-        filter.Children.Add(chips);
+        filter.Children.Add(Shell.Compact ? chips.RowAt(1).M(0, 10, 0, 0) : chips);
         var search = SearchBox();
-        filter.Children.Add(search.Col(1));
+        filter.Children.Add(Shell.Compact ? search : search.Col(1));
         g.Children.Add(filter.RowAt(2));
 
         var listWrap = U.Cols("*");
@@ -139,7 +155,7 @@ public sealed class WordsPage : UserControl, IPage
 
     Control SearchBox()
     {
-        var box = new TextBox { Width = 240, FontSize = 14, Padding = new Thickness(36, 8, 12, 8), Text = _search, VerticalAlignment = VerticalAlignment.Top };
+        var box = new TextBox { Width = Shell.Compact ? double.NaN : 240, FontSize = 14, Padding = new Thickness(36, 8, 12, 8), Text = _search, VerticalAlignment = VerticalAlignment.Top };
         var ph = U.T("Поиск: русский, кана, romaji", "Muted", 13);
         ph.IsHitTestVisible = false; ph.Margin = new Thickness(38, 9, 0, 0); ph.VerticalAlignment = VerticalAlignment.Top;
         ph.IsVisible = _search.Length == 0 ? true : false;

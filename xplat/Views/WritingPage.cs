@@ -24,7 +24,7 @@ namespace Matsubakira.Views;
 public sealed class WritingPage : UserControl, IPage, IKeyTarget
 {
     public string Title => "Прописи";
-    const double Size = 330;
+    static readonly double Size = Shell.Compact ? 300 : 330;
     readonly List<(string ch, string hint)> _deck;
     int _i, _stroke, _mistakes, _total, _score;
     bool _showGuide = true;
@@ -56,7 +56,7 @@ public sealed class WritingPage : UserControl, IPage, IKeyTarget
         board.Children.Add(new Viewbox { Child = _flash });
         board.Children.Add(_ink);
 
-        var side = new StackPanel { Margin = new Thickness(28, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Width = 300 };
+        var side = new StackPanel { Margin = Shell.Compact ? new Thickness(0, 20, 0, 0) : new Thickness(28, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Width = 300 };
         side.Children.Add(_counter);
         side.Children.Add(_title.M(0, 6, 0, 6));
         side.Children.Add(_status);
@@ -68,7 +68,7 @@ public sealed class WritingPage : UserControl, IPage, IKeyTarget
             U.Btn("Дальше", Next, "Primary", "")).M(0, 8, 0, 0));
         side.Children.Add(U.T("Пиши каждую черту одним движением. Важно: порядок черт и направление (сверху вниз, слева направо).", "Muted", 12.5).M(0, 18, 0, 0));
 
-        var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+        var row = new StackPanel { Orientation = Shell.Compact ? Orientation.Vertical : Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
         row.Children.Add(board); row.Children.Add(side);
         var root = new StackPanel();
         root.Children.Add(U.Header("書", "Прописи", "Пиши мышью или пером — приложение проверит порядок, направление и форму каждой черты."));

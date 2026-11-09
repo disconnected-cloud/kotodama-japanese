@@ -15,6 +15,7 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        if (!ProgressStore.IsLoaded) ProgressStore.Load(); // на телефоне нет Program.Main
         bool light = ProgressStore.P.LightTheme || Environment.GetCommandLineArgs().Contains("--light");
         RequestedThemeVariant = light ? ThemeVariant.Light : ThemeVariant.Dark;
         ApplyPalette(Resources, light, ProgressStore.P.AccentColor);
@@ -28,7 +29,9 @@ public partial class App : Application
             try { if (Shell.Main != null) Shell.Toast("Что-то пошло не так — записал в журнал, продолжаем", "!"); } catch { }
         };
 
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (ApplicationLifetime is ISingleViewApplicationLifetime single)
+            single.MainView = new MainView(); // телефон: интерфейс без окна
+        else if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow();
             desktop.ShutdownRequested += (_, _) => ProgressStore.Save();

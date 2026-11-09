@@ -41,7 +41,7 @@ public sealed class ReaderPage : UserControl, IPage
     {
         var root = new StackPanel();
         root.Children.Add(U.Header("読", "Чтение", "Тексты с фуриганой и озвучкой. Нажми на любое слово — перевод и «+» в карточки."));
-        var grid = new UniformGrid { Columns = 3, Margin = new Thickness(-6, 0, -6, 0) };
+        var grid = new UniformGrid { Columns = U.Columns(3), Margin = new Thickness(-6, 0, -6, 0) };
         foreach (var t in _texts.Value)
         {
             bool done = ProgressStore.P.Flags.Contains("read:" + t.Title);

@@ -15,7 +15,9 @@ public interface IKeyTarget { bool HandleKey(Key key); }
 
 public static class Shell
 {
-    public static MainWindow Main { get; set; } = null!;
+    public static MainView Main { get; set; } = null!;
+    /// <summary>Телефонная раскладка: нижние вкладки вместо бокового меню, одна колонка, меньше отступы.</summary>
+    public static bool Compact { get; set; } = OperatingSystem.IsAndroid() || Environment.GetCommandLineArgs().Contains("--phone");
     public static void Open(Control page) => Main.Push(page);
     /// <summary>Открыть страницу с анимацией «раскрытия» из карточки.</summary>
     public static void OpenFrom(Control source, Control page) => Main.ExpandFrom(source, page);
@@ -283,21 +285,55 @@ public static class U
         return g;
     }
 
+    /// <summary>Подсказка про клавиатуру — на телефоне не нужна.</summary>
+    public static T DesktopOnly<T>(this T el) where T : Control { if (Shell.Compact) el.IsVisible = false; return el; }
+
+    /// <summary>Сетка карточек: на компьютере desktop колонок, на телефоне phone.</summary>
+    public static int Columns(int desktop, int phone = 1) => Shell.Compact ? phone : desktop;
+
+    /// <summary>
+    /// «Основное + боковая панель» (колонки *, отступ, фикс.) — на телефоне друг под другом.
+    /// starRows: обе части делят высоту пополам (для прокручиваемых списков).
+    /// </summary>
+    public static Grid Stackify(Grid g, bool starRows = false)
+    {
+        if (!Shell.Compact || g.ColumnDefinitions.Count < 2) return g;
+        g.ColumnDefinitions.Clear();
+        g.RowDefinitions = new RowDefinitions(starRows ? "*,*" : "auto,auto");
+        foreach (var c in g.Children)
+        {
+            int col = Grid.GetColumn(c);
+            if (col > 0) { Grid.SetColumn(c, 0); Grid.SetRow(c, 1); c.Margin = new Thickness(c.Margin.Left, c.Margin.Top + 16, c.Margin.Right, c.Margin.Bottom); }
+        }
+        return g;
+    }
+
     /// <summary>Шапка страницы: японский заголовок-иероглиф, название и подзаголовок.</summary>
     public static Control Header(string jp, string title, string subtitle, Control? right = null)
     {
         var g = Cols("auto", "*", "auto");
-        g.Margin = new Thickness(0, 4, 0, 24);
+        g.Margin = new Thickness(0, 4, 0, Shell.Compact ? 16 : 24);
         var badge = new Border
         {
-            Width = 52, Height = 52, CornerRadius = new CornerRadius(14), Background = B("AccentSoft"),
+            Width = Shell.Compact ? 42 : 52, Height = Shell.Compact ? 42 : 52, CornerRadius = new CornerRadius(14), Background = B("AccentSoft"),
             Child = new TextBlock { Text = jp, FontFamily = R<FontFamily>("JpSerif"), FontSize = jp.Length > 1 ? 20 : 26, Foreground = B("Accent"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, -2, 0, 0) },
         };
         g.Children.Add(badge);
-        var sp = Stack(T(title, "H1"), T(subtitle, "Muted", 13.5).M(0, 3, 0, 0));
+        var sp = Stack(T(title, "H1", Shell.Compact ? 22 : null), T(subtitle, "Muted", Shell.Compact ? 12.5 : 13.5).M(0, 3, 0, 0));
         sp.VerticalAlignment = VerticalAlignment.Center; sp.Margin = new Thickness(16, 0, 0, 0);
         g.Children.Add(sp.Col(1));
-        if (right != null) { right.VerticalAlignment = VerticalAlignment.Center; g.Children.Add(right.Col(2)); }
+        if (right != null)
+        {
+            // на телефоне элементы справа (переключатели уровня и т.п.) переносятся под заголовок
+            if (Shell.Compact && right is StackPanel { Orientation: Orientation.Horizontal } rs)
+            {
+                var wp = new WrapPanel();
+                foreach (var c in rs.Children.ToList()) { rs.Children.Remove(c); c.Margin = new Thickness(0, 0, 6, 6); wp.Children.Add(c); }
+                right = wp;
+            }
+            if (Shell.Compact) { g.RowDefinitions = new RowDefinitions("auto,auto"); right.Margin = new Thickness(0, 12, 0, 0); right.HorizontalAlignment = HorizontalAlignment.Left; Grid.SetColumnSpan(right, 3); g.Children.Add(right.RowAt(1)); }
+            else { right.VerticalAlignment = VerticalAlignment.Center; g.Children.Add(right.Col(2)); }
+        }
         return g;
     }
 
@@ -305,7 +341,7 @@ public static class U
     public static ScrollViewer Page(Control content) => new()
     {
         HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
-        Content = new Border { Padding = new Thickness(40, 12, 40, 40), Child = content, MaxWidth = 1240 },
+        Content = new Border { Padding = Shell.Compact ? new Thickness(16, 8, 16, 24) : new Thickness(40, 12, 40, 40), Child = content, MaxWidth = 1240 },
     };
 
     public static Border Pill(string text, IBrush? bg = null, IBrush? fg = null)
@@ -332,6 +368,7 @@ public static class U
         for (int i = 0; i < kids.Length; i++)
         {
             if (i > 0) kids[i].Margin = new Thickness(gap, kids[i].Margin.Top, kids[i].Margin.Right, kids[i].Margin.Bottom);
+            if (Shell.Compact && kids[i] is TextBlock { TextWrapping: TextWrapping.Wrap } tw) tw.MaxWidth = Math.Min(double.IsNaN(tw.MaxWidth) ? 1e9 : tw.MaxWidth, 270);
             sp.Children.Add(kids[i]);
         }
         return sp;

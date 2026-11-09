@@ -269,7 +269,7 @@ public sealed class TrainersPage : UserControl, IPage
         root.Children.Add(U.Header("練", "Тренажёры", "План на день, работа над ошибками и упражнения на грамматику, счёт и слух."));
         root.Children.Add(PlanCard());
 
-        var grid = new UniformGrid { Columns = 3, Margin = new Thickness(-6, 18, -6, 0) };
+        var grid = new UniformGrid { Columns = U.Columns(3), Margin = new Thickness(-6, 18, -6, 0) };
         grid.Children.Add(Tile("誤", "Тетрадь ошибок", Mistakes.Count > 0 ? $"{Mistakes.Count} ошибок ждут исправления" : "Ошибок нет — отлично!", () => { var q = MistakesQuiz(); if (q != null) Shell.Open(q); else Shell.Toast("Ошибок пока нет", "完璧"); }));
         grid.Children.Add(Tile("活", "Спряжение глаголов", "11 форм: ます, て, ない, потенциальная…", () => Shell.Open(Conj.Quiz())));
         grid.Children.Add(Tile("数", "Счётные суффиксы", "本・枚・匹・人… с особыми чтениями", () => Shell.Open(new CountersPage())));

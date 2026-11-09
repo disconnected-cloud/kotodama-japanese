@@ -30,7 +30,7 @@ public sealed class GrammarPage : UserControl, IPage
         foreach (var level in new[] { "N5", "N4", "N3" })
         {
             root.Children.Add(U.T(level switch { "N5" => "N5 · основы", "N4" => "N4 · продолжение", _ => "N3 · средний уровень" }, "H2").M(0, 6, 0, 10));
-            var grid = new UniformGrid { Columns = 2, Margin = new Thickness(-6, 0, -6, 16) };
+            var grid = new UniformGrid { Columns = U.Columns(2), Margin = new Thickness(-6, 0, -6, 16) };
             foreach (var l in Db.Grammar.Where(g => g.Level == level))
             {
                 bool isDone = done.Contains(l.Id);

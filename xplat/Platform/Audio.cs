@@ -158,6 +158,21 @@ public static class Pcm
     }
 }
 
+/// <summary>Воспроизведение одного звука (реализация зависит от платформы).</summary>
+public interface IPlayback { Task<bool> PlayAsync(float[] x, int rate); void Stop(); }
+
+/// <summary>
+/// Реализации, которые подставляет платформа (Android): звук, микрофон, системный голос.
+/// На компьютере всё null — используются встроенные варианты.
+/// </summary>
+public static class Hooks
+{
+    public static Func<IPlayback>? Playback;
+    public static Func<IMic>? Mic;
+    /// <summary>Системный синтез речи → путь к WAV (на Android — голос Google/Samsung, если онлайн-голос недоступен).</summary>
+    public static Func<string, bool, Task<string?>>? SystemTts;
+}
+
 /// <summary>Один канал воспроизведения (озвучка и звуки интерфейса — разные экземпляры, не перебивают друг друга).</summary>
 public sealed class AudioPlayer
 {
@@ -169,7 +184,7 @@ public sealed class AudioPlayer
     public Task<bool> PlayAsync(float[] x, int rate)
     {
         Stop();
-        var pb = OperatingSystem.IsWindows() ? (IPlayback)new WinPlayback() : new LinuxPlayback();
+        var pb = Hooks.Playback?.Invoke() ?? (OperatingSystem.IsWindows() ? (IPlayback)new WinPlayback() : new LinuxPlayback());
         lock (_lock) _cur = pb;
         return pb.PlayAsync(x, rate);
     }
@@ -181,7 +196,7 @@ public sealed class AudioPlayer
         try { p?.Stop(); } catch { }
     }
 
-    interface IPlayback { Task<bool> PlayAsync(float[] x, int rate); void Stop(); }
+
 
     /// <summary>Windows: NAudio WaveOut (winmm) — без WinRT, работает на любом .NET.</summary>
     sealed class WinPlayback : IPlayback
@@ -247,9 +262,9 @@ public interface IMic : IDisposable
 
 public static class Mic
 {
-    public static IMic Create(int device) => OperatingSystem.IsWindows() ? new WinMic(device) : new LinuxMic();
+    public static IMic Create(int device) => Hooks.Mic?.Invoke() ?? (OperatingSystem.IsWindows() ? new WinMic(device) : new LinuxMic());
 
-    public static bool Available => OperatingSystem.IsWindows() ? SafeCount() > 0 : Tools.Recorder() != null;
+    public static bool Available => Hooks.Mic != null || (OperatingSystem.IsWindows() ? SafeCount() > 0 : Tools.Recorder() != null);
 
     public static List<string> Devices()
     {

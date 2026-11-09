@@ -33,7 +33,7 @@ public sealed class Palette : Grid
         PointerPressed += (_, e) => { if (e.Source == this) _close(); };
         var card = new Border
         {
-            Classes = { "Card" }, Width = 640, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 90, 0, 0), Padding = new Thickness(12),
+            Classes = { "Card" }, Width = Shell.Compact ? double.NaN : 640, MaxWidth = 640, HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 90, 0, 0), Padding = new Thickness(12),
             BoxShadow = BoxShadows.Parse("0 6 24 0 #59000000"),
         };
         var sp = new StackPanel();

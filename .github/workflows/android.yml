@@ -1,0 +1,105 @@
+# Android-версия Kotodama: сборка APK, запуск в эмуляторе со снимком экрана, APK для релиза.
+# Подпись: если в секретах репозитория есть ANDROID_KEYSTORE_B64 и ANDROID_KEYSTORE_PASS — подписываем своим ключом
+# (тогда новые версии ставятся поверх старых без удаления). Иначе — отладочный ключ, только для проверки.
+name: Android
+
+on:
+  push:
+    branches: [main, master]
+    paths: ["android/**", "xplat/**", "Data/**", "Assets/**", ".github/workflows/android.yml"]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Тег релиза, к которому прикрепить APK (например, v1.2.0). Пусто — только собрать."
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Android workload
+        run: dotnet workload install android
+
+      - name: Ключ подписи (если задан)
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/kotodama.p12"
+            ALIAS=$(keytool -list -v -keystore "$RUNNER_TEMP/kotodama.p12" -storetype PKCS12 -storepass "$KS_PASS" | grep -m1 "Alias name" | cut -d: -f2 | xargs)
+            echo "SIGN_ARGS=-p:KotodamaKeyStore=$RUNNER_TEMP/kotodama.p12 -p:KotodamaKeyPass=$KS_PASS -p:KotodamaKeyAlias=$ALIAS" >> "$GITHUB_ENV"
+            echo "Подпись своим ключом (alias: $ALIAS)"
+          else
+            echo "Секрета нет — отладочная подпись"
+          fi
+
+      - name: Сборка APK (arm64 — для телефонов)
+        run: |
+          dotnet publish android/Kotodama.Android.csproj -c Release -f net10.0-android -p:AndroidSdkDirectory=$ANDROID_HOME $SIGN_ARGS -o out/arm64
+          APK=$(ls out/arm64/*-Signed.apk | head -1)
+          cp "$APK" Kotodama-android.apk
+          ls -la Kotodama-android.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Kotodama-android
+          path: Kotodama-android.apk
+
+      - name: Сборка для эмулятора (x86_64)
+        run: dotnet publish android/Kotodama.Android.csproj -c Release -f net10.0-android -p:AndroidSdkDirectory=$ANDROID_HOME -p:RuntimeIdentifiers=android-x86_64 -o out/x64
+
+      - name: Ускорение эмулятора (KVM)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Запуск в эмуляторе и снимки экрана
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: |
+            adb install -r $(ls out/x64/*-Signed.apk | head -1)
+            adb shell pm grant io.github.disconnectedcloud.kotodama android.permission.RECORD_AUDIO || true
+            adb shell am start -n io.github.disconnectedcloud.kotodama/$(adb shell cmd package resolve-activity --brief io.github.disconnectedcloud.kotodama | tail -1 | cut -d/ -f2)
+            sleep 25
+            adb exec-out screencap -p > android-start.png
+            adb shell input tap 540 1300 || true
+            sleep 5
+            adb exec-out screencap -p > android-tap.png
+            adb logcat -d | grep -iE "kotodama|mono|dotnet|avalonia|FATAL|AndroidRuntime" | tail -150 > android-log.txt || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-check
+          path: |
+            android-*.png
+            android-log.txt
+
+      - name: Прикрепить к релизу
+        if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.tag != '')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: gh release upload "$TAG" Kotodama-android.apk --clobber
