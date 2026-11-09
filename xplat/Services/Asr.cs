@@ -13,14 +13,24 @@ public static class Asr
 {
     public static readonly (string id, string title, string desc, long size)[] Models =
     {
-        ("small-q5_1", "Точная", "Whisper small · лучше слышит ошибки", 190_085_487),
+        ("small-q5_1", "Точная", "Whisper small · хороший баланс скорости и точности", 190_085_487),
         ("base-q5_1", "Быстрая", "Whisper base · для слабых ПК", 59_707_625),
     };
 
+    static string UrlFor(string id) => id == "kotoba-v2-q5"
+        ? "https://huggingface.co/kotoba-tech/kotoba-whisper-v2.0-ggml/resolve/main/ggml-kotoba-whisper-v2.0-q5_0.bin"
+        : $"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{id}.bin";
+
+    /// <summary>Модель по умолчанию — первая скачанная из списка (японская → точная → быстрая).</summary>
+    public static string BestInstalled => Models.Select(m => m.id).FirstOrDefault(id => File.Exists(PathFor(id))) ?? Models[0].id;
+
     static string Dir => Path.Combine(ProgressStore.Folder, "models");
-    public static string ModelId => Models.Any(m => m.id == ProgressStore.P.AsrModel) ? ProgressStore.P.AsrModel : Models[0].id;
+    public static string ModelId => Models.Any(m => m.id == ProgressStore.P.AsrModel) && File.Exists(PathFor(ProgressStore.P.AsrModel)) ? ProgressStore.P.AsrModel
+        : File.Exists(PathFor(BestInstalled)) ? BestInstalled : Models.Any(m => m.id == ProgressStore.P.AsrModel) ? ProgressStore.P.AsrModel : Models[0].id;
     public static string PathFor(string id) => System.IO.Path.Combine(Dir, $"ggml-{id}.bin");
-    public static bool Ready => File.Exists(PathFor(ModelId));
+    /// <summary>Для отладочного сравнения моделей: явный путь к файлу модели.</summary>
+    public static string? OverridePath;
+    public static bool Ready => OverridePath != null || File.Exists(PathFor(ModelId));
 
     static WhisperFactory? _factory;
     static string? _loaded;
@@ -32,7 +42,7 @@ public static class Asr
     public static async Task DownloadAsync(string id, IProgress<double> progress, CancellationToken ct)
     {
         Directory.CreateDirectory(Dir);
-        var url = $"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{id}.bin";
+        var url = UrlFor(id);
         var part = PathFor(id) + ".part";
         using var http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
         using var resp = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
@@ -68,10 +78,11 @@ public static class Asr
 
     static void EnsureLoaded()
     {
-        if (_factory != null && _loaded == ModelId) return;
+        var path = OverridePath ?? PathFor(ModelId);
+        if (_factory != null && _loaded == path) return;
         _factory?.Dispose();
-        _factory = WhisperFactory.FromPath(PathFor(ModelId));
-        _loaded = ModelId;
+        _factory = WhisperFactory.FromPath(path);
+        _loaded = path;
     }
 
     /// <summary>
@@ -81,6 +92,13 @@ public static class Asr
     /// </summary>
     /// <param name="prompt">Ожидаемая фраза: подсказывает модели словарь и написание (короткие слова распознаются намного надёжнее).</param>
     public static async Task<(string text, float confidence)> TranscribeAsync(byte[] wav, CancellationToken ct, string? prompt = null)
+    {
+        var r = await TranscribeDetailedAsync(wav, ct, prompt);
+        return (r.Text, r.Confidence);
+    }
+
+    /// <summary>Распознавание с уверенностью модели по каждому фрагменту (токену) — чтобы показать, что прозвучало нечётко.</summary>
+    public static async Task<AsrResult> TranscribeDetailedAsync(byte[] wav, CancellationToken ct, string? prompt = null)
     {
         await Gate.WaitAsync(ct);
         try
@@ -100,14 +118,18 @@ public static class Asr
             if (!string.IsNullOrWhiteSpace(prompt)) b = b.WithPrompt(prompt);
             using var proc = b.Build();
             var sb = new StringBuilder();
+            var tokens = new List<(string, float)>();
             float p = 0; int n = 0;
             using var ms = new MemoryStream(wav);
             await foreach (var seg in proc.ProcessAsync(ms, ct))
             {
                 sb.Append(seg.Text);
                 p += seg.Probability; n++;
+                if (seg.Tokens != null)
+                    foreach (var t in seg.Tokens)
+                        if (!string.IsNullOrEmpty(t.Text) && !t.Text.StartsWith("[_") && !t.Text.StartsWith("<|")) tokens.Add((t.Text, t.Probability));
             }
-            return (sb.ToString().Trim(), n > 0 ? p / n : 0);
+            return new AsrResult(sb.ToString().Trim(), n > 0 ? p / n : 0, tokens.ToArray());
         }
         finally { Gate.Release(); ScheduleUnload(); }
     }
@@ -125,7 +147,33 @@ public static class Asr
         total += total & 1;
         var pcm = new byte[total];
         Buffer.BlockCopy(wav, 44, pcm, edge, pcmLen);
+        Clean(pcm, edge, pcmLen);
         return Recorder.ToWav(pcm);
+    }
+
+    /// <summary>
+    /// Чистка перед распознаванием: фильтр 80 Гц убирает гул (вентилятор, сеть, удары по столу),
+    /// затем громкость выравнивается до −1 дБ — Whisper стабильнее работает на ровном уровне.
+    /// </summary>
+    static void Clean(byte[] pcm, int offset, int len)
+    {
+        int n = len / 2;
+        if (n < 32) return;
+        const double rc = 1.0 / (2 * Math.PI * 80), dt = 1.0 / 16000, a = rc / (rc + dt);
+        var y = new double[n];
+        double prevX = 0, prevY = 0, peak = 0;
+        for (int i = 0; i < n; i++)
+        {
+            double x = BitConverter.ToInt16(pcm, offset + i * 2);
+            prevY = a * (prevY + x - prevX); prevX = x;
+            y[i] = prevY; peak = Math.Max(peak, Math.Abs(prevY));
+        }
+        double gain = peak > 50 ? Math.Min(12, 0.89 * 32767 / peak) : 1;
+        for (int i = 0; i < n; i++)
+        {
+            int v = (int)Math.Clamp(y[i] * gain, short.MinValue, short.MaxValue);
+            pcm[offset + i * 2] = (byte)(v & 0xFF); pcm[offset + i * 2 + 1] = (byte)((v >> 8) & 0xFF);
+        }
     }
 
     public static void Unload()
@@ -135,3 +183,6 @@ public static class Asr
         finally { Gate.Release(); }
     }
 }
+
+/// <summary>Текст, средняя уверенность и уверенность по фрагментам.</summary>
+public sealed record AsrResult(string Text, float Confidence, (string text, float p)[] Tokens);

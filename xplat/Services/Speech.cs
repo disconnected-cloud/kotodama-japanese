@@ -4,7 +4,7 @@ using Matsubakira.Platform;
 
 namespace Matsubakira.Services;
 
-public sealed record SpeechCheck(bool Ok, int Score, string Heard, string Verdict, string? Error = null, string HeardKana = "", string[]? Hints = null)
+public sealed record SpeechCheck(bool Ok, int Score, string Heard, string Verdict, string? Error = null, string HeardKana = "", string[]? Hints = null, (string text, float p)[]? Tokens = null)
 {
     /// <summary>Тот же результат с другим баллом (вердикт пересчитывается).</summary>
     public SpeechCheck WithScore(int score) => this with { Score = score, Ok = score >= 70, Verdict = Speech.VerdictFor(score, Heard) };

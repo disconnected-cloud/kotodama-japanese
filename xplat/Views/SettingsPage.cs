@@ -40,13 +40,26 @@ public sealed class SettingsPage : UserControl, IPage
             Choice(new[] { 90, 100, 115, 130 }, (int)Math.Round(p.UiScale * 100), v => { p.UiScale = v / 100.0; AskRestart(); }, v => v + "%").M(0, 10, 0, 0),
             ChoiceS(new[] { "sakura", "mint", "indigo", "amber" }, p.AccentColor, v => { p.AccentColor = v; AskRestart(); }, v => v switch { "mint" => "Мята", "indigo" => "Индиго", "amber" => "Янтарь", _ => "Сакура" }).M(0, 10, 0, 0),
             Toggle("Анимированное интро при запуске", p.Intro, v => p.Intro = v).M(0, 12, 0, 0),
-            Toggle("Напоминания Windows (повторение, серия)", p.Reminders, v => p.Reminders = v),
+            Toggle("Системные напоминания (повторение, серия)", p.Reminders, v => p.Reminders = v),
+            Toggle("Закрытие окна сворачивает в трей (напоминания и слово дня продолжают приходить)", p.MinimizeToTray, v => p.MinimizeToTray = v),
             Toggle("Звуки ответов", p.Sounds, v => { p.Sounds = v; if (v) Sfx.Ok(); }))));
         root.Children.Add(Section("Движок озвучки", "Авто: офлайн-голос VOICEVOX, если установлен, иначе нейро-голос онлайн.",
             ChoiceS(new[] { "auto", "online", "offline" }, p.TtsEngine, v => { p.TtsEngine = v; OnShown(); }, v => v switch { "auto" => "Авто", "online" => "Онлайн (Microsoft)", _ => "Офлайн (VOICEVOX)" })));
         root.Children.Add(Section("Офлайн-голоса VOICEVOX", "Бесплатный японский синтез, работает без интернета. ~100 голосов в 27 пакетах. Условия: при публикации озвучки указывай «VOICEVOX:имя персонажа».", VoicevoxBlock()));
         root.Children.Add(Section("Голос", "Нейросетевая озвучка Microsoft Neural. Каждая фраза сохраняется на диск — повторно звучит мгновенно и без интернета.", VoiceBlock()));
         root.Children.Add(SpeechUi.ModelCard(OnShown).M(0, 0, 0, 16));
+        // Слово дня
+        var wod = new WrapPanel();
+        foreach (var (t, label) in new[] { ("", "Выключено"), ("08:00", "08:00"), ("09:00", "09:00"), ("12:00", "12:00"), ("19:00", "19:00"), ("21:00", "21:00") })
+        {
+            var rb = new RadioButton { Classes = { "ChipRadio" }, Content = label, GroupName = "wod", IsChecked = p.WordOfDayTime == t, Margin = new Thickness(0, 0, 8, 8) };
+            var tt = t;
+            rb.Checked += (_, _) => { p.WordOfDayTime = tt; ProgressStore.Notify(); };
+            wod.Children.Add(rb);
+        }
+        root.Children.Add(Section("Слово дня", "Каждый день в выбранное время — уведомление со словом, примером и озвучкой. Программа должна быть запущена (можно свёрнутой в трей).",
+            U.Stack(wod, Toggle("Произносить слово и пример вслух", p.WordOfDaySpeak, v => p.WordOfDaySpeak = v).M(0, 4, 0, 0),
+                U.Btn("Показать слово дня", () => WordOfDay.Show(force: true), "", "").Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 8, 0, 0); }))));
         root.Children.Add(Section("Микрофон", $"Режим: {(p.MicMode == "auto" ? $"авто-стоп после паузы {p.MicPause:0.0} с" : "ручная остановка")}.",
             U.Btn("Проверка и настройка микрофона", () => Shell.Open(new MicCheckPage()), "", "\uE720")));
         if (Asr.Ready)

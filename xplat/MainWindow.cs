@@ -144,11 +144,21 @@ public class MainWindow : Window
         AddHandler(KeyDownEvent, OnPreviewKey, RoutingStrategies.Tunnel);
         Activated += (_, _) => UpdateStats();
         Opened += (_, _) => OnOpened();
+        // «Сворачивать в трей»: окно прячется, напоминания и слово дня продолжают приходить
+        Closing += (_, e) =>
+        {
+            if (ProgressStore.P.MinimizeToTray && !_reallyClose && !e.IsProgrammatic) { e.Cancel = true; Hide(); Shell.Toast("Kotodama работает в трее", "言"); }
+        };
     }
+
+    bool _reallyClose;
+    public void Quit() { _reallyClose = true; Close(); }
 
     void OnOpened()
     {
         UpdateStats();
+        Dispatcher.UIThread.Post(() => Badge.Update(this), DispatcherPriority.Background);
+        Dispatcher.UIThread.Post(() => { if (!Environment.GetCommandLineArgs().Skip(1).Any()) WordOfDay.Tick(); }, DispatcherPriority.Background);
         _navItems["home"].IsChecked = true;
         PlayIntro();
         Tray.Init(this);
@@ -160,7 +170,7 @@ public class MainWindow : Window
             Updater.AutoCheck();
             if (CrashReport.HasNew()) { CrashReport.MarkSeen(); Shell.Toast("В прошлый раз была ошибка — отправить отчёт можно в Настройках → «Обратная связь»", "!"); }
         }
-        var remind = new DispatcherTimer { Interval = TimeSpan.FromMinutes(10) };
+        var remind = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
         remind.Tick += (_, _) => Tray.Tick();
         remind.Start();
         int pi = Array.IndexOf(args, "--page");
@@ -168,6 +178,10 @@ public class MainWindow : Window
 #if DEBUG
         int oi = Array.IndexOf(args, "--open");
         if (oi > 0 && oi + 1 < args.Length) DebugOpen(args[oi + 1]);
+        int li = Array.IndexOf(args, "--llmtest");
+        if (li > 0 && li + 2 < args.Length) DebugLlm(args[li + 1], args[li + 2]);
+        int bi = Array.IndexOf(args, "--asrbench");
+        if (bi > 0 && bi + 2 < args.Length) DebugAsrBench(args[bi + 1], args[bi + 2]);
         int si = Array.IndexOf(args, "--snap");
         if (si > 0 && si + 1 < args.Length) DebugSnap(args[si + 1]);
 #endif
@@ -235,6 +249,7 @@ public class MainWindow : Window
         Item("grammar", "文", "Грамматика");
         Item("speech", "話", "Говорение");
         Item("dialogs", "対", "Диалоги");
+        Item("chat", "会", "Разговор с ИИ");
         Item("reader", "読", "Чтение");
         Item("dict", "辞", "Словарь");
         Header("ПРАКТИКА");
@@ -292,6 +307,7 @@ public class MainWindow : Window
         ["settings"] = () => new SettingsPage(),
         ["trainers"] = () => new TrainersPage(),
         ["reader"] = () => new ReaderPage(),
+        ["chat"] = () => new ChatPage(),
     };
 
     public void NavigateRoot(string key)
@@ -348,6 +364,7 @@ public class MainWindow : Window
     void OnPreviewKey(object? sender, KeyEventArgs e)
     {
         if (_intro.IsVisible) { CloseIntro(fast: true); e.Handled = true; return; }
+        if (_overlay != null && e.Key == Key.Escape) { CloseOverlay(); e.Handled = true; return; }
         if (e.Key == Key.K && e.KeyModifiers == KeyModifiers.Control) { OpenPalette(); e.Handled = true; return; }
         if (_palette != null) return;
         var focused = FocusManager?.GetFocusedElement();
@@ -374,6 +391,7 @@ public class MainWindow : Window
         int due = p.Cards.Count(kv => kv.Value.Due <= DateTime.Now);
         _dueBadge.IsVisible = due > 0;
         _dueText.Text = due > 99 ? "99+" : due.ToString();
+        if (IsVisible) Badge.Update(this);
     }
 
     public static string Plural(int n, string one, string few, string many)
@@ -428,6 +446,29 @@ public class MainWindow : Window
             Anim.Opacity(ghost, 1, 0, 220, 0, () => { _root.Children.Remove(ghost); _expanding = false; });
         });
     }
+
+    // ─────────── Карточка поверх окна (слово дня и т.п.) ───────────
+    Grid? _overlay;
+    public void ShowOverlay(Control content)
+    {
+        CloseOverlay();
+        var overlay = new Grid { Background = new SolidColorBrush(Color.FromArgb(0x99, 0, 0, 0)) };
+        var close = new Button { Content = "", HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Classes = { "IconButton" } };
+        close.Click += (_, _) => CloseOverlay();
+        var card = new Border
+        {
+            Classes = { "Card" }, MinWidth = 440, MaxWidth = 620, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+            Padding = new Thickness(30, 22), BoxShadow = BoxShadows.Parse("0 6 24 0 #59000000"),
+            Child = new Grid { Children = { content, close } },
+        };
+        overlay.Children.Add(card);
+        overlay.PointerPressed += (_, e) => { if (e.Source == overlay) CloseOverlay(); };
+        _overlay = overlay;
+        _root.Children.Add(overlay);
+        Anim.FadeUp(card, 0, 12, 260);
+    }
+
+    public void CloseOverlay() { if (_overlay != null) { _root.Children.Remove(_overlay); _overlay = null; } }
 
     // ─────────── Диалог «да/нет» ───────────
     public Task<bool> Confirm(string text, string yes, string no)
@@ -525,6 +566,73 @@ public class MainWindow : Window
             rtb.Save(path);
             Close();
         }, TimeSpan.FromSeconds(2.5));
+    }
+
+    /// <summary>Сравнение моделей распознавания на фразах уроков (озвучка из кэша): время и баллы обоих проходов.</summary>
+    async void DebugAsrBench(string model, string outPath)
+    {
+        var log = new List<string>();
+        void L(string x) { log.Add(x); System.IO.File.WriteAllLines(outPath, log); }
+        Asr.OverridePath = model;
+        await JDict.LoadAsync();
+        var items = Db.SpeechLessons.SelectMany(l => l.Items.Select(i => (i.Jp, i.KanaPlain))).Distinct().ToList();
+        var sw = new System.Diagnostics.Stopwatch();
+        long t1 = 0, tAll = 0; int n = 0, fails = 0, second = 0; long sum = 0;
+        foreach (var (jp, kana) in items)
+        {
+            var mp3 = await Tts.GetAsync(jp);
+            if (mp3 == null) continue;
+            var (x, rate) = Platform.Pcm.Decode(mp3);
+            var pcm = Platform.Pcm.ToPcm16(Platform.Pcm.Resample(x, rate, 16000));
+            var rec = new Recording(Recorder.ToWav(pcm), true, Array.Empty<float>(), pcm.Length / 32000.0, 0.5f, 0.001f);
+            sw.Restart();
+            var r1 = await Asr.TranscribeDetailedAsync(rec.Wav, CancellationToken.None);
+            t1 += sw.ElapsedMilliseconds;
+            var s1 = Speech.Score(r1.Text, r1.Confidence, jp, kana);
+            sw.Restart();
+            var sc = await Views.SpeechUi.ScoreRecording(jp, kana, rec, CancellationToken.None);
+            tAll += sw.ElapsedMilliseconds;
+            if (s1.Score < 88) second++;
+            n++; sum += sc.Score;
+            if (sc.Score < 70) fails++;
+            if (s1.Score < 80) L($"  {s1.Score,3}->{sc.Score,3} {jp} | heard '{r1.Text}' low: {string.Join(" ", r1.Tokens.Where(t => t.p < 0.5).Select(t => $"{t.text}:{t.p:0.00}"))}");
+        }
+        L($"MODEL {System.IO.Path.GetFileName(model)}: n={n} avg={sum / Math.Max(1, n)} fails={fails} pass1={t1 / Math.Max(1, n)}ms full={tAll / Math.Max(1, n)}ms second-pass={second}");
+        Environment.Exit(0);
+    }
+
+    /// <summary>Проверка языковой модели: диалог, исправление, перевод — с замером времени.</summary>
+    async void DebugLlm(string model, string outPath)
+    {
+        var log = new List<string>();
+        void L(string x) { log.Add(x); System.IO.File.WriteAllLines(outPath, log); }
+        try
+        {
+            Llm.OverridePath = model;
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var hist = new List<(string, string)>
+            {
+                ("system", "あなたは日本語の会話練習の相手です。\n場面：カフェの店員。\n相手は日本語を勉強しているロシア人です。とてもやさしい日本語（JLPT N5）。です・ます形。短い文。\nルール：\n・必ず日本語だけで答える。\n・一回の返事は1〜2文だけ。\n・最後に簡単な質問をする。"),
+                ("user", "（会話を始めてください。最初のあいさつと質問をひとつ。）"),
+            };
+            var r1 = await Llm.AskAsync(hist, 140, 0.7f);
+            L($"load+first: {sw.ElapsedMilliseconds} ms :: {r1}");
+            hist.Add(("assistant", r1)); hist.Add(("user", "コーヒーをください。ミルクはいらないです。"));
+            sw.Restart();
+            var r2 = await Llm.AskAsync(hist, 140, 0.7f);
+            L($"reply2: {sw.ElapsedMilliseconds} ms :: {r2}");
+            sw.Restart();
+            var fix = await Llm.AskAsync(new[] { ("system", "あなたは日本語の先生です。学習者の文をチェックします。"), ("user", "次の文に文法や言葉の間違いがあれば、正しい自然な文を一つだけ書いてください。説明は不要です。間違いがなければ「OK」とだけ書いてください。\n文：わたしはきのう学校に行きます。") }, 80, 0.1f);
+            L($"correct: {sw.ElapsedMilliseconds} ms :: {fix}");
+            sw.Restart();
+            var ok = await Llm.AskAsync(new[] { ("system", "あなたは日本語の先生です。学習者の文をチェックします。"), ("user", "次の文に文法や言葉の間違いがあれば、正しい自然な文を一つだけ書いてください。説明は不要です。間違いがなければ「OK」とだけ書いてください。\n文：コーヒーをください。") }, 80, 0.1f);
+            L($"correct-ok: {sw.ElapsedMilliseconds} ms :: {ok}");
+            sw.Restart();
+            var tr = await Llm.AskAsync(new[] { ("system", "Ты переводчик с японского на русский. Пиши только перевод, без пояснений."), ("user", r2) }, 120, 0.2f);
+            L($"translate: {sw.ElapsedMilliseconds} ms :: {tr}");
+        }
+        catch (Exception ex) { L("ERROR " + ex); }
+        Environment.Exit(0);
     }
 
     void DebugOpen(string what)

@@ -165,8 +165,8 @@ public sealed class HomePage : UserControl, IPage
 
     static Border WordOfDay()
     {
-        var words = Db.Words.Where(w => w.Level is "N5" or "N4").ToArray();
-        var w = words[(DateTime.Today.DayOfYear * 7 + DateTime.Today.Year) % words.Length];
+        // то же слово, что приходит в уведомлении «Слово дня»
+        var w = Services.WordOfDay.Today ?? Db.Words[DateTime.Today.DayOfYear % Db.Words.Length];
         var sp = new StackPanel();
         var head = U.Cols("*", "auto");
         head.Children.Add(U.T("Слово дня", "H3"));
@@ -176,6 +176,9 @@ public sealed class HomePage : UserControl, IPage
         sp.Children.Add(U.Jp(w.Kana, 14, U.B("Accent")).M(0, 4, 0, 0));
         sp.Children.Add(U.T(w.Romaji, "Muted", 13));
         sp.Children.Add(U.T(w.Ru, "H3", 16).M(0, 10, 0, 0));
-        return new Border { Classes = { "Card" }, Child = sp };
+        sp.Children.Add(U.T("Нажми — пример фразы", "Muted", 11.5).M(0, 8, 0, 0));
+        var card = new Border { Classes = { "Card" }, Child = sp, Cursor = Cursors.Hand };
+        card.PointerReleased += (_, e) => { if (e.Source is not Button && e.Source is not TextBlock { Parent: Button }) Services.WordOfDay.Show(force: true); };
+        return card;
     }
 }

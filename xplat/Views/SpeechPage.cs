@@ -31,6 +31,7 @@ public sealed class SpeechPage : UserControl, IPage
 
         root.Children.Add(U.T("Уроки", "H2").M(0, 26, 0, 12));
         var grid = new UniformGrid { Columns = 3, Margin = new Thickness(-6, 0, -6, 0) };
+        grid.Children.Add(ChatCard());
         grid.Children.Add(PersonalCard());
         grid.Children.Add(PairsCard());
         foreach (var l in Db.SpeechLessons) grid.Children.Add(LessonCard(l));
@@ -66,6 +67,19 @@ public sealed class SpeechPage : UserControl, IPage
         var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
         HomePage.Hover(card);
         card.PointerReleased += (_, _) => Shell.OpenFrom(card, new SpeechLessonPage(PersonalLesson()));
+        return card;
+    }
+
+    static Border ChatCard()
+    {
+        var sp = new StackPanel();
+        sp.Children.Add(U.Jp("会", 30, U.B("Accent"), true).Also(t => t.HorizontalAlignment = HorizontalAlignment.Left));
+        sp.Children.Add(U.T("Разговор с ИИ", "H3", 15).M(0, 12, 0, 3));
+        sp.Children.Add(U.T("Свободный диалог голосом с нейросетью — кафе, знакомство, дорога…", "Muted").Also(t => t.MinHeight = 36));
+        sp.Children.Add(U.Pill("Новое", U.B("AccentSoft"), U.B("Accent")).Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 10, 0, 0); }));
+        var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
+        HomePage.Hover(card);
+        card.PointerReleased += (_, _) => Shell.Go("chat");
         return card;
     }
 
@@ -346,11 +360,20 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
         if (r.Heard.Length > 0)
         {
             info.Children.Add(U.T("РАСПОЗНАНО", "Overline").M(0, 10, 0, 3));
-            info.Children.Add(Diff(p.Jp, p.KanaPlain, r.Heard, r.HeardKana));
+            info.Children.Add(r.HeardKana.Length > 0 ? SpeechDetail.MoraChips(p.Jp, p.KanaPlain, r.HeardKana, r.Tokens) : Diff(p.Jp, p.KanaPlain, r.Heard, r.HeardKana));
+            if (r.HeardKana.Length > 0 && Speech.Normalize(r.Heard) != Speech.Normalize(r.HeardKana))
+                info.Children.Add(U.T($"Whisper записал: {r.Heard}", "Muted", 12).M(0, 2, 0, 0));
         }
         top.Children.Add(info.Col(1));
         sp.Children.Add(top);
         if (SpeechUi.HintsPanel(r) is { } hints) sp.Children.Add(hints);
+        if (r.Score >= 70 && SpeechDetail.UnclearCount(r.Tokens) > 0)
+            sp.Children.Add(U.T("Засчитано, но часть мор прозвучала нечётко (оранжевая рамка) — открывай рот чуть шире и не глотай окончания.", "Body", 13, U.B("Gold")).M(0, 10, 0, 0));
+        if (rec != null && rec.Heard && SpeechDetail.AccentPanel(p.Jp, p.KanaPlain, rec.Wav) is { } accent)
+        {
+            sp.Children.Add(new Border { Height = 1, Background = U.B("Stroke"), Margin = new Thickness(0, 16, 0, 12) });
+            sp.Children.Add(accent);
+        }
         if (pr != null)
         {
             sp.Children.Add(new Border { Height = 1, Background = U.B("Stroke"), Margin = new Thickness(0, 16, 0, 12) });

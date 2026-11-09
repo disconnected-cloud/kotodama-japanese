@@ -44,15 +44,16 @@ public static class SpeechUi
         if (r.Seconds < 0.2 || (!r.Heard && r.PeakLevel < 0.02f))
             return new SpeechCheck(false, 0, "", "Ничего не услышано. Говори громче или открой «Проверка микрофона» в разделе «Говорение».");
         await JDict.LoadAsync();
-        var (t1, c1) = await Asr.TranscribeAsync(r.Wav, ct);
-        var s1 = Speech.Score(t1, c1, jp, kana);
+        var a1 = await Asr.TranscribeDetailedAsync(r.Wav, ct);
+        var s1 = Speech.Score(a1.Text, a1.Confidence, jp, kana) with { Tokens = a1.Tokens };
         if (s1.Score >= 88) return s1;
         status?.Invoke("Уточняю распознавание…");
-        var (t2, c2) = await Asr.TranscribeAsync(r.Wav, ct, jp);
+        var a2 = await Asr.TranscribeDetailedAsync(r.Wav, ct, jp);
+        var (t2, c2) = (a2.Text, a2.Confidence);
         // Без подсказки Whisper часто слышит ерунду на гласных и коротких словах («あいうえお», «こうこう»),
         // поэтому потолок щадящий: правильно сказанное проходит, а явная подмена всё же не получает высший балл.
         int cap = s1.Heard.Length == 0 ? 90 : Math.Max(s1.Score + 45, 86);
-        var s2 = Speech.Score(t2, c2, jp, kana, cap);
+        var s2 = Speech.Score(t2, c2, jp, kana, cap) with { Tokens = a2.Tokens };
         return s2.Score > s1.Score ? s2 : s1;
     }
 
