@@ -83,8 +83,12 @@ public sealed class GrammarLessonPage : UserControl, IPage
         {
             n++;
             var sp = new StackPanel();
-            var patt = new TextBlock { Text = p.Pattern, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 28, FontWeight = FontWeights.SemiBold, Foreground = U.B("AccentGradient"), TextWrapping = TextWrapping.Wrap };
+            var patt = PatternView(p.Pattern);
             sp.Children.Add(U.Row(12, U.Pill($"{n}", U.B("Surface3"), U.B("Text")).CenterV(), patt));
+            // Буквы-заглушки в формуле (X, Y, A, B) — поясняем, что это места для своих слов
+            var slots = p.Pattern.Where(c => c is >= 'A' and <= 'Z').Distinct().ToArray();
+            if (slots.Length > 0)
+                sp.Children.Add(U.T($"{string.Join(" и ", slots)} в рамках — места, куда подставляются твои слова (смотри примеры ниже)", "Muted", 13).M(0, 8, 0, 0));
             sp.Children.Add(U.T(p.Explain, "Body", 14.5).M(0, 12, 0, 6));
             foreach (var ex in p.Examples)
             {
@@ -113,6 +117,35 @@ public sealed class GrammarLessonPage : UserControl, IPage
         root.HorizontalAlignment = HorizontalAlignment.Center;
         Content = U.Page(wrap);
         Anim.Stagger(root, 70, 0, 12);
+    }
+
+    /// <summary>Формула урока: японская часть акцентным цветом, заглушки X/Y/A/B — в рамочках другого цвета.</summary>
+    static FrameworkElement PatternView(string pattern)
+    {
+        var wrap = new WrapPanel { VerticalAlignment = VerticalAlignment.Center };
+        var buf = new System.Text.StringBuilder();
+        void Flush()
+        {
+            if (buf.Length == 0) return;
+            wrap.Children.Add(new TextBlock { Text = buf.ToString(), FontFamily = U.R<FontFamily>("JpFont"), FontSize = 28, FontWeight = FontWeights.SemiBold, Foreground = U.B("Accent"), VerticalAlignment = VerticalAlignment.Center });
+            buf.Clear();
+        }
+        foreach (var c in pattern)
+        {
+            if (c is >= 'A' and <= 'Z')
+            {
+                Flush();
+                wrap.Children.Add(new Border
+                {
+                    BorderBrush = U.B("Accent2"), BorderThickness = new Thickness(1.5), CornerRadius = new CornerRadius(6), Padding = new Thickness(8, 0, 8, 0),
+                    Margin = new Thickness(3, 0, 3, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = "Сюда подставляется слово",
+                    Child = new TextBlock { Text = c.ToString(), FontSize = 22, FontWeight = FontWeights.SemiBold, Foreground = U.B("Accent2") },
+                });
+            }
+            else buf.Append(c);
+        }
+        Flush();
+        return wrap;
     }
 
     void StartQuiz()

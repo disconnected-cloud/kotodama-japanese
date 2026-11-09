@@ -381,6 +381,7 @@ public partial class MainWindow : Window
             case "flash": Push(new Controls.FlashSession("Демо", Db.Words.Take(5).Select(Controls.FlashSession.FromWord))); break;
             case "kanjiflash": Push(new Controls.FlashSession("Демо", Db.Kanji.Take(5).Select(Controls.FlashSession.FromKanji))); break;
             case "grammar": Push(new GrammarLessonPage(Db.Grammar[4])); break;
+            case "grammar1": Push(new GrammarLessonPage(Db.Grammar[0])); break;
             case "speech": Push(new SpeechLessonPage(Db.SpeechLessons[1])); break;
             case "dialog": Push(new DialogPage(Db.Dialogs[1])); break;
             case "unit": Push(new UnitPage(Db.Course[0])); break;
