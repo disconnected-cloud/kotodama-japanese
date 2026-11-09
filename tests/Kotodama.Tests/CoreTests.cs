@@ -345,3 +345,31 @@ public class PitchAndMnemonicsTests
     public void MostKanjiHaveMnemonicHint() =>
         Assert.True(Db.Kanji.Count(k => Mnemonics.Hint(k.Char, k.Ru).Length > 0) > Db.Kanji.Length * 0.6);
 }
+
+#if XPLAT
+public class GrammarRulesTests
+{
+    [Theory]
+    [InlineData("きのう学校に行きます。", "きのう学校に行きました。")]
+    [InlineData("あした映画を見ました。", "あした映画を見ます。")]
+    [InlineData("日本語を勉強しますでした。", "日本語を勉強しませんでした。")]
+    [InlineData("これはペンじゃありますか？", "これはペンですか？")]
+    public void FixesCommonMistakes(string wrong, string right) => Assert.Equal(right, GrammarRules.Check(wrong)?.fixedText);
+
+    [Theory]
+    [InlineData("コーヒーをください。")]
+    [InlineData("きのう学校に行きました。")]
+    [InlineData("あした映画を見ます。")]
+    public void CorrectSentencesPass(string ok) => Assert.Null(GrammarRules.Check(ok));
+
+    [Fact]
+    public void RomajiBySeparateWords()
+    {
+        JDict.LoadAsync().Wait();
+        Assert.Equal("konnichiwa, kyou wa nani o shimasu ka?", Reading.RomajiWords("こんにちは、今日は何をしますか？"));
+        Assert.Equal("koohii o kudasai.", Reading.RomajiWords("コーヒーをください。"));
+        Assert.Equal("watashi wa gakusei desu.", Reading.RomajiWords("私は学生です。"));
+        Assert.Equal("sushi o tabemasu ka?", Reading.RomajiWords("寿司を食べますか？"));
+    }
+}
+#endif

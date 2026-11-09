@@ -178,6 +178,8 @@ public class MainWindow : Window
 #if DEBUG
         int oi = Array.IndexOf(args, "--open");
         if (oi > 0 && oi + 1 < args.Length) DebugOpen(args[oi + 1]);
+        int pt = Array.IndexOf(args, "--playtest");
+        if (pt > 0 && pt + 1 < args.Length) DebugPlay(args[pt + 1]);
         int li = Array.IndexOf(args, "--llmtest");
         if (li > 0 && li + 2 < args.Length) DebugLlm(args[li + 1], args[li + 2]);
         int bi = Array.IndexOf(args, "--asrbench");
@@ -227,7 +229,7 @@ public class MainWindow : Window
         dock.Children.Add(summary);
 
         // Меню со скользящей подложкой выбранного пункта
-        _navIndicator.VerticalAlignment = VerticalAlignment.Top; _navIndicator.Height = 40; _navIndicator.Margin = new Thickness(12, 0);
+        _navIndicator.VerticalAlignment = VerticalAlignment.Top; _navIndicator.Height = 37; _navIndicator.Margin = new Thickness(12, 0);
         _navIndicator.CornerRadius = new CornerRadius(10); _navIndicator.Background = U.B("SelectedTint"); _navIndicator.Opacity = 0; _navIndicator.IsHitTestVisible = false;
         _navIndicator.RenderTransform = _navShift;
         _navIndicator.Child = new Border { Width = 3, Height = 16, CornerRadius = new CornerRadius(2), Background = U.B("Accent"), HorizontalAlignment = HorizontalAlignment.Left };
@@ -239,7 +241,7 @@ public class MainWindow : Window
             _navItems[key] = rb;
             _nav.Children.Add(rb);
         }
-        void Header(string t) => _nav.Children.Add(U.T(t, "Overline").M(28, 16, 0, 6));
+        void Header(string t) => _nav.Children.Add(U.T(t, "Overline").M(28, 12, 0, 5));
         Item("home", "家", "Главная");
         Item("path", "道", "Путь обучения");
         Header("РАЗДЕЛЫ");
@@ -565,7 +567,7 @@ public class MainWindow : Window
             rtb.Render(this);
             rtb.Save(path);
             Close();
-        }, TimeSpan.FromSeconds(2.5));
+        }, TimeSpan.FromSeconds(double.TryParse(Environment.GetEnvironmentVariable("KOTODAMA_SNAP_DELAY"), out var sd) ? sd : 2.5));
     }
 
     /// <summary>Сравнение моделей распознавания на фразах уроков (озвучка из кэша): время и баллы обоих проходов.</summary>
@@ -610,28 +612,41 @@ public class MainWindow : Window
         {
             Llm.OverridePath = model;
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            var hist = new List<(string, string)>
-            {
-                ("system", "あなたは日本語の会話練習の相手です。\n場面：カフェの店員。\n相手は日本語を勉強しているロシア人です。とてもやさしい日本語（JLPT N5）。です・ます形。短い文。\nルール：\n・必ず日本語だけで答える。\n・一回の返事は1〜2文だけ。\n・最後に簡単な質問をする。"),
-                ("user", "（会話を始めてください。最初のあいさつと質問をひとつ。）"),
-            };
+            var cafe = Views.ChatPrompts.Scenes.First(x => x.Key == "cafe");
+            var hist = new List<(string, string)> { ("system", Views.ChatPrompts.System(cafe, "N5")), ("user", Views.ChatPrompts.Opener(cafe)) };
             var r1 = await Llm.AskAsync(hist, 140, 0.7f);
             L($"load+first: {sw.ElapsedMilliseconds} ms :: {r1}");
-            hist.Add(("assistant", r1)); hist.Add(("user", "コーヒーをください。ミルクはいらないです。"));
+            hist[^1] = ("assistant", r1);
+            hist.Add(("user", "コーヒーをください。ミルクはいらないです。"));
             sw.Restart();
             var r2 = await Llm.AskAsync(hist, 140, 0.7f);
             L($"reply2: {sw.ElapsedMilliseconds} ms :: {r2}");
+            foreach (var t in new[] { "わたしはきのう学校に行きます。", "コーヒーをください。", "わたしは日本語を勉強しますでした。" })
+            {
+                sw.Restart();
+                L($"correct '{t}': {sw.ElapsedMilliseconds} ms :: {await Llm.AskAsync(Views.ChatPrompts.Correct(t), 80, 0.1f)}");
+            }
             sw.Restart();
-            var fix = await Llm.AskAsync(new[] { ("system", "あなたは日本語の先生です。学習者の文をチェックします。"), ("user", "次の文に文法や言葉の間違いがあれば、正しい自然な文を一つだけ書いてください。説明は不要です。間違いがなければ「OK」とだけ書いてください。\n文：わたしはきのう学校に行きます。") }, 80, 0.1f);
-            L($"correct: {sw.ElapsedMilliseconds} ms :: {fix}");
+            L($"translate: {await Llm.AskAsync(Views.ChatPrompts.Translate(r2), 120, 0.2f)} ({sw.ElapsedMilliseconds} ms)");
             sw.Restart();
-            var ok = await Llm.AskAsync(new[] { ("system", "あなたは日本語の先生です。学習者の文をチェックします。"), ("user", "次の文に文法や言葉の間違いがあれば、正しい自然な文を一つだけ書いてください。説明は不要です。間違いがなければ「OK」とだけ書いてください。\n文：コーヒーをください。") }, 80, 0.1f);
-            L($"correct-ok: {sw.ElapsedMilliseconds} ms :: {ok}");
-            sw.Restart();
-            var tr = await Llm.AskAsync(new[] { ("system", "Ты переводчик с японского на русский. Пиши только перевод, без пояснений."), ("user", r2) }, 120, 0.2f);
-            L($"translate: {sw.ElapsedMilliseconds} ms :: {tr}");
+            L($"hint: {await Llm.AskAsync(Views.ChatPrompts.Hint(cafe, "N5", r2), 60, 0.5f)} ({sw.ElapsedMilliseconds} ms)");
         }
         catch (Exception ex) { L("ERROR " + ex); }
+        Environment.Exit(0);
+    }
+
+    /// <summary>Беззвучная проверка воспроизведения: озвучка обычная и медленная, своя запись, звуки интерфейса.</summary>
+    async void DebugPlay(string outPath)
+    {
+        var log = new List<string>();
+        void L(string x) { log.Add(x); System.IO.File.WriteAllLines(outPath, log); }
+        Platform.AudioPlayer.Muted = true;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        L($"say normal: {await Speech.SayAsync("こんにちは")} {sw.ElapsedMilliseconds} ms"); sw.Restart();
+        L($"say slow: {await Speech.SayAsync("こんにちは", true)} {sw.ElapsedMilliseconds} ms"); sw.Restart();
+        var wav = Recorder.ToWav(Platform.Pcm.ToPcm16(Enumerable.Range(0, 8000).Select(i => (float)Math.Sin(i * 0.1) * 0.2f).ToArray()));
+        L($"play wav: {await Speech.PlayWavAsync(wav)} {sw.ElapsedMilliseconds} ms");
+        L($"mic available: {Recorder.HasMicrophone} devices: {string.Join(", ", Recorder.Devices())}");
         Environment.Exit(0);
     }
 
@@ -651,6 +666,8 @@ public class MainWindow : Window
             case "writing": Push(new WritingPage()); break;
             case "mic": Push(new MicCheckPage()); break;
             case "pairs": Push(new PairsPage()); break;
+            case "chat": if (Environment.GetEnvironmentVariable("KOTODAMA_LLM") is { } lp) Llm.OverridePath = lp; NavigateRoot("chat"); break;
+            case "wod": WordOfDay.Show(); break;
             case "quiz":
                 var w = Db.Words.Take(8).ToArray();
                 Push(new Controls.QuizSession("Демо", w.Select(x => new Controls.QuizQ { Prompt = x.Jp, Sub = x.Kana, Answer = x.Ru, Options = Controls.QuizSession.MakeOptions(x.Ru, w.Select(y => y.Ru)) })));

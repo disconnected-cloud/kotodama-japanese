@@ -70,8 +70,51 @@ public static class Llm
         progress.Report(1);
     }
 
+    static bool _nativeSet;
+
+    /// <summary>
+    /// Явно указываем, какую сборку llama.cpp грузить: под возможности процессора (AVX-512 / AVX2 / AVX / без AVX).
+    /// Автоопределение LLamaSharp в однофайловой публикации не всегда находит папку runtimes.
+    /// </summary>
+    static void SetupNative()
+    {
+        if (_nativeSet) return;
+        _nativeSet = true;
+        string rid = OperatingSystem.IsWindows() ? "win-x64" : "linux-x64";
+        string ext = OperatingSystem.IsWindows() ? ".dll" : ".so";
+        string pre = OperatingSystem.IsWindows() ? "" : "lib";
+        string[] variants = System.Runtime.Intrinsics.X86.Avx512F.IsSupported ? new[] { "avx512", "avx2", "avx", "noavx" }
+            : System.Runtime.Intrinsics.X86.Avx2.IsSupported ? new[] { "avx2", "avx", "noavx" }
+            : System.Runtime.Intrinsics.X86.Avx.IsSupported ? new[] { "avx", "noavx" } : new[] { "noavx" };
+        foreach (var v in variants)
+        {
+            var dir = Path.Combine(AppContext.BaseDirectory, "runtimes", rid, "native", v);
+            if (!File.Exists(Path.Combine(dir, pre + "llama" + ext))) continue;
+            // зависимости первыми: llama.dll ищет ggml*.dll по имени, а уже загруженные модули подхватываются
+            var loaded = new Dictionary<string, IntPtr>();
+            foreach (var name in new[] { "ggml-base", "ggml-cpu", "ggml", "llama", "mtmd" })
+            {
+                var f = Path.Combine(dir, pre + name + ext);
+                if (File.Exists(f) && System.Runtime.InteropServices.NativeLibrary.TryLoad(f, out var h)) loaded[name] = h;
+            }
+            try
+            {
+                System.Runtime.InteropServices.NativeLibrary.SetDllImportResolver(typeof(LLama.Native.NativeApi).Assembly,
+                    (lib, _, _) => loaded.TryGetValue(Path.GetFileNameWithoutExtension(lib).Replace("lib", ""), out var h) ? h : IntPtr.Zero);
+            }
+            catch (InvalidOperationException) { } // у сборки уже есть свой резолвер — тогда хватает предзагрузки
+            break;
+        }
+        LLama.Native.NativeLibraryConfig.All.WithLogCallback((level, msg) =>
+        {
+            if (level >= LLama.Native.LLamaLogLevel.Warning)
+                try { File.AppendAllText(Path.Combine(ProgressStore.Folder, "llm.log"), $"[{DateTime.Now:HH:mm:ss}] {level}: {msg}"); } catch { }
+        });
+    }
+
     static void EnsureLoaded()
     {
+        SetupNative();
         var path = OverridePath ?? PathFor(ModelId);
         if (_weights != null && _loaded == path) return;
         _weights?.Dispose();

@@ -36,6 +36,7 @@ public partial class App : Application
         }
         // Тяжёлое — в фоне, чтобы окно появилось сразу
         Task.Run(Db.Preload);
+        _ = JDict.LoadAsync(); // словарь нужен латинице, распознаванию речи и чтению — грузим в фоне сразу
         if (Environment.GetCommandLineArgs().Length <= 1 && Voicevox.Downloaded && !ProgressStore.P.Flags.Contains("vv-ok"))
             _ = Task.Run(async () =>
             {

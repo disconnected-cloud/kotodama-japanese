@@ -180,7 +180,7 @@
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Margin" Value="12,1"/>
       <Setter Property="FontSize" Value="14"/>
-      <Setter Property="Height" Value="40"/>
+      <Setter Property="Height" Value="37"/>
       <Setter Property="HorizontalAlignment" Value="Stretch"/>
       <Setter Property="Template">
         <ControlTemplate>

@@ -19,16 +19,8 @@ public sealed class ChatPage : UserControl, IPage, IKeyTarget
 {
     public string Title => "Разговор с ИИ";
 
-    static readonly (string key, string title, string emoji, string scene)[] Scenes =
-    {
-        ("free", "Свободная тема", "speech_balloon", "自由な雑談。相手の趣味や一日について話す。"),
-        ("intro", "Знакомство", "waving_hand", "初めて会った人との自己紹介。名前、出身、仕事や勉強について。"),
-        ("cafe", "Кафе", "hot_beverage", "あなたはカフェの店員。客（学習者）の注文を聞く。"),
-        ("shop", "Магазин", "shopping_bags", "あなたはお店の店員。客が買い物をする。値段、サイズ、色について。"),
-        ("way", "Дорога", "world_map", "学習者は道に迷った旅行者。あなたは親切な通行人で、駅やホテルへの行き方を教える。"),
-        ("hotel", "Отель", "hotel", "あなたはホテルのフロント係。チェックイン、部屋、朝食について。"),
-        ("hobby", "Хобби", "artist_palette", "趣味、好きな食べ物、アニメ、音楽、週末の過ごし方について気軽に話す。"),
-    };
+    static ChatPrompts.Scene[] Scenes => ChatPrompts.Scenes;
+    ChatPrompts.Scene Scene => Scenes.First(x => x.Key == _scene);
 
     string _scene = "free";
     string _level = ProgressStore.P.Level is "N4" or "N3" ? ProgressStore.P.Level : "N5";
@@ -55,7 +47,7 @@ public sealed class ChatPage : UserControl, IPage, IKeyTarget
         Render();
     }
 
-    public void OnShown() { if (Llm.Ready) Llm.Warmup(); Asr.Warmup(); }
+    public void OnShown() { _ = JDict.LoadAsync(); if (Llm.Ready) Llm.Warmup(); Asr.Warmup(); }
 
     void Render()
     {
@@ -70,8 +62,9 @@ public sealed class ChatPage : UserControl, IPage, IKeyTarget
         }
         // сцена и уровень
         var scenes = new WrapPanel();
-        foreach (var (key, title, emoji, _) in Scenes)
+        foreach (var sc in Scenes)
         {
+            var (key, title, emoji) = (sc.Key, sc.Title, sc.Emoji);
             var rb = new RadioButton { Classes = { "ChipRadio" }, GroupName = "scene", IsChecked = _scene == key, Margin = new Thickness(0, 0, 8, 8),
                 Content = U.Row(6, Emoji.Img(emoji, 18), new TextBlock { Text = title, VerticalAlignment = VerticalAlignment.Center }) };
             var k = key;
@@ -146,24 +139,7 @@ public sealed class ChatPage : UserControl, IPage, IKeyTarget
     }
 
     // ─────────── Разговор ───────────
-    string SystemPrompt()
-    {
-        var scene = Scenes.First(s => s.key == _scene).scene;
-        string words = _level switch
-        {
-            "N5" => "とてもやさしい日本語（JLPT N5）。です・ます形。短い文。",
-            "N4" => "やさしい日本語（JLPT N4）。です・ます形。",
-            _ => "自然でやさしい日本語（JLPT N3）。",
-        };
-        return "あなたは日本語の会話練習の相手です。\n" +
-               $"場面：{scene}\n" +
-               $"相手は日本語を勉強しているロシア人です。{words}\n" +
-               "ルール：\n" +
-               "・必ず日本語だけで答える。英語、ロシア語、ローマ字、翻訳、ふりがなは書かない。\n" +
-               "・一回の返事は1〜2文だけ。\n" +
-               "・会話が続くように、最後に簡単な質問をする。\n" +
-               "・相手の間違いは直さない（別の機能が直します）。";
-    }
+    string SystemPrompt() => ChatPrompts.System(Scene, _level);
 
     void Restart()
     {
@@ -176,7 +152,7 @@ public sealed class ChatPage : UserControl, IPage, IKeyTarget
     async Task StartAsync()
     {
         _history.Add(("system", SystemPrompt()));
-        await ReplyAsync(("user", "（会話を始めてください。最初のあいさつと質問をひとつ。）"), hiddenUser: true);
+        await ReplyAsync(("user", ChatPrompts.Opener(Scene)), hiddenUser: true);
     }
 
     async Task SendAsync()
@@ -243,7 +219,7 @@ public sealed class ChatPage : UserControl, IPage, IKeyTarget
     {
         var sp = new StackPanel();
         sp.Children.Add(new TextBlock { Text = text, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 18, TextWrapping = TextWrapping.Wrap });
-        sp.Children.Add(U.T(Kana.ToRomaji(Reading.Of(text)), "Muted", 12));
+        sp.Children.Add(U.T(Reading.RomajiWords(text), "Muted", 12));
         var extra = new StackPanel();
         sp.Children.Add(extra);
         var b = new Border { Child = sp, Background = U.B("AccentSoft"), CornerRadius = new CornerRadius(16, 16, 4, 16), Padding = new Thickness(14, 10), HorizontalAlignment = HorizontalAlignment.Right, MaxWidth = 620 };
@@ -267,7 +243,7 @@ public sealed class ChatPage : UserControl, IPage, IKeyTarget
     void FillAiTools(StackPanel tools, string reply)
     {
         tools.Children.Clear();
-        tools.Children.Add(U.T(Kana.ToRomaji(Reading.Of(reply)), "Muted", 12).M(0, 2, 0, 6));
+        tools.Children.Add(U.T(Reading.RomajiWords(reply), "Muted", 12).M(0, 2, 0, 6));
         var tr = U.T("", "Body", 13, U.B("Muted"));
         tr.IsVisible = false;
         var trBtn = U.Btn("Перевод", () => { }, "Ghost", "");
@@ -277,7 +253,7 @@ public sealed class ChatPage : UserControl, IPage, IKeyTarget
             tr.IsVisible = true;
             if (tr.Text is { Length: > 0 }) return;
             tr.Text = "перевожу…";
-            try { tr.Text = await Llm.AskAsync(new[] { ("system", "Ты переводчик с японского на русский. Пиши только перевод, без пояснений."), ("user", reply) }, 120, 0.2f); }
+            try { tr.Text = await Llm.AskAsync(ChatPrompts.Translate(reply), 120, 0.2f); }
             catch (Exception ex) { tr.Text = "Не удалось перевести: " + ex.Message; }
         };
         tools.Children.Add(U.Row(2, U.SpeakBtn(() => reply), U.SpeakBtn(() => reply, true), trBtn));
@@ -287,21 +263,25 @@ public sealed class ChatPage : UserControl, IPage, IKeyTarget
     /// <summary>Проверка фразы ученика: если есть ошибка — естественный вариант с озвучкой.</summary>
     async Task CorrectAsync(string text, StackPanel extra)
     {
-        if (!Llm.Ready || text.Length < 2) return;
+        if (text.Length < 2) return;
         try
         {
-            var ans = await Llm.AskAsync(new[]
+            // сначала надёжные правила (мгновенно), затем — языковая модель
+            string? why = null, ans;
+            if (GrammarRules.Check(text) is { } rule) (ans, why) = rule;
+            else
             {
-                ("system", "あなたは日本語の先生です。学習者の文をチェックします。"),
-                ("user", "次の文に文法や言葉の間違いがあれば、正しい自然な文を一つだけ書いてください。説明は不要です。間違いがなければ「OK」とだけ書いてください。\n文：" + text),
-            }, 80, 0.1f);
-            ans = OnlyJapanese(ans.Replace("「", "").Replace("」", "")).Trim();
-            if (ans.Length == 0 || ans.Contains("OK") || Reading.Phon(Reading.Of(ans)) == Reading.Phon(Reading.Of(text))) return;
+                if (!Llm.Ready) return;
+                ans = await Llm.AskAsync(ChatPrompts.Correct(text), 80, 0.1f);
+                ans = OnlyJapanese(ans.Replace("「", "").Replace("」", "")).Trim();
+                if (ans.Length == 0 || ans.Contains("OK") || Reading.Phon(Reading.Of(ans)) == Reading.Phon(Reading.Of(text))) return;
+            }
             var row = U.Row(6, new TextBlock { Text = "", FontFamily = U.R<FontFamily>("Icons"), Foreground = U.B("Gold"), VerticalAlignment = VerticalAlignment.Center },
                 U.T("Естественнее: ", "Muted", 12.5).CenterV(),
                 new TextBlock { Text = ans, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 15, Foreground = U.B("Gold"), TextWrapping = TextWrapping.Wrap, MaxWidth = 420, VerticalAlignment = VerticalAlignment.Center },
                 U.SpeakBtnSmall(ans));
             extra.Children.Add(row.M(0, 6, 0, 0));
+            if (why != null) extra.Children.Add(U.T(why, "Muted", 12).M(22, 0, 0, 0));
             Anim.FadeUp(row, 0, 6, 220);
         }
         catch { }
@@ -316,11 +296,7 @@ public sealed class ChatPage : UserControl, IPage, IKeyTarget
         _hint.IsEnabled = false; _status.Text = "Придумываю пример ответа…";
         try
         {
-            var ans = OnlyJapanese(await Llm.AskAsync(new[]
-            {
-                ("system", "あなたは日本語の先生です。"),
-                ("user", $"学習者（{_level}）が次の質問に答えます。学習者が言える、とても短くてやさしい返事の例を日本語で一つだけ書いてください。説明は不要。\n質問：{last}"),
-            }, 60, 0.6f));
+            var ans = OnlyJapanese(await Llm.AskAsync(ChatPrompts.Hint(Scene, _level, last), 60, 0.5f));
             if (ans.Length == 0) return;
             var chip = U.Btn(ans, () => { _input.Text = ans; _input.Focus(); }, "", null).Tip("Нажми, чтобы вставить в поле ответа, или повтори вслух");
             chip.FontFamily = U.R<FontFamily>("JpFont"); chip.FontWeight = FontWeight.Normal;

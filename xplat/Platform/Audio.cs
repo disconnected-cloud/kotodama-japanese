@@ -161,6 +161,8 @@ public static class Pcm
 /// <summary>Один канал воспроизведения (озвучка и звуки интерфейса — разные экземпляры, не перебивают друг друга).</summary>
 public sealed class AudioPlayer
 {
+    /// <summary>Только для отладочной проверки: играть без звука.</summary>
+    public static bool Muted;
     readonly object _lock = new();
     IPlayback? _cur;
 
@@ -195,6 +197,7 @@ public sealed class AudioPlayer
                 var pcm = Pcm.ToPcm16(x);
                 var src = new NAudio.Wave.RawSourceWaveStream(new MemoryStream(pcm), new NAudio.Wave.WaveFormat(rate, 16, 1));
                 _out = new NAudio.Wave.WaveOutEvent { DesiredLatency = 120 };
+                if (Muted) _out.Volume = 0;
                 _out.PlaybackStopped += (_, _) => { _tcs.TrySetResult(!_stopped); try { _out?.Dispose(); } catch { } };
                 _out.Init(src);
                 _out.Play();

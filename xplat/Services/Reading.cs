@@ -146,6 +146,84 @@ public static class Reading
         return Kana.ToHiragana(e.Kana);
     }
 
+    /// <summary>
+    /// Латиница по словам: «こんにちは、今日は何をしますか» → «konnichiwa, kyou wa nani o shimasu ka».
+    /// Текст делится на слова по словарю, частицы は/を/へ читаются как wa/o/e.
+    /// </summary>
+    public static string RomajiWords(string text)
+    {
+        var words = new List<string>();
+        var sb = new StringBuilder();
+        var t = DigitsToKanji(text);
+        const string Lead = "はをがにでともへの", Tail = "かねよな";
+        bool Punct(char c) => c is '。' or '、' or '！' or '？' or '!' or '?' or ',' or '.' or '…' or ' ' or '　';
+        void Flush() { if (words.Count > 0) { sb.Append(string.Join(" ", words)); words.Clear(); } }
+        string Rom(string token) => token switch
+        {
+            "は" => "wa", "を" => "o", "へ" => "e", "こんにちは" => "konnichiwa", "こんばんは" => "konbanwa",
+            _ => Kana.ToRomaji(Kana.ToHiragana(Of(token))),
+        };
+        for (int i = 0; i < t.Length;)
+        {
+            char c = t[i];
+            if (Punct(c))
+            {
+                Flush();
+                sb.Append(c switch { '。' => ". ", '、' => ", ", '！' or '!' => "! ", '？' or '?' => "? ", _ => " " });
+                i++; continue;
+            }
+            if (Kana.IsKana(c) && c >= 'ァ')
+            {
+                // катакана — заимствованное слово целиком (コーヒー → koohii)
+                int e = i;
+                while (e < t.Length && Kana.IsKana(t[e]) && t[e] >= 'ァ') e++;
+                words.Add(Kana.ToRomaji(Kana.ToHiragana(t[i..e])));
+                i = e; continue;
+            }
+            if (IsKanji(c))
+            {
+                // слово с кандзи или катаканой: самое длинное по словарю, но без «приклеенной» частицы (今日は → 今日 + は)
+                var (len, _) = JDict.Longest(t, i);
+                if (len > 1 && Lead.Contains(t[i + len - 1]) && i + len < t.Length && !Punct(t[i + len]) && JDict.Lookup(t.Substring(i, len - 1)) != null) len--;
+                // окончание глагола/прилагательного пишется слитно: 食べます → tabemasu, 高かった → takakatta
+                int k = i + len;
+                if (IsKanji(t[k - 1]) && k < t.Length && Kana.IsKana(t[k]) && t[k] < 'ァ' && !Lead.Contains(t[k]) && !IsCopula(t, k))
+                {
+                    int e = k;
+                    while (e < t.Length && Kana.IsKana(t[e]) && t[e] < 'ァ') e++;
+                    if (e - k > 1 && Tail.Contains(t[e - 1]) && (e >= t.Length || Punct(t[e]))) e--;
+                    len = e - i;
+                }
+                words.Add(Rom(t.Substring(i, len)));
+                i += len; continue;
+            }
+            if (Kana.IsKana(c))
+            {
+                int e = i;
+                while (e < t.Length && Kana.IsKana(t[e]) && t[e] < 'ァ' && !Punct(t[e])) e++;
+                var run = t[i..e];
+                if (run is "こんにちは" or "こんばんは" or "ありがとう" or "おはよう") { words.Add(Rom(run)); i = e; continue; }
+                // частица в начале (после слова) и в конце (か, ね, よ) — отдельными словами
+                if (IsCopula(t, i)) { int ce = CopulaEnd(t, i); words.Add(Kana.ToRomaji(t[i..ce])); i = ce; continue; }
+                if (run.Length > 1 && Lead.Contains(run[0]) && i > 0 && !Punct(t[i - 1]) && !Kana.IsKana(t[i - 1]) is var afterWord && (afterWord || t[i - 1] >= 'ァ'))
+                { words.Add(Rom(run[..1])); run = run[1..]; }
+                string? tail = null;
+                if (run.Length > 2 && Tail.Contains(run[^1]) && (e >= t.Length || Punct(t[e]))) { tail = run[^1..]; run = run[..^1]; }
+                if (run.Length > 0) words.Add(run.Length == 1 && Lead.Contains(run[0]) ? Rom(run) : Kana.ToRomaji(run));
+                if (tail != null) words.Add(Kana.ToRomaji(tail));
+                i = e; continue;
+            }
+            Flush();
+            sb.Append(c); i++;
+        }
+        Flush();
+        return System.Text.RegularExpressions.Regex.Replace(sb.ToString(), " +", " ").Trim();
+    }
+
+    static readonly string[] Copulas = { "でしょう", "でした", "ですか", "です", "だった", "だろう", "では", "じゃない", "じゃ" };
+    static bool IsCopula(string t, int i) => Copulas.Any(c => string.CompareOrdinal(t, i, c, 0, c.Length) == 0);
+    static int CopulaEnd(string t, int i) { var c = Copulas.First(x => string.CompareOrdinal(t, i, x, 0, x.Length) == 0); return i + (c == "ですか" ? 2 : c.Length); }
+
     /// <summary>Звучание для сравнения: латиница без различий, которых не слышно (は/わ, おう/おお, づ/ず…).</summary>
     public static string Phon(string hira)
     {
