@@ -63,7 +63,7 @@ jobs:
           path: Kotodama-android.apk
 
       - name: Сборка для эмулятора (x86_64)
-        run: dotnet publish android/Kotodama.Android.csproj -c Release -f net10.0-android -p:AndroidSdkDirectory=$ANDROID_HOME -p:RuntimeIdentifiers=android-x86_64 -o out/x64
+        run: dotnet publish android/Kotodama.Android.csproj -c Release -f net10.0-android -p:AndroidSdkDirectory=$ANDROID_HOME -p:RuntimeIdentifiers=android-x64 -o out/x64
 
       - name: Ускорение эмулятора (KVM)
         run: |
