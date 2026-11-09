@@ -55,31 +55,34 @@ public sealed class PitchView : FrameworkElement
 public sealed class AccentView : FrameworkElement
 {
     readonly List<(string kana, double pitch, bool accentEnd)> _m;
-    public AccentView(List<(string kana, double pitch, bool accentEnd)> moras) { _m = moras; Height = 58; }
+    readonly double _k;   // масштаб: 1 — обычный, 0.7 — компактный (строки словаря)
+    public AccentView(List<(string kana, double pitch, bool accentEnd)> moras, bool compact = false) { _m = moras; _k = compact ? 0.7 : 1; Height = 58 * _k; }
 
-    protected override Size MeasureOverride(Size available) => new(Math.Min(available.Width, _m.Count * 26 + 8), 58);
+    protected override Size MeasureOverride(Size available) => new(Math.Min(available.Width, _m.Count * 26 * _k + 8), 58 * _k);
 
     protected override void OnRender(DrawingContext dc)
     {
         if (_m.Count == 0) return;
-        var voiced = _m.Where(m => m.pitch > 0).Select(m => m.pitch).ToArray();
+        var voiced = _m.Where(m => m.pitch >= 0).Select(m => m.pitch).ToArray();
         if (voiced.Length == 0) return;
         double lo = voiced.Min(), hi = voiced.Max(), mid = (lo + hi) / 2;
-        double cell = Math.Min(26, (ActualWidth - 8) / _m.Count);
-        var pen = new Pen(U.B("Accent"), 2) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }; pen.Freeze();
+        double cell = Math.Min(26 * _k + (_m.Any(x => x.kana.Length > 1) ? 6 : 0), (ActualWidth - 8) / _m.Count);
+        var pen = new Pen(U.B("Accent"), 2 * _k) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }; pen.Freeze();
         var tf = new Typeface(U.R<FontFamily>("JpFont"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
         Point? prev = null;
         for (int i = 0; i < _m.Count; i++)
         {
             var (kana, pitch, accentEnd) = _m[i];
             double x = 4 + i * cell + cell / 2;
-            var ft = new FormattedText(kana, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, tf, 15, U.B("Text"), 1.25);
-            dc.DrawText(ft, new Point(x - ft.Width / 2, 32));
-            if (pitch <= 0) { prev = null; continue; }
+            bool particle = kana.StartsWith("(");
+            var ft = new FormattedText(particle ? kana.Trim('(', ')') : kana, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, tf, 15 * _k, U.B(particle ? "Faint" : "Text"), 1.25);
+            dc.DrawText(ft, new Point(x - ft.Width / 2, 32 * _k));
+            if (pitch < 0) { prev = null; continue; }
             bool high = pitch >= mid && hi - lo > 0.15;
-            var p = new Point(x, high ? 8 : 24);
+            var p = new Point(x, (high ? 8 : 24) * _k);
             if (prev is Point pp) dc.DrawLine(pen, pp, p);
-            dc.DrawEllipse(accentEnd ? U.B("Accent") : U.B("Bg"), pen, p, 3.2, 3.2);
+            if (particle) dc.DrawEllipse(null, pen, p, 2.6 * _k, 2.6 * _k);
+            else dc.DrawEllipse(accentEnd ? U.B("Accent") : U.B("Bg"), pen, p, 3.2 * _k, 3.2 * _k);
             prev = p;
         }
     }

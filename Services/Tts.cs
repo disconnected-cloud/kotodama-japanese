@@ -26,6 +26,8 @@ public static class Tts
     static readonly object Gate = new();
 
     public static string? LastError { get; private set; }
+    static DateTime _edgeDownUntil;   // после серии сбоев не ждём таймаутов, а сразу идём к запасным вариантам
+    static int _edgeFails;
 
     /// <summary>Офлайн-голос VOICEVOX используется, если он установлен и выбран (или режим «авто»).</summary>
     public static bool UseOffline => ProgressStore.P.TtsEngine switch
@@ -85,12 +87,25 @@ public static class Tts
             path = Path.ChangeExtension(path, ".mp3"); // авто-режим: пробуем онлайн
             data = null;
         }
-        try { data = await EdgeAsync(text, male ? "ja-JP, KeitaNeural" : "ja-JP, NanamiNeural", slow ? "-35%" : "-5%"); }
-        catch (Exception ex) { LastError = "Neural: " + ex.Message; }
+        if (DateTime.Now >= _edgeDownUntil)
+        {
+            try { data = await EdgeAsync(text, male ? "ja-JP, KeitaNeural" : "ja-JP, NanamiNeural", slow ? "-35%" : "-5%"); _edgeFails = 0; }
+            catch (Exception ex)
+            {
+                LastError = "Neural: " + ex.Message;
+                if (++_edgeFails >= 3) { _edgeDownUntil = DateTime.Now.AddMinutes(10); _edgeFails = 0; }
+            }
+        }
         if (data is not { Length: > 600 })
         {
             try { data = await GoogleAsync(text, slow); }
             catch (Exception ex) { LastError += " · Google: " + ex.Message; }
+        }
+        if (data is not { Length: > 600 } && Voicevox.Installed)
+        {
+            // Онлайн недоступен — офлайн-голос как последний запасной вариант
+            data = Voicevox.Synthesize(text, Voicevox.PickStyle(male), slow ? 0.72 : 1.0);
+            if (data is { Length: > 1000 }) path = Path.ChangeExtension(path, ".wav");
         }
         if (data is not { Length: > 600 }) return null;
         Directory.CreateDirectory(CacheDir);
@@ -125,7 +140,7 @@ public static class Tts
         ws.Options.SetRequestHeader("Cookie", "muid=" + Guid.NewGuid().ToString("N").ToUpperInvariant() + ";");
         var url = $"wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken={Token}" +
                   $"&Sec-MS-GEC={Gec()}&Sec-MS-GEC-Version=1-{ChromiumVer}&ConnectionId={Guid.NewGuid():N}";
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(7));
         await ws.ConnectAsync(new Uri(url), cts.Token);
 
         string date = DateTime.UtcNow.ToString("ddd MMM dd yyyy HH:mm:ss", CultureInfo.InvariantCulture) + " GMT+0000 (Coordinated Universal Time)";

@@ -190,7 +190,7 @@ public class DataIntegrityTests
     {
         Assert.True(Db.Words.Length > 2000);
         Assert.True(Db.Kanji.Length >= 370);
-        Assert.Equal(28, Db.Grammar.Length);
+        Assert.Equal(45, Db.Grammar.Length);
         Assert.NotEmpty(Db.Dialogs);
         Assert.NotEmpty(Db.Course);
     }
@@ -248,4 +248,37 @@ public class DictionaryTests
         Assert.Equal(3, len);
         Assert.NotNull(e);
     }
+}
+
+public class PitchAndMnemonicsTests
+{
+    [Theory]
+    [InlineData("箸", "はし", 1)]   // палочки: атамадака
+    [InlineData("橋", "はし", 2)]   // мост: одака
+    [InlineData("端", "はし", 0)]   // край: хэйбан
+    public void HashiMinimalPair(string word, string reading, int accent) => Assert.Equal(accent, Pitch.Accent(word, reading));
+
+    [Fact]
+    public void MorasJoinSmallKana() => Assert.Equal(new[] { "きょ", "う" }, Pitch.Moras("きょう"));
+
+    [Fact]
+    public void AtamadakaPatternHighThenLow()
+    {
+        var p = Pitch.Pattern("箸", "はし")!;
+        Assert.Equal(1, p[0].pitch);
+        Assert.Equal(0, p[1].pitch);
+        Assert.True(p[0].accentEnd);
+    }
+
+    [Fact]
+    public void KanjiHaveParts()
+    {
+        var m = Mnemonics.For("休")!;
+        Assert.Contains(m.Parts, x => x[0] == "亻");
+        Assert.False(string.IsNullOrEmpty(Mnemonics.Hint("休", "отдыхать")));
+    }
+
+    [Fact]
+    public void MostKanjiHaveMnemonicHint() =>
+        Assert.True(Db.Kanji.Count(k => Mnemonics.Hint(k.Char, k.Ru).Length > 0) > Db.Kanji.Length * 0.6);
 }

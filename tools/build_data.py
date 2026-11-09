@@ -65,7 +65,7 @@ def segment(jp, kana=None):
 texts = {}
 def add(jp, kana=None):
     if jp and jp not in texts: texts[jp] = segment(jp, kana)
-for f in ("grammar.json", "grammar_n4.json", "grammar_n3.json"):
+for f in ("grammar.json", "grammar_n4.json", "grammar_n3.json", "grammar_n3b.json"):
     for l in load(f):
         for p in l["points"]:
             for ex in p["ex"]: add(ex[0], ex[1])

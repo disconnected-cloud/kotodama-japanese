@@ -34,7 +34,7 @@ public static class Course
 
     public static int DoneCount(CourseUnit u) => (F.Contains(TheoryKey(u)) ? 1 : 0) + Enumerable.Range(0, u.Steps.Length).Count(i => StepDone(u, i));
     public static int Total(CourseUnit u) => u.Steps.Length + 1;
-    public static bool Complete(CourseUnit u) => DoneCount(u) == Total(u);
+    public static bool Complete(CourseUnit u) => F.Contains("skip:" + u.Id) || DoneCount(u) == Total(u);
     public static bool Unlocked(CourseUnit u) => u.Id == 1 || Complete(Db.Course[u.Id - 2]);
     public static CourseUnit Current => Db.Course.FirstOrDefault(u => !Complete(u) && Unlocked(u)) ?? Db.Course[^1];
 

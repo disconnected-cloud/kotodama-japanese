@@ -125,6 +125,8 @@ public sealed class FlashSession : Grid, IPage, IKeyTarget
         sp.Children.Add(U.Jp(c.Front, Math.Min(c.FrontSize, 64)).Center());
         if (c.Reading.Length > 0 && c.Reading != c.Front) sp.Children.Add(U.Jp(c.Reading, 22, U.B("Accent")).Center().M(0, 6, 0, 0));
         if (ProgressStore.P.ShowRomaji && c.Romaji.Length > 0) sp.Children.Add(U.T(c.Romaji, "Muted", 14).Center().M(0, 2, 0, 0));
+        if (!c.Id.StartsWith("k:") && Pitch.Pattern(c.Front, c.Reading) is { } pat)
+            sp.Children.Add(new AccentView(pat) { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 8, 0, 0), ToolTip = Pitch.Describe(Pitch.Accent(c.Front, c.Reading) ?? 0, pat.Count - 1) });
         sp.Children.Add(new Border { Height = 1, Background = U.B("Stroke"), Margin = new Thickness(60, 18, 60, 16) });
         sp.Children.Add(U.T(c.Meaning, "H2", 24).Center());
         if (c.Extra != null) sp.Children.Add(U.T(c.Extra, "Muted", 13).Center().M(0, 8, 0, 0));
@@ -236,7 +238,7 @@ public sealed class FlashSession : Grid, IPage, IKeyTarget
     {
         Id = k.Id, Front = k.Char, FrontSize = 130, Hint = "Кандзи · " + k.Strokes + " черт",
         Reading = k.Kun.Length > 0 ? k.Kun : k.On, Romaji = "", Meaning = k.Ru,
-        Extra = $"он: {k.On}    кун: {(k.Kun.Length > 0 ? k.Kun : "—")}",
+        Extra = $"он: {k.On}    кун: {(k.Kun.Length > 0 ? k.Kun : "—")}" + (Mnemonics.Hint(k.Char, k.Ru) is { Length: > 0 } h ? "\n💡 " + h : ""),
         Examples = k.Examples, Speak = k.Examples.Length > 0 ? k.Examples[0].Kana : k.Char,
         IsNew = ProgressStore.Card(k.Id) == null,
     };

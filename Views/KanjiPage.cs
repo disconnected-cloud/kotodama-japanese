@@ -109,6 +109,25 @@ public sealed class KanjiPage : UserControl, IPage
         head.Children.Add(U.SpeakBtn(() => k.Examples.Length > 0 ? k.Examples[0].Kana : k.Char).Col(1));
         sp.Children.Add(head);
 
+        if (Mnemonics.For(k.Char) is { } mn && mn.Parts.Length > 0)
+        {
+            sp.Children.Add(U.T("ИЗ ЧЕГО СОСТОИТ", "Overline").M(0, 16, 0, 6));
+            var parts = new WrapPanel();
+            foreach (var part in mn.Parts)
+                parts.Children.Add(new Border
+                {
+                    Background = U.B("Surface2"), CornerRadius = new CornerRadius(10), Padding = new Thickness(10, 4, 10, 4), Margin = new Thickness(0, 0, 6, 6),
+                    Child = U.Row(6, U.Jp(part[0], 18, U.B("Accent"), true).CenterV(), U.T(part[1].Length > 0 ? part[1] : "часть", "Muted", 12).CenterV()),
+                });
+            sp.Children.Add(parts);
+            var hint = Mnemonics.Hint(k.Char, k.Ru);
+            if (hint.Length > 0)
+                sp.Children.Add(new Border
+                {
+                    Background = U.B("AccentSoft"), CornerRadius = new CornerRadius(10), Padding = new Thickness(12, 8, 12, 8), Margin = new Thickness(0, 4, 0, 0),
+                    Child = U.Row(8, new TextBlock { Text = "\uEA80", FontFamily = U.R<FontFamily>("Icons"), Foreground = U.B("Gold"), VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 3, 0, 0) }, U.T(hint, "Body", 13.5).Also(t => t.MaxWidth = 320)),
+                });
+        }
         sp.Children.Add(Reading("ОН-ЁМИ · китайское чтение", k.On, "Accent2"));
         sp.Children.Add(Reading("КУН-ЁМИ · японское чтение", k.Kun.Length > 0 ? k.Kun : "—", "Accent"));
 

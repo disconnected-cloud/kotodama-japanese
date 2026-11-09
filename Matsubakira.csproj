@@ -10,7 +10,7 @@
     <AssemblyName>Kotodama</AssemblyName>
     <Product>Kotodama</Product>
     <RootNamespace>Matsubakira</RootNamespace>
-    <Version>0.5.0</Version>
+    <Version>1.0.0</Version>
     <ApplicationIcon>Assets/app.ico</ApplicationIcon>
     <!-- Скорость: PGO + быстрый старт -->
     <TieredPGO>true</TieredPGO>

@@ -90,7 +90,7 @@ public static class Updater
             chcp 65001 >nul
             :wait
             tasklist /FI "PID eq {pid}" | find "{pid}" >nul && (timeout /t 1 /nobreak >nul & goto wait)
-            robocopy "{fresh.TrimEnd('\\')}" "{AppDir.TrimEnd('\\')}" /E /XD data /R:3 /W:1 /NFL /NDL /NJH /NJS /NP >nul
+            robocopy "{fresh.TrimEnd('\\')}" "{AppDir.TrimEnd('\\')}" /E /XD data{(ProgressStore.Portable ? "" : " /XF portable ПРОЧТИ.txt")} /R:3 /W:1 /NFL /NDL /NJH /NJS /NP >nul
             start "" "{exe}"
             """);
         Process.Start(new ProcessStartInfo("cmd.exe", $"/c \"{script}\"") { CreateNoWindow = true, UseShellExecute = false, WindowStyle = ProcessWindowStyle.Hidden });

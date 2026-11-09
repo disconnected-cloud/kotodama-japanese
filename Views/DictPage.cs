@@ -16,6 +16,8 @@ public sealed record DictRow(DictEntry E)
     public string Ru { get; } = System.Text.RegularExpressions.Regex.Replace(E.Ru.TrimStart(':', ' '), @"(\d\)):\s*", "$1 ").Replace('{', '(').Replace('}', ')');
     public Visibility CommonVis => E.Common ? Visibility.Visible : Visibility.Collapsed;
     public string AddGlyph => JDict.InStudy(E) ? "" : "";
+    FrameworkElement? _accent;
+    public FrameworkElement? AccentEl => _accent ??= Pitch.Pattern(E.Jp, E.Kana) is { } p ? new Controls.AccentView(p, compact: true) { HorizontalAlignment = HorizontalAlignment.Left } : null;
 }
 
 /// <summary>Большой словарь: ~69 тыс. статей, поиск по-русски, латиницей, каной и иероглифами.</summary>

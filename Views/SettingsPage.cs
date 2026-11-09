@@ -58,17 +58,22 @@ public sealed class SettingsPage : UserControl, IPage
             U.Btn("Импорт из файла", ImportProgress, "", "\uE8E5"))));
         root.Children.Add(Section("Достижения", $"Открыто {p.Achievements.Count} из {Achievements.All.Length}", AchievementsGrid()));
         root.Children.Add(Section("Обновления", $"Установлена версия {Updater.Current.ToString(3)}. Новые версии берутся из github.com/{Updater.Repo}.", UpdateBlock()));
+        var report = U.Row(10,
+            U.Btn("Сообщить об ошибке", () => CrashReport.Open(), "", "\uEBE8"),
+            U.Btn("Предложить идею", () => { try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo($"https://github.com/{Updater.Repo}/issues/new?labels=enhancement") { UseShellExecute = true }); } catch { } }, "Ghost", "\uEA80"));
+        root.Children.Add(Section("Обратная связь", CrashReport.LastEntry() is { } last ? "В журнале есть ошибка — отчёт откроется на GitHub уже заполненным, ты только нажмёшь «Submit»." : "Нашёл ошибку или есть идея? Откроется форма на GitHub.", report));
         root.Children.Add(Section("Хранилище", $"Всего занято: {Storage.Format(Storage.Total)} · папка: {ProgressStore.Folder}", StorageBlock()));
         root.Children.Add(Section("Данные", $"Прогресс хранится локально: {ProgressStore.Folder}", reset));
 
         root.Children.Add(Section("Открытые данные", null, U.Stack(
             U.T("Словарь: JMdict © EDRDG, лицензия CC BY-SA 4.0 (сборка jmdict-simplified).", "Muted"),
             U.T("Порядок черт: KanjiVG © Ulrich Apel, лицензия CC BY-SA 3.0.", "Muted"),
+            U.T("Питч-акцент: Kanjium (CC BY-SA 4.0). Части кандзи: KRADFILE, KANJIDIC2 © EDRDG (CC BY-SA 4.0).", "Muted"),
             U.T("Распознавание речи: OpenAI Whisper (MIT) через whisper.cpp / Whisper.net.", "Muted"),
             U.T("Иллюстрации: Microsoft Fluent Emoji (MIT).", "Muted"),
             U.T("Офлайн-синтез: VOICEVOX (голоса — по условиям персонажей). Примеры фраз: Tatoeba (CC BY 2.0 FR).", "Muted"),
             U.T("Морфологический разбор при подготовке латиницы: MeCab + UniDic.", "Muted"))));
-        root.Children.Add(U.T("Kotodama 0.5 · 言霊 — «душа слова»: правильно произнесённое слово обретает силу.", "Muted").M(0, 8, 0, 0));
+        root.Children.Add(U.T("Kotodama 1.0 · 言霊 — «душа слова»: правильно произнесённое слово обретает силу.", "Muted").M(0, 8, 0, 0));
         Content = U.Page(root);
         Anim.Stagger(root, 50);
     }

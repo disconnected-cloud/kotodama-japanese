@@ -46,6 +46,8 @@ public sealed class Progress
     public bool Reminders { get; set; } = true;
     public Dictionary<string, int> GameBest { get; set; } = new();
     public bool AutoUpdate { get; set; } = true;
+    public string Goal { get; set; } = "";
+    public DateTime LastCrashSeen { get; set; }
     public DateTime LastUpdateCheck { get; set; }
     public Dictionary<string, int> Mistakes { get; set; } = new();  // id ошибки → счётчик
     public HashSet<string> Achievements { get; set; } = new();
@@ -98,6 +100,7 @@ public static class ProgressStore
         }
         // v0.3: декор по умолчанию выключен (лепестки заметно нагружали CPU) — сбрасываем один раз
         if (P.Flags.Add("mig-v3")) P.Petals = false;
+        if (P.Xp > 0) P.Flags.Add("onboarded"); // у кого уже есть прогресс — помощник первого запуска не нужен
         // Серия сгорает, если пропущен день
         if (P.LastStudy.Date < DateTime.Today.AddDays(-1)) P.Streak = 0;
     }

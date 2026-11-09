@@ -42,7 +42,8 @@ for c, _ in count.most_common():
     on = "、".join(readings(e, "ja_on")[:3]); kun = "、".join(r for r in readings(e, "ja_kun")[:3] if not r.startswith("-"))
     strokes = e["misc"]["strokeCounts"][0] if e["misc"].get("strokeCounts") else 0
     # значение: перевод самостоятельного слова из одного знака, иначе — первого слова-примера
-    meaning = next((w[2] for w in ex[c] if w[0] == c), None) or f"в слове {ex[c][0][0]}: {ex[c][0][2]}"
+    manual = json.load(open(os.path.join(proj, "tools", "kanji_n3_meanings.json"), encoding="utf8")) if os.path.exists(os.path.join(proj, "tools", "kanji_n3_meanings.json")) else {}
+    meaning = manual.get(c) or next((w[2] for w in ex[c] if w[0] == c), None) or f"в слове {ex[c][0][0]}: {ex[c][0][2]}"
     res.append([c, on, kun, meaning, strokes, ex[c][:2]])
 json.dump(res, open(D("kanji_n3.json"), "w", encoding="utf8"), ensure_ascii=False, indent=0)
 print("kanji N3:", len(res), "e.g.", res[:3])

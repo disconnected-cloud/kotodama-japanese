@@ -39,7 +39,12 @@ public partial class MainWindow : Window
             NavHome.IsChecked = true;
             PlayIntro();
             Tray.Init(this);
-            if (!Environment.GetCommandLineArgs().Skip(1).Any()) Updater.AutoCheck();
+            if (!ProgressStore.P.Flags.Contains("onboarded") && !Environment.GetCommandLineArgs().Skip(1).Any()) Push(new OnboardingPage());
+            if (!Environment.GetCommandLineArgs().Skip(1).Any())
+            {
+                Updater.AutoCheck();
+                if (CrashReport.HasNew()) { CrashReport.MarkSeen(); Shell.Toast("В прошлый раз была ошибка — отправить отчёт можно в Настройках → «Обратная связь»", "!"); }
+            }
             var remind = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMinutes(10) };
             remind.Tick += (_, _) => Tray.Tick();
             remind.Start();
@@ -154,7 +159,7 @@ public partial class MainWindow : Window
     {
         Host.Content = page;
         // Режим фокуса: во время упражнений боковое меню скрывается
-        bool focus = page is Controls.QuizSession or Controls.FlashSession or BuilderSession or SpeechLessonPage or DialogPage or WritingPage or KanaRainGame or MemoryGame or SprintGame;
+        bool focus = page is Controls.QuizSession or Controls.FlashSession or BuilderSession or SpeechLessonPage or DialogPage or WritingPage or KanaRainGame or MemoryGame or SprintGame or OnboardingPage;
         SideCol.Width = new GridLength(focus ? 0 : 232);
         Sidebar.Visibility = focus ? Visibility.Collapsed : Visibility.Visible;
         BackBtn.Visibility = _stack.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
@@ -382,6 +387,7 @@ public partial class MainWindow : Window
             case "kanjiflash": Push(new Controls.FlashSession("Демо", Db.Kanji.Take(5).Select(Controls.FlashSession.FromKanji))); break;
             case "grammar": Push(new GrammarLessonPage(Db.Grammar[4])); break;
             case "grammar1": Push(new GrammarLessonPage(Db.Grammar[0])); break;
+            case "onboard": Push(new OnboardingPage()); break;
             case "speech": Push(new SpeechLessonPage(Db.SpeechLessons[1])); break;
             case "dialog": Push(new DialogPage(Db.Dialogs[1])); break;
             case "unit": Push(new UnitPage(Db.Course[0])); break;
