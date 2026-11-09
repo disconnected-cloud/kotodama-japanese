@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Kotodama на Avalonia: один код для Windows и Linux -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Kotodama</AssemblyName>
+    <Product>Kotodama</Product>
+    <RootNamespace>Matsubakira</RootNamespace>
+    <Version>1.1.0</Version>
+    <ApplicationIcon>../Assets/app.ico</ApplicationIcon>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <TieredPGO>true</TieredPGO>
+    <SatelliteResourceLanguages>ru</SatelliteResourceLanguages>
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+  </PropertyGroup>
+
+  <!-- Портативная/Linux-сборка со встроенным .NET: обновление качает такой же архив -->
+  <PropertyGroup Condition="'$(SelfContained)' == 'true'">
+    <DefineConstants>$(DefineConstants);SELFCONTAINED</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <PublishSingleFile>true</PublishSingleFile>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <IncludeNativeLibrariesForSelfExtract>false</IncludeNativeLibrariesForSelfExtract>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="../Data/*.json;../Data/*.gz" LogicalName="%(Filename)%(Extension)" />
+    <AvaloniaResource Include="../Assets/app.ico" Link="Assets/app.ico" />
+    <AvaloniaResource Include="../Assets/app.png" Link="Assets/app.png" />
+    <AvaloniaResource Include="../Assets/emoji/*.png" Link="Assets/emoji/%(Filename)%(Extension)" />
+    <AvaloniaResource Include="Assets/fonts/*.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="NAudio.WinMM" Version="2.2.1" />
+    <PackageReference Include="NAudio.Core" Version="2.2.1" />
+    <PackageReference Include="NLayer" Version="3.0.1" />
+    <PackageReference Include="Whisper.net" Version="1.9.1" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
+  </ItemGroup>
+
+  <!-- В публикацию — только нативные библиотеки своей платформы -->
+  <Target Name="TrimWhisperRuntimes" AfterTargets="Publish">
+    <RemoveDir Condition="$(RuntimeIdentifier.StartsWith('linux'))" Directories="$(PublishDir)runtimes/win-x64;$(PublishDir)runtimes/win-x86;$(PublishDir)runtimes/win-arm64;$(PublishDir)runtimes/macos-x64;$(PublishDir)runtimes/macos-arm64;$(PublishDir)runtimes/linux-arm;$(PublishDir)runtimes/linux-arm64" />
+    <RemoveDir Condition="$(RuntimeIdentifier.StartsWith('win'))" Directories="$(PublishDir)runtimes/linux-x64;$(PublishDir)runtimes/linux-arm;$(PublishDir)runtimes/linux-arm64;$(PublishDir)runtimes/macos-x64;$(PublishDir)runtimes/macos-arm64;$(PublishDir)runtimes/win-x86;$(PublishDir)runtimes/win-arm64" />
+    <Delete Files="$(PublishDir)ggml-metal.metal" />
+  </Target>
+
+</Project>

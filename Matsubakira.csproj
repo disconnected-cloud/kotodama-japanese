@@ -18,7 +18,7 @@
     <InvariantGlobalization>false</InvariantGlobalization>
     <SatelliteResourceLanguages>ru</SatelliteResourceLanguages>
     <!-- Тесты и готовые сборки не входят в основной проект -->
-    <DefaultItemExcludes>$(DefaultItemExcludes);tests/**;dist/**;dist-portable/**</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);tests/**;dist/**;dist-portable/**;xplat/**;release/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <!-- Release-публикация: один exe, предкомпиляция (ReadyToRun) для мгновенного запуска -->

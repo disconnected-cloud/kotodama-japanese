@@ -1,0 +1,14 @@
+Kotodama · 言霊 — японский язык с нуля (Linux, x64)
+
+Запуск без установки:   ./Kotodama
+Установка в меню:       ./install.sh
+Удаление:               ./uninstall.sh
+
+Всё нужное (.NET, графика, распознавание речи) уже внутри.
+Для звука и микрофона используются стандартные программы системы:
+  • воспроизведение — paplay (PulseAudio/PipeWire) или aplay (ALSA);
+  • запись для проверки произношения — parecord, pw-record или arecord.
+В Ubuntu/Debian: sudo apt install pulseaudio-utils
+Для японского текста нужен шрифт с кандзи: sudo apt install fonts-noto-cjk
+
+Прогресс хранится в ~/.config/Matsubakira.

@@ -1,0 +1,553 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
+using Avalonia.Threading;
+using Matsubakira.Services;
+using Matsubakira.Views;
+using RadioButton = Matsubakira.Compat.RadioButton;
+
+namespace Matsubakira;
+
+/// <summary>Главное окно: боковое меню, область страниц со стеком навигации, тосты, интро, Ctrl+K.</summary>
+public class MainWindow : Window
+{
+    readonly Dictionary<string, Control> _roots = new();
+    readonly List<Control> _stack = new();
+    readonly Grid _root = new();
+    readonly ContentControl _host = new() { Focusable = false };
+    readonly TranslateTransform _hostShift = new();
+    readonly Border _sidebar = new();
+    readonly ColumnDefinition _sideCol = new(new GridLength(232));
+    readonly StackPanel _nav = new();
+    readonly Border _navIndicator = new();
+    readonly TranslateTransform _navShift = new();
+    readonly Dictionary<string, RadioButton> _navItems = new();
+    readonly Button _backBtn;
+    readonly TextBlock _crumb = new() { FontSize = 12.5, VerticalAlignment = VerticalAlignment.Center };
+    readonly Border _toast = new();
+    readonly TextBlock _toastJp = new(), _toastText = new();
+    readonly Grid _intro = new() { IsVisible = false };
+    readonly TextBlock _streak = new(), _levelText = new(), _goalText = new();
+    readonly ProgressBar _goalBar = new() { Height = 4 }, _xpBar = new() { Height = 4, Margin = new Thickness(0, 6, 0, 0) };
+    readonly Border _dueBadge = new();
+    readonly TextBlock _dueText = new();
+    readonly Button? _maxBtn;
+    static readonly bool CustomChrome = OperatingSystem.IsWindows();
+
+    public MainWindow()
+    {
+        Shell.Main = this;
+        Title = "Kotodama · 言霊 — японский язык";
+        Width = 1280; Height = 820; MinWidth = 1020; MinHeight = 680;
+        WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        Background = U.B("Bg");
+        try { Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://Kotodama/Assets/app.ico"))); } catch { }
+        if (CustomChrome)
+        {
+            ExtendClientAreaToDecorationsHint = true;
+            ExtendClientAreaChromeHints = Avalonia.Platform.ExtendClientAreaChromeHints.NoChrome;
+            ExtendClientAreaTitleBarHeightHint = -1;
+        }
+#if DEBUG
+        if (Environment.GetCommandLineArgs().Any(a => a is "--snap" or "--selftest" or "--offscreen" or "--speechaudit"))
+        {
+            ShowActivated = false; ShowInTaskbar = false;
+            WindowStartupLocation = WindowStartupLocation.Manual; Position = new PixelPoint(-20000, 0);
+        }
+#endif
+        _host.RenderTransform = _hostShift;
+
+        // ── Фон: едва заметное свечение в углу
+        var glow = new Avalonia.Controls.Shapes.Ellipse
+        {
+            Width = 900, Height = 700, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, -460, -260, 0), IsHitTestVisible = false,
+            Fill = new RadialGradientBrush { GradientStops = { new GradientStop(Color.Parse("#14F07AA0"), 0), new GradientStop(Color.Parse("#00F07AA0"), 1) } },
+        };
+        _root.Children.Add(glow);
+
+        var layout = new Grid();
+        layout.ColumnDefinitions.Add(_sideCol);
+        layout.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+        _sidebar.Child = BuildSidebar();
+        _sidebar.BorderBrush = U.B("Stroke");
+        _sidebar.BorderThickness = new Thickness(0, 0, 1, 0);
+        layout.Children.Add(_sidebar);
+
+        // ── Основная область: строка заголовка + страница
+        var main = new Grid { RowDefinitions = new RowDefinitions("44,*") };
+        var bar = new Grid { Background = Brushes.Transparent };
+        var left = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(20, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+        _backBtn = new Button
+        {
+            Padding = new Thickness(8, 5), Margin = new Thickness(0, 0, 6, 0), IsVisible = false,
+            Content = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Children =
+                {
+                    new TextBlock { Text = "", FontFamily = U.R<FontFamily>("Icons"), FontSize = 11, VerticalAlignment = VerticalAlignment.Center },
+                    new TextBlock { Text = "Назад", Margin = new Thickness(8, 0, 0, 0), FontSize = 13, FontWeight = FontWeight.Normal },
+                },
+            },
+        };
+        _backBtn.Classes.Add("Ghost");
+        _backBtn.Click += (_, _) => Pop();
+        _crumb.Foreground = U.B("Faint");
+        left.Children.Add(_backBtn); left.Children.Add(_crumb);
+        bar.Children.Add(left);
+        if (CustomChrome)
+        {
+            var caps = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top };
+            Button Cap(string glyph, Action a, bool close = false)
+            {
+                var b = new Button { Content = glyph };
+                b.Classes.Add("CaptionBtn"); if (close) b.Classes.Add("CloseBtn");
+                b.Click += (_, _) => a();
+                caps.Children.Add(b);
+                return b;
+            }
+            Cap("", () => WindowState = WindowState.Minimized);
+            _maxBtn = Cap("", () => WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized);
+            Cap("", Close, true);
+            bar.Children.Add(caps);
+            // Перетаскивание окна за строку заголовка, двойной клик — развернуть
+            bar.PointerPressed += (_, e) =>
+            {
+                if (!e.GetCurrentPoint(bar).Properties.IsLeftButtonPressed) return;
+                if (e.ClickCount == 2) WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+                else BeginMoveDrag(e);
+            };
+        }
+        main.Children.Add(bar);
+        main.Children.Add(_host.RowAt(1));
+        main.Children.Add(BuildToast().RowAt(1));
+        layout.Children.Add(main.Col(1));
+        _root.Children.Add(layout);
+
+        _intro.Background = U.B("Bg");
+        _root.Children.Add(_intro);
+        // Масштаб интерфейса (настройка) — через LayoutTransformControl, разметка пересчитывается честно
+        Content = Math.Abs(ProgressStore.P.UiScale - 1) > 0.01
+            ? new LayoutTransformControl { LayoutTransform = new ScaleTransform(ProgressStore.P.UiScale, ProgressStore.P.UiScale), Child = _root }
+            : _root;
+
+
+        ProgressStore.Changed += () => Dispatcher.UIThread.Post(UpdateStats);
+        PropertyChanged += (_, e) => { if (e.Property == WindowStateProperty) OnStateChanged(); };
+        AddHandler(KeyDownEvent, OnPreviewKey, RoutingStrategies.Tunnel);
+        Activated += (_, _) => UpdateStats();
+        Opened += (_, _) => OnOpened();
+    }
+
+    void OnOpened()
+    {
+        UpdateStats();
+        _navItems["home"].IsChecked = true;
+        PlayIntro();
+        Tray.Init(this);
+        var args = Environment.GetCommandLineArgs();
+        bool plain = !args.Skip(1).Any();
+        if (!ProgressStore.P.Flags.Contains("onboarded") && plain) Push(new OnboardingPage());
+        if (plain)
+        {
+            Updater.AutoCheck();
+            if (CrashReport.HasNew()) { CrashReport.MarkSeen(); Shell.Toast("В прошлый раз была ошибка — отправить отчёт можно в Настройках → «Обратная связь»", "!"); }
+        }
+        var remind = new DispatcherTimer { Interval = TimeSpan.FromMinutes(10) };
+        remind.Tick += (_, _) => Tray.Tick();
+        remind.Start();
+        int pi = Array.IndexOf(args, "--page");
+        if (pi > 0 && pi + 1 < args.Length) NavigateRoot(args[pi + 1]);
+#if DEBUG
+        int oi = Array.IndexOf(args, "--open");
+        if (oi > 0 && oi + 1 < args.Length) DebugOpen(args[oi + 1]);
+        int si = Array.IndexOf(args, "--snap");
+        if (si > 0 && si + 1 < args.Length) DebugSnap(args[si + 1]);
+#endif
+    }
+
+    // ─────────── Боковая панель ───────────
+    Control BuildSidebar()
+    {
+        var dock = new DockPanel();
+        var logo = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(26, 20, 0, 22) };
+        logo.Children.Add(new TextBlock { Text = "言", FontFamily = U.R<FontFamily>("JpSerif"), FontSize = 24, Foreground = U.B("Accent"), VerticalAlignment = VerticalAlignment.Center });
+        logo.Children.Add(new StackPanel
+        {
+            Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center,
+            Children =
+            {
+                new TextBlock { Text = "Kotodama", FontSize = 15, FontWeight = FontWeight.SemiBold },
+                new TextBlock { Text = "日本語を学ぼう", FontFamily = U.R<FontFamily>("JpFont"), FontSize = 10.5, Foreground = U.B("Faint") },
+            },
+        });
+        DockPanel.SetDock(logo, Dock.Top);
+        dock.Children.Add(logo);
+
+        // Сводка внизу: серия, уровень, цель дня
+        _streak.FontWeight = FontWeight.SemiBold; _streak.FontSize = 13; _streak.Margin = new Thickness(8, 0, 0, 0); _streak.VerticalAlignment = VerticalAlignment.Center;
+        _levelText.FontSize = 12; _levelText.Foreground = U.B("Muted"); _levelText.HorizontalAlignment = HorizontalAlignment.Right; _levelText.VerticalAlignment = VerticalAlignment.Center;
+        _goalText.FontSize = 11.5; _goalText.Foreground = U.B("Faint"); _goalText.HorizontalAlignment = HorizontalAlignment.Right;
+        _goalBar.Foreground = U.B("Gold");
+        _xpBar.Tip("Прогресс до следующего уровня");
+        var top = new Grid();
+        top.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { new TextBlock { Text = "火", FontFamily = U.R<FontFamily>("JpSerif"), FontSize = 15, Foreground = U.B("Gold"), VerticalAlignment = VerticalAlignment.Center }, _streak } });
+        top.Children.Add(_levelText);
+        var goalRow = new Grid { Margin = new Thickness(0, 10, 0, 6) };
+        goalRow.Children.Add(new TextBlock { Text = "Сегодня", FontSize = 11.5, Foreground = U.B("Faint") });
+        goalRow.Children.Add(_goalText);
+        var summary = new Border
+        {
+            Margin = new Thickness(14, 0, 14, 16), Padding = new Thickness(14, 12), CornerRadius = new CornerRadius(12),
+            Background = U.B("Surface"), BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(1),
+            Child = new StackPanel { Children = { top, goalRow, _goalBar, _xpBar } },
+        };
+        DockPanel.SetDock(summary, Dock.Bottom);
+        dock.Children.Add(summary);
+
+        // Меню со скользящей подложкой выбранного пункта
+        _navIndicator.VerticalAlignment = VerticalAlignment.Top; _navIndicator.Height = 40; _navIndicator.Margin = new Thickness(12, 0);
+        _navIndicator.CornerRadius = new CornerRadius(10); _navIndicator.Background = U.B("SelectedTint"); _navIndicator.Opacity = 0; _navIndicator.IsHitTestVisible = false;
+        _navIndicator.RenderTransform = _navShift;
+        _navIndicator.Child = new Border { Width = 3, Height = 16, CornerRadius = new CornerRadius(2), Background = U.B("Accent"), HorizontalAlignment = HorizontalAlignment.Left };
+        void Item(string key, string glyph, object content)
+        {
+            var rb = new RadioButton { Tag = glyph, Content = content, GroupName = "nav" };
+            rb.Classes.Add("NavItem");
+            rb.Checked += (_, _) => { MoveNavIndicator(rb); ShowRoot(key); };
+            _navItems[key] = rb;
+            _nav.Children.Add(rb);
+        }
+        void Header(string t) => _nav.Children.Add(U.T(t, "Overline").M(28, 16, 0, 6));
+        Item("home", "家", "Главная");
+        Item("path", "道", "Путь обучения");
+        Header("РАЗДЕЛЫ");
+        Item("kana", "あ", "Кана");
+        Item("words", "語", "Слова");
+        Item("kanji", "漢", "Кандзи");
+        Item("grammar", "文", "Грамматика");
+        Item("speech", "話", "Говорение");
+        Item("dialogs", "対", "Диалоги");
+        Item("reader", "読", "Чтение");
+        Item("dict", "辞", "Словарь");
+        Header("ПРАКТИКА");
+        _dueText.FontSize = 11; _dueText.FontWeight = FontWeight.SemiBold; _dueText.Foreground = U.B("OnAccent");
+        _dueBadge.HorizontalAlignment = HorizontalAlignment.Right; _dueBadge.Background = U.B("Accent"); _dueBadge.CornerRadius = new CornerRadius(8);
+        _dueBadge.Padding = new Thickness(6, 0); _dueBadge.IsVisible = false; _dueBadge.Child = _dueText;
+        Item("review", "復", new Grid { Width = 132, Children = { new TextBlock { Text = "Повторение" }, _dueBadge } });
+        Item("trainers", "練", "Тренажёры");
+        Item("settings", "設", "Настройки");
+
+        var navGrid = new Grid { Children = { _navIndicator, _nav } };
+        dock.Children.Add(new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Hidden, Content = navGrid });
+        return dock;
+    }
+
+    /// <summary>Подложка выбранного пункта плавно «переезжает» к новому пункту.</summary>
+    void MoveNavIndicator(Control item)
+    {
+        if (!item.IsArrangeValid || item.Bounds.Height == 0) { Dispatcher.UIThread.Post(() => MoveNavIndicator(item), DispatcherPriority.Loaded); return; }
+        var p = item.TranslatePoint(new Point(0, 0), _nav);
+        if (p == null) return;
+        double y = p.Value.Y;
+        bool first = _navIndicator.Opacity == 0;
+        _navIndicator.Opacity = 1;
+        if (first) _navShift.Y = y;
+        else Anim.Run((_navShift, "y"), _navShift.Y, y, 320, v => _navShift.Y = v, Ease.QuinticOut);
+    }
+
+    Border BuildToast()
+    {
+        _toastJp.FontFamily = U.R<FontFamily>("JpSerif"); _toastJp.FontSize = 18; _toastJp.Foreground = U.B("Accent");
+        _toastJp.VerticalAlignment = VerticalAlignment.Center; _toastJp.Margin = new Thickness(0, 0, 12, 0);
+        _toastText.FontSize = 13.5; _toastText.VerticalAlignment = VerticalAlignment.Center; _toastText.TextWrapping = TextWrapping.Wrap; _toastText.MaxWidth = 640;
+        _toast.HorizontalAlignment = HorizontalAlignment.Center; _toast.VerticalAlignment = VerticalAlignment.Bottom; _toast.Margin = new Thickness(0, 0, 0, 28);
+        _toast.Background = U.B("Surface3"); _toast.BorderBrush = U.B("StrokeStrong"); _toast.BorderThickness = new Thickness(1);
+        _toast.CornerRadius = new CornerRadius(12); _toast.Padding = new Thickness(18, 10); _toast.Opacity = 0; _toast.IsHitTestVisible = false;
+        _toast.BoxShadow = BoxShadows.Parse("0 6 24 0 #59000000");
+        _toast.Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { _toastJp, _toastText } };
+        return _toast;
+    }
+
+    // ─────────── Навигация ───────────
+    static readonly Dictionary<string, Func<Control>> Factories = new()
+    {
+        ["home"] = () => new HomePage(),
+        ["path"] = () => new PathPage(),
+        ["dialogs"] = () => new DialogsPage(),
+        ["dict"] = () => new DictPage(),
+        ["kana"] = () => new KanaPage(),
+        ["words"] = () => new WordsPage(),
+        ["kanji"] = () => new KanjiPage(),
+        ["grammar"] = () => new GrammarPage(),
+        ["speech"] = () => new SpeechPage(),
+        ["review"] = ReviewPage.Create,
+        ["settings"] = () => new SettingsPage(),
+        ["trainers"] = () => new TrainersPage(),
+        ["reader"] = () => new ReaderPage(),
+    };
+
+    public void NavigateRoot(string key)
+    {
+        if (!_navItems.TryGetValue(key, out var rb)) { key = "home"; rb = _navItems[key]; }
+        if (rb.IsChecked == true) ShowRoot(key); else rb.IsChecked = true;
+    }
+
+    void ShowRoot(string key)
+    {
+        // Страница повторения всегда пересоздаётся — очередь зависит от времени
+        if (key == "review" || !_roots.TryGetValue(key, out var page))
+        {
+            page = Factories[key]();
+            if (key != "review") _roots[key] = page;
+        }
+        _stack.Clear();
+        _stack.Add(page);
+        Show(page, 1);
+    }
+
+    public Control? PendingExpand;
+
+    public void Push(Control page)
+    {
+        if (PendingExpand is { } src) { PendingExpand = null; ExpandFrom(src, page); return; }
+        _stack.Add(page);
+        Show(page, 1);
+    }
+
+    public void Pop()
+    {
+        if (_stack.Count <= 1) { NavigateRoot("home"); return; }
+        _stack.RemoveAt(_stack.Count - 1);
+        Show(_stack[^1], -1);
+    }
+
+    void Show(Control page, int dir)
+    {
+        _host.Content = null; // страница может быть закэширована — сначала отцепляем
+        _host.Content = page;
+        // Режим фокуса: во время упражнений боковое меню скрывается
+        bool focus = page is Controls.QuizSession or Controls.FlashSession or BuilderSession or SpeechLessonPage or DialogPage or WritingPage or KanaRainGame or MemoryGame or SprintGame or OnboardingPage;
+        _sideCol.Width = new GridLength(focus ? 0 : 232);
+        _sidebar.IsVisible = !focus;
+        _backBtn.IsVisible = _stack.Count > 1;
+        _crumb.Text = string.Join("  ›  ", _stack.OfType<IPage>().Select(p => p.Title));
+        (page as IPage)?.OnShown();
+        Anim.Opacity(_host, 0, 1, 220);
+        Anim.Run((_hostShift, "y"), dir > 0 ? 10 : -10, 0, 380, v => _hostShift.Y = v, Ease.QuinticOut);
+        UpdateStats();
+    }
+
+    void OnPreviewKey(object? sender, KeyEventArgs e)
+    {
+        if (_intro.IsVisible) { CloseIntro(fast: true); e.Handled = true; return; }
+        if (e.Key == Key.K && e.KeyModifiers == KeyModifiers.Control) { OpenPalette(); e.Handled = true; return; }
+        if (_palette != null) return;
+        var focused = FocusManager?.GetFocusedElement();
+        if (focused is TextBox && e.Key is not (Key.Enter or Key.Escape)) return;
+        if (_host.Content is IKeyTarget kt && kt.HandleKey(e.Key)) { e.Handled = true; return; }
+        if (e.Key == Key.Escape && _stack.Count > 1) { Pop(); e.Handled = true; }
+        else if (e.Key == Key.Back && _stack.Count > 1 && focused is not TextBox) { Pop(); e.Handled = true; }
+    }
+
+    // ─────────── Статистика в сайдбаре ───────────
+    void UpdateStats()
+    {
+        Achievements.CheckNew();
+        var p = ProgressStore.P;
+        _streak.Text = $"{p.Streak} {Plural(p.Streak, "день", "дня", "дней")}";
+        int lvl = ProgressStore.Level;
+        _levelText.Text = $"Ур. {lvl}";
+        int from = ProgressStore.XpForLevel(lvl), to = ProgressStore.XpForLevel(lvl + 1);
+        _xpBar.Maximum = Math.Max(1, to - from);
+        _xpBar.Value = p.Xp - from;
+        _goalBar.Maximum = Math.Max(1, p.DailyGoal);
+        _goalBar.Value = Math.Min(p.DailyGoal, ProgressStore.TodayXp);
+        _goalText.Text = $"{ProgressStore.TodayXp} / {p.DailyGoal} XP";
+        int due = p.Cards.Count(kv => kv.Value.Due <= DateTime.Now);
+        _dueBadge.IsVisible = due > 0;
+        _dueText.Text = due > 99 ? "99+" : due.ToString();
+    }
+
+    public static string Plural(int n, string one, string few, string many)
+    {
+        n = Math.Abs(n) % 100;
+        if (n is >= 11 and <= 14) return many;
+        return (n % 10) switch { 1 => one, 2 or 3 or 4 => few, _ => many };
+    }
+
+    // ─────────── Тост ───────────
+    public void ShowToast(string text, string? jp)
+    {
+        _toastText.Text = text;
+        _toastJp.Text = jp ?? "";
+        _toastJp.IsVisible = !string.IsNullOrEmpty(jp);
+        // появление 0,2 с → 2,2 с на экране → исчезновение 0,4 с
+        Anim.Run((_toast, "op"), 0, 1, 2800, k => _toast.Opacity = k < 0.07 ? k / 0.07 : k < 0.857 ? 1 : (1 - k) / 0.143, Ease.Linear);
+        Anim.Pop(_toast, 0.9);
+    }
+
+    /// <summary>Лепестки сакуры отключены в кроссплатформенной версии (дорогой декор); настройка сохраняется.</summary>
+    public void SetPetals(bool on) { }
+
+    // ─────────── «Раскрытие» карточки в страницу ───────────
+    bool _expanding;
+    public void ExpandFrom(Control source, Control page)
+    {
+        if (_expanding || !source.IsEffectivelyVisible) { Push(page); return; }
+        var a = source.TranslatePoint(new Point(0, 0), _root);
+        var b = _host.TranslatePoint(new Point(0, 0), _root);
+        if (a == null || b == null || _host.Bounds.Width < 1) { Push(page); return; }
+        _expanding = true;
+        Rect from = new(a.Value, source.Bounds.Size), to = new(b.Value, _host.Bounds.Size);
+        var ghost = new Border
+        {
+            Width = to.Width, Height = to.Height, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(to.X, to.Y, 0, 0), Background = U.B("Surface"), BorderBrush = U.B("StrokeStrong"), BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(16), IsHitTestVisible = false, RenderTransformOrigin = new RelativePoint(0, 0, RelativeUnit.Absolute),
+        };
+        var sc = new ScaleTransform(from.Width / to.Width, from.Height / to.Height);
+        var tr = new TranslateTransform(from.X - to.X, from.Y - to.Y);
+        ghost.RenderTransform = new TransformGroup { Children = { sc, tr } };
+        _root.Children.Add(ghost);
+        double sx = sc.ScaleX, sy = sc.ScaleY, tx = tr.X, ty = tr.Y;
+        Anim.Run((ghost, "expand"), 0, 1, 300, k =>
+        {
+            sc.ScaleX = sx + (1 - sx) * k; sc.ScaleY = sy + (1 - sy) * k;
+            tr.X = tx * (1 - k); tr.Y = ty * (1 - k);
+        }, Ease.QuinticInOut, 0, () =>
+        {
+            Push(page);
+            Anim.Opacity(ghost, 1, 0, 220, 0, () => { _root.Children.Remove(ghost); _expanding = false; });
+        });
+    }
+
+    // ─────────── Диалог «да/нет» ───────────
+    public Task<bool> Confirm(string text, string yes, string no)
+    {
+        var tcs = new TaskCompletionSource<bool>();
+        var overlay = new Grid { Background = new SolidColorBrush(Color.FromArgb(0x99, 0, 0, 0)) };
+        void Done(bool r) { _root.Children.Remove(overlay); tcs.TrySetResult(r); }
+        var card = new Border
+        {
+            Classes = { "Card" }, Width = 460, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Padding = new Thickness(26, 22),
+            BoxShadow = BoxShadows.Parse("0 6 24 0 #59000000"),
+            Child = U.Stack(
+                U.T("Kotodama", "Overline"),
+                U.T(text, "Body", 15).M(0, 8, 0, 20),
+                U.Row(10, U.Btn(yes, () => Done(true), "Primary"), U.Btn(no, () => Done(false))).Also(r => r.HorizontalAlignment = HorizontalAlignment.Right)),
+        };
+        overlay.Children.Add(card);
+        overlay.PointerPressed += (_, e) => { if (e.Source == overlay) Done(false); };
+        overlay.KeyDown += (_, e) => { if (e.Key == Key.Escape) Done(false); else if (e.Key == Key.Enter) Done(true); };
+        _root.Children.Add(overlay);
+        Anim.FadeUp(card, 0, 10, 220);
+        return tcs.Task;
+    }
+
+    // ─────────── Ctrl+K ───────────
+    Controls.Palette? _palette;
+    public void OpenPalette()
+    {
+        if (_palette != null) return;
+        _palette = new Controls.Palette(() => { _root.Children.Remove(_palette!); _palette = null; });
+        _root.Children.Add(_palette);
+    }
+
+    // ─────────── Интро ───────────
+    bool _introClosing;
+
+    /// <summary>Черты 言霊 прорисовываются кистью, затем появляется название, и экран растворяется (~3 с, пропуск — клик/клавиша).</summary>
+    void PlayIntro()
+    {
+        var cl = Environment.GetCommandLineArgs();
+        if (!cl.Contains("--intro") && (!ProgressStore.P.Intro || cl.Any(a => a.StartsWith("--")))) return;
+        _intro.IsVisible = true;
+        _intro.Opacity = 1;
+        var stack = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+        var s1 = new Controls.StrokeView("言", 150, plain: true, ink: U.B("Accent"), thick: 4.4);
+        var s2 = new Controls.StrokeView("霊", 150, plain: true, ink: U.B("Text"), thick: 4.4) { Margin = new Thickness(14, 0, 0, 0) };
+        row.Children.Add(s1); row.Children.Add(s2);
+        stack.Children.Add(row);
+        var title = new TextBlock { Text = "Kotodama", FontSize = 30, FontWeight = FontWeight.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 26, 0, 0), Opacity = 0 };
+        var sub = new TextBlock { Text = "言霊 — душа слова · японский шаг за шагом", FontSize = 14, Foreground = U.B("Muted"), HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 6, 0, 0), Opacity = 0 };
+        var line = new Border { Height = 2, Width = 0, CornerRadius = new CornerRadius(1), Background = U.B("Accent"), Margin = new Thickness(0, 18, 0, 0), HorizontalAlignment = HorizontalAlignment.Center };
+        stack.Children.Add(title); stack.Children.Add(sub); stack.Children.Add(line);
+        _intro.Children.Clear();
+        _intro.Children.Add(stack);
+        _intro.PointerPressed += (_, _) => CloseIntro(fast: true);
+
+        double end = Math.Max(s1.Play(2.6, 250), s2.Play(3.2, 550));
+        Anim.FadeUp(title, (int)Math.Max(0, end - 350), 14, 520);
+        Anim.FadeUp(sub, (int)Math.Max(0, end - 180), 10, 520);
+        Anim.Run((line, "w"), 0, 120, 600, v => line.Width = v, Ease.QuinticOut, (int)end);
+        DispatcherTimer.RunOnce(() => CloseIntro(fast: false), TimeSpan.FromMilliseconds(end + 900));
+    }
+
+    void CloseIntro(bool fast)
+    {
+        if (_introClosing || !_intro.IsVisible) return;
+        _introClosing = true;
+        if (_intro.Children.Count > 0 && _intro.Children[0] is Control st)
+        {
+            var (s, _) = Anim.Transforms(st);
+            Anim.Run((s, "sc"), 1, 1.05, 520, v => { s.ScaleX = v; s.ScaleY = v; });
+        }
+        Anim.Opacity(_intro, 1, 0, fast ? 220 : 520, 0, () => { _intro.IsVisible = false; _intro.Children.Clear(); }, Ease.CubicInOut);
+        Anim.Opacity(_host, 0, 1, 500);
+    }
+
+    // ─────────── Окно ───────────
+    void OnStateChanged()
+    {
+        // Развёрнутое окно без рамки выходит за край экрана на толщину рамки — компенсируем
+        if (CustomChrome) _root.Margin = WindowState == WindowState.Maximized ? new Thickness(7) : new Thickness(0);
+        if (_maxBtn != null) _maxBtn.Content = WindowState == WindowState.Maximized ? "" : "";
+    }
+
+#if DEBUG
+    // Рендер собственного окна в PNG (без захвата экрана) и выход — для визуальной проверки
+    void DebugSnap(string path)
+    {
+        DispatcherTimer.RunOnce(() =>
+        {
+            var size = new PixelSize((int)Bounds.Width, (int)Bounds.Height);
+            using var rtb = new RenderTargetBitmap(size);
+            rtb.Render(this);
+            rtb.Save(path);
+            Close();
+        }, TimeSpan.FromSeconds(2.5));
+    }
+
+    void DebugOpen(string what)
+    {
+        switch (what)
+        {
+            case "flash": Push(new Controls.FlashSession("Демо", Db.Words.Take(5).Select(Controls.FlashSession.FromWord))); break;
+            case "kanjiflash": Push(new Controls.FlashSession("Демо", Db.Kanji.Take(5).Select(Controls.FlashSession.FromKanji))); break;
+            case "grammar": Push(new GrammarLessonPage(Db.Grammar[4])); break;
+            case "grammar1": Push(new GrammarLessonPage(Db.Grammar[0])); break;
+            case "onboard": Push(new OnboardingPage()); break;
+            case "speech": Push(new SpeechLessonPage(Db.SpeechLessons[1])); break;
+            case "dialog": Push(new DialogPage(Db.Dialogs[1])); break;
+            case "unit": Push(new UnitPage(Db.Course[0])); break;
+            case "reader": Push(new ReaderPage()); break;
+            case "writing": Push(new WritingPage()); break;
+            case "mic": Push(new MicCheckPage()); break;
+            case "pairs": Push(new PairsPage()); break;
+            case "quiz":
+                var w = Db.Words.Take(8).ToArray();
+                Push(new Controls.QuizSession("Демо", w.Select(x => new Controls.QuizQ { Prompt = x.Jp, Sub = x.Kana, Answer = x.Ru, Options = Controls.QuizSession.MakeOptions(x.Ru, w.Select(y => y.Ru)) })));
+                break;
+        }
+    }
+#endif
+}

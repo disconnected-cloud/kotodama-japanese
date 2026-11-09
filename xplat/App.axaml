@@ -1,0 +1,295 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Matsubakira.App"
+             RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <FontFamily x:Key="UiFont">Segoe UI Variable Display, Segoe UI, Inter, Noto Sans, Ubuntu, Cantarell, DejaVu Sans, Yu Gothic UI, Noto Sans CJK JP</FontFamily>
+    <FontFamily x:Key="JpFont">Yu Gothic UI, Meiryo, Noto Sans CJK JP, Noto Sans JP, Source Han Sans JP, IPAGothic, TakaoGothic, VL Gothic, sans-serif</FontFamily>
+    <FontFamily x:Key="JpSerif">Yu Mincho, MS Mincho, Noto Serif CJK JP, Noto Serif JP, Source Han Serif JP, IPAMincho, Noto Sans CJK JP, Yu Gothic UI</FontFamily>
+    <FontFamily x:Key="Icons">avares://Kotodama/Assets/fonts#Kotodama Icons</FontFamily>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme />
+
+    <Style Selector="Window">
+      <Setter Property="FontFamily" Value="{DynamicResource UiFont}"/>
+    </Style>
+    <Style Selector="TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+    </Style>
+
+    <!-- ═══════════ Текст ═══════════ -->
+    <Style Selector="TextBlock.H1"><Setter Property="FontSize" Value="28"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+    <Style Selector="TextBlock.H2"><Setter Property="FontSize" Value="18"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+    <Style Selector="TextBlock.H3"><Setter Property="FontSize" Value="15"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+    <Style Selector="TextBlock.Body"><Setter Property="FontSize" Value="14"/><Setter Property="LineHeight" Value="22"/><Setter Property="TextWrapping" Value="Wrap"/></Style>
+    <Style Selector="TextBlock.MutedText"><Setter Property="FontSize" Value="13"/><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="Foreground" Value="{DynamicResource Muted}"/></Style>
+    <Style Selector="TextBlock.Overline"><Setter Property="FontSize" Value="11"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Foreground" Value="{DynamicResource Muted}"/></Style>
+    <Style Selector="TextBlock.Jp"><Setter Property="FontFamily" Value="{DynamicResource JpFont}"/></Style>
+    <Style Selector="TextBlock.Icon"><Setter Property="FontFamily" Value="{DynamicResource Icons}"/><Setter Property="FontSize" Value="16"/><Setter Property="VerticalAlignment" Value="Center"/></Style>
+
+    <!-- ═══════════ Карточки ═══════════ -->
+    <Style Selector="Border.Card">
+      <Setter Property="Background" Value="{DynamicResource Surface}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Stroke}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="16"/>
+      <Setter Property="Padding" Value="20"/>
+    </Style>
+    <Style Selector="Border.Pill">
+      <Setter Property="Background" Value="{DynamicResource Surface2}"/>
+      <Setter Property="CornerRadius" Value="999"/>
+      <Setter Property="Padding" Value="10,4"/>
+      <Setter Property="HorizontalAlignment" Value="Left"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- ═══════════ Кнопки ═══════════ -->
+    <Style Selector="Button, ToggleButton, RadioButton.ChipRadio">
+      <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+      <Setter Property="Background" Value="{DynamicResource Surface2}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Stroke}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="16,10"/>
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="RenderTransformOrigin" Value="50%,50%"/>
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12"/>
+        </Transitions>
+      </Setter>
+    </Style>
+    <!-- Наведение: лёгкий оттенок поверх фона; нажатие: кнопка чуть «проседает» -->
+    <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Surface3}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrong}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+    </Style>
+    <Style Selector="Button:pressed, ToggleButton:pressed, RadioButton.ChipRadio:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.965)"/>
+    </Style>
+    <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Surface2}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+      <Setter Property="Opacity" Value="0.5"/>
+    </Style>
+
+    <Style Selector="Button.Primary">
+      <Setter Property="Background" Value="{DynamicResource Accent}"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Foreground" Value="{DynamicResource OnAccent}"/>
+    </Style>
+    <Style Selector="Button.Primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentHover}"/>
+      <Setter Property="Foreground" Value="{DynamicResource OnAccent}"/>
+    </Style>
+    <Style Selector="Button.Primary TextBlock"><Setter Property="Foreground" Value="{DynamicResource OnAccent}"/></Style>
+
+    <Style Selector="Button.Ghost">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+      <Setter Property="Padding" Value="10,8"/>
+    </Style>
+    <Style Selector="Button.Ghost TextBlock"><Setter Property="Foreground" Value="{DynamicResource Muted}"/></Style>
+    <Style Selector="Button.Ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SelectedTint}"/>
+    </Style>
+
+    <Style Selector="Button.IconButton">
+      <Setter Property="FontFamily" Value="{DynamicResource Icons}"/>
+      <Setter Property="FontWeight" Value="Normal"/>
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="Width" Value="38"/>
+      <Setter Property="Height" Value="38"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+
+    <Style Selector="Button.Option">
+      <Setter Property="Background" Value="{DynamicResource Surface}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrong}"/>
+      <Setter Property="FontSize" Value="20"/>
+      <Setter Property="FontWeight" Value="Normal"/>
+      <Setter Property="FontFamily" Value="{DynamicResource JpFont}"/>
+      <Setter Property="MinHeight" Value="68"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+    </Style>
+
+    <!-- Переключатели-«чипы» -->
+    <Style Selector="ToggleButton.Chip">
+      <Setter Property="Padding" Value="12,6"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="FontWeight" Value="Normal"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrong}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+      <Setter Property="Margin" Value="0,0,8,8"/>
+    </Style>
+    <Style Selector="ToggleButton.Chip:checked /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoft}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+    </Style>
+
+    <!-- RadioButton-чип: свой простой шаблон вместо кружка Fluent -->
+    <Style Selector="RadioButton.ChipRadio">
+      <Setter Property="Padding" Value="14,7"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="FontWeight" Value="Normal"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrong}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+      <Setter Property="Margin" Value="0,0,8,0"/>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10" Padding="{TemplateBinding Padding}">
+            <ContentPresenter Name="cp" Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.ChipRadio:pointerover /template/ Border#bd">
+      <Setter Property="Background" Value="{DynamicResource SelectedTint}"/>
+    </Style>
+    <Style Selector="RadioButton.ChipRadio:checked">
+      <Setter Property="Background" Value="{DynamicResource Text}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Text}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Bg}"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="RadioButton.ChipRadio:checked /template/ Border#bd">
+      <Setter Property="Background" Value="{DynamicResource Text}"/>
+    </Style>
+    <Style Selector="RadioButton.ChipRadio:checked TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource Bg}"/>
+    </Style>
+
+    <!-- Пункт меню слева. Выбранный пункт подсвечивает скользящая подложка в MainWindow -->
+    <Style Selector="RadioButton.NavItem">
+      <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Margin" Value="12,1"/>
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="Height" Value="40"/>
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Grid Background="Transparent">
+            <Border Name="hover" CornerRadius="10" Background="{DynamicResource HoverTint}" Opacity="0">
+              <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.15"/></Transitions></Border.Transitions>
+            </Border>
+            <StackPanel Orientation="Horizontal" Margin="14,0" VerticalAlignment="Center">
+              <TextBlock Name="ico" Text="{TemplateBinding Tag}" FontFamily="{DynamicResource JpSerif}" FontSize="16" Width="22"
+                         VerticalAlignment="Center" Foreground="{TemplateBinding Foreground}"/>
+              <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+            </StackPanel>
+          </Grid>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.NavItem:pointerover"><Setter Property="Foreground" Value="{DynamicResource Text}"/></Style>
+    <Style Selector="RadioButton.NavItem:pointerover /template/ Border#hover"><Setter Property="Opacity" Value="0.035"/></Style>
+    <Style Selector="RadioButton.NavItem:checked"><Setter Property="Foreground" Value="{DynamicResource Text}"/></Style>
+    <Style Selector="RadioButton.NavItem:checked /template/ TextBlock#ico"><Setter Property="Foreground" Value="{DynamicResource Accent}"/></Style>
+
+    <!-- Кнопки окна -->
+    <Style Selector="Button.CaptionBtn">
+      <Setter Property="Width" Value="46"/>
+      <Setter Property="Height" Value="36"/>
+      <Setter Property="FontFamily" Value="{DynamicResource Icons}"/>
+      <Setter Property="FontSize" Value="10"/>
+      <Setter Property="FontWeight" Value="Normal"/>
+      <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="0"/>
+      <Setter Property="Padding" Value="0"/>
+    </Style>
+    <Style Selector="Button.CaptionBtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource CaptionHover}"/>
+      <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="Button.CloseBtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#E81123"/>
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <Style Selector="Button.CaptionBtn:pressed"><Setter Property="RenderTransform" Value="none"/></Style>
+
+    <!-- ═══════════ Прогресс, скролл, поле ввода ═══════════ -->
+    <Style Selector="ProgressBar">
+      <Setter Property="Height" Value="6"/>
+      <Setter Property="MinHeight" Value="2"/>
+      <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+      <Setter Property="Background" Value="{DynamicResource Surface3}"/>
+      <Setter Property="CornerRadius" Value="3"/>
+      <Setter Property="MinWidth" Value="0"/>
+    </Style>
+    <Style Selector="ProgressBar /template/ Border#ProgressBarTrack"><Setter Property="CornerRadius" Value="3"/></Style>
+    <Style Selector="ProgressBar /template/ Border#PART_Indicator"><Setter Property="CornerRadius" Value="3"/></Style>
+
+    <Style Selector="TextBox">
+      <Setter Property="Background" Value="{DynamicResource Surface2}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+      <Setter Property="CaretBrush" Value="{DynamicResource Accent}"/>
+      <Setter Property="SelectionBrush" Value="{DynamicResource Accent2}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrong}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="FontSize" Value="22"/>
+      <Setter Property="Padding" Value="16,12"/>
+      <Setter Property="CornerRadius" Value="14"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="{DynamicResource Surface2}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrong}"/>
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="{DynamicResource Surface2}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style Selector="TextBox /template/ TextBlock#PART_Watermark, TextBox /template/ TextBlock#PART_FloatingWatermark">
+      <Setter Property="Foreground" Value="{DynamicResource Faint}"/>
+    </Style>
+
+    <Style Selector="ToolTip">
+      <Setter Property="Background" Value="{DynamicResource Surface3}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrong}"/>
+      <Setter Property="Padding" Value="10,6"/>
+      <Setter Property="CornerRadius" Value="8"/>
+    </Style>
+
+    <Style Selector="ScrollBar">
+      <Setter Property="AllowAutoHide" Value="True"/>
+    </Style>
+
+    <Style Selector="CheckBox">
+      <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+    </Style>
+
+    <!-- Список без системной подсветки -->
+    <Style Selector="ListBox.Plain">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="ListBox.Plain ListBoxItem">
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="ListBox.Plain ListBoxItem:pointerover /template/ ContentPresenter, ListBox.Plain ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+  </Application.Styles>
+</Application>

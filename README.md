@@ -27,8 +27,9 @@
 | `Kotodama-Setup-1.1.0.exe` (если есть в релизе) | Обычная установка: ярлык в «Пуске», удаление через «Приложения». Права администратора не нужны. |
 | `Kotodama-portable-win-x64.zip` | Распакуй и запусти `Kotodama.exe`. Ничего устанавливать не нужно. |
 | `Kotodama-win-x64.zip` | Архив поменьше, но нужен [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0). |
+| `Kotodama-linux-x64.tar.gz` | **Linux** (x64): распакуй, запусти `./Kotodama` или `./install.sh` — появится в меню приложений. |
 
-Требования: Windows 10 (1809+) или 11, 64-бит.
+Требования: Windows 10 (1809+) или 11, 64-бит; Linux x64 (Ubuntu 22.04+, Fedora, Arch и др.). В Linux для звука нужен PulseAudio или PipeWire (`pulseaudio-utils`), для японского текста — шрифт `fonts-noto-cjk`.
 
 Модель распознавания речи (190 МБ) и офлайн-голоса VOICEVOX скачиваются кнопками внутри приложения.
 
@@ -41,6 +42,17 @@ publish.cmd               :: обычная сборка → dist
 publish-portable.cmd      :: переносная сборка → dist-portable
 build-installer.cmd       :: установщик (нужен Inno Setup 6)
 ```
+
+Кроссплатформенная версия (Avalonia, Windows и Linux) — папка [`xplat/`](xplat/):
+
+```
+dotnet run --project xplat
+dotnet test tests/Kotodama.XTests
+dotnet publish xplat -c Release -r linux-x64 --self-contained -o release/Kotodama-linux
+python tools/pack_linux.py release/Kotodama-linux release/Kotodama-linux-x64.tar.gz
+```
+
+Linux-архив собирается и проверяется автоматически в GitHub Actions (`.github/workflows/linux.yml`) и прикрепляется к каждому новому релизу.
 
 Скрипты подготовки данных (латиница, словарь, порядок черт, частотные слова) лежат в [`tools/`](tools/README.md).
 
@@ -57,4 +69,6 @@ build-installer.cmd       :: установщик (нужен Inno Setup 6)
 | Иллюстрации | [Microsoft Fluent Emoji](https://github.com/microsoft/fluentui-emoji) | MIT |
 | Распознавание речи | [OpenAI Whisper](https://github.com/openai/whisper) через [Whisper.net](https://github.com/sandrohanea/whisper.net) | MIT |
 | Офлайн-голоса | [VOICEVOX](https://voicevox.hiroshiba.jp/) (скачиваются отдельно) | по условиям персонажей; при публикации озвучки укажи «VOICEVOX:имя» |
-| Аудио | [NAudio](https://github.com/naudio/NAudio) | MIT |
+| Аудио | [NAudio](https://github.com/naudio/NAudio), [NLayer](https://github.com/naudio/NLayer) | MIT |
+| Интерфейс (Linux) | [Avalonia](https://avaloniaui.net/) | MIT |
+| Иконки (Linux) | [Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) © Microsoft | MIT |

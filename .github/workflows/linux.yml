@@ -1,0 +1,74 @@
+# Linux-версия Kotodama (Avalonia): сборка, тесты, проверка запуска и архив для релиза.
+# • push / pull request — собрать, прогнать тесты, запустить в виртуальном дисплее и сохранить снимки экрана;
+# • публикация релиза — дополнительно прикрепить Kotodama-linux-x64.tar.gz к этому релизу;
+# • ручной запуск (Actions → Linux → Run workflow) с указанием тега — прикрепить архив к уже вышедшему релизу.
+name: Linux
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Тег релиза, к которому прикрепить архив (например, v1.1.0). Пусто — только собрать."
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Шрифты и библиотеки для запуска интерфейса
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends xvfb xauth fonts-noto-cjk fonts-noto-color-emoji libice6 libsm6 libfontconfig1 pulseaudio-utils
+
+      - name: Тесты
+        run: dotnet test tests/Kotodama.XTests -c Release
+
+      - name: Проверка запуска (снимки экрана в виртуальном дисплее)
+        run: |
+          dotnet build xplat/Kotodama.csproj -c Debug
+          mkdir -p snaps
+          for page in home words speech kanji settings; do
+            xvfb-run -a -s "-screen 0 1400x900x24" dotnet xplat/bin/Debug/net8.0/Kotodama.dll --page $page --snap snaps/$page.png || true
+          done
+          for what in flash writing pairs; do
+            xvfb-run -a -s "-screen 0 1400x900x24" dotnet xplat/bin/Debug/net8.0/Kotodama.dll --open $what --snap snaps/open-$what.png || true
+          done
+          ls -la snaps
+          test -f snaps/home.png
+          cat ~/.config/Matsubakira/crash.log 2>/dev/null || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-snapshots
+          path: snaps/
+
+      - name: Сборка Linux x64
+        run: |
+          dotnet publish xplat/Kotodama.csproj -c Release -r linux-x64 --self-contained true -o out/Kotodama-linux
+          python3 tools/pack_linux.py out/Kotodama-linux Kotodama-linux-x64.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Kotodama-linux-x64
+          path: Kotodama-linux-x64.tar.gz
+
+      - name: Прикрепить к релизу
+        if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.tag != '')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: gh release upload "$TAG" Kotodama-linux-x64.tar.gz --clobber

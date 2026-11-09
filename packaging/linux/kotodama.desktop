@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Kotodama
+GenericName=Японский язык
+Comment=Японский с нуля: кана, слова, кандзи, грамматика и говорение
+Exec=@EXEC@
+Icon=@ICON@
+Terminal=false
+Categories=Education;Languages;
+Keywords=japanese;japan;kana;kanji;японский;
+StartupWMClass=Kotodama

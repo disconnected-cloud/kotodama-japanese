@@ -1,2 +1,4 @@
 *.cmd text eol=crlf
 *.iss text eol=crlf
+*.sh text eol=lf
+*.desktop text eol=lf
