@@ -36,6 +36,16 @@
     <AndroidSigningKeyPass>$(KotodamaKeyPass)</AndroidSigningKeyPass>
   </PropertyGroup>
 
+  <!-- Неявные using Android.* конфликтуют с Avalonia (Button, ProgressBar, Application) — в общем коде их не подключаем -->
+  <ItemGroup>
+    <Using Remove="Android.App" />
+    <Using Remove="Android.Widget" />
+    <Using Remove="Android.OS" />
+    <Using Remove="Android.Views" />
+    <Using Remove="Android.Content" />
+    <Using Remove="Android.Runtime" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="../xplat/**/*.cs" LinkBase="Shared"
              Exclude="../xplat/obj/**;../xplat/bin/**;../xplat/Program.cs;../xplat/MainWindow.cs;../xplat/Services/Llm.cs;../xplat/Services/Tray.cs;../xplat/Services/Badge.cs;../xplat/Views/ChatPage.cs;../xplat/Views/ChatPrompts.cs" />
