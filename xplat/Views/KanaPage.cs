@@ -66,12 +66,43 @@ public sealed class KanaPage : UserControl, IPage
         root.Children.Add(trainCard);
 
         // Таблицы
-        root.Children.Add(Table("Основные знаки · 五十音", Kana.BasicGrid, 5));
+        // Основная таблица + панель учителя справа
+        var basic = U.Cols("auto", "24", "*");
+        basic.Children.Add(Table("Основные знаки · 五十音", Kana.BasicGrid, 5));
+        basic.Children.Add(TeacherPanel().Col(2));
+        root.Children.Add(U.Stackify(basic));
         root.Children.Add(Table("Звонкие и полузвонкие · 濁音・半濁音", Kana.DakutenGrid, 5));
         root.Children.Add(Table("Сочетания · 拗音", Kana.ComboGrid, 3));
         root.Children.Add(U.T("Подсказка: нажми на знак, чтобы услышать произношение.", "Muted").Center().M(0, 18, 0, 0));
         Anim.Stagger(root, 60, 0, 6);
         return root;
+    }
+
+    /// <summary>Панель «учителя»: советы и знакомство со знаками по 10 (порядок черт, звук, примеры).</summary>
+    Control TeacherPanel()
+    {
+        bool kata = _kata;
+        var basic = Kana.All.Where(c => c.Group == Kana.Basic).ToList();
+        var fresh = basic.Where(c => ProgressStore.KanaScore(Key(c, kata)) < 3).Take(10).ToList();
+        var sp = new StackPanel();
+        var head = U.Cols("*", "auto");
+        head.Children.Add(U.Stack(U.T("Как учить кану", "H2"),
+            U.T("Учи по 10 знаков: сначала посмотри порядок черт и послушай, потом квиз. Пиши каждый знак рукой 3–5 раз — так он запомнится в разы быстрее.", "Body", 13.5).Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 8, 0, 0),
+            U.T(kata ? "Катакана — те же звуки, что и в хирагане, только угловатые знаки. Учи её после хираганы." : "Похожие пары: さ/ち, は/ほ, ぬ/め, る/ろ, わ/れ/ね — сравни их внимательно.", "Muted", 12.5).Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 10, 0, 0)));
+        head.Children.Add(Art.Anime("teacher", 230).Col(1).M(12, 0, 0, 0));
+        sp.Children.Add(head);
+        var learn = U.Btn(fresh.Count > 0 ? $"Учить следующие {fresh.Count}: {string.Concat(fresh.Take(5).Select(c => c.Get(kata)))}…" : "Повторить все знаки", () =>
+        {
+            var list = fresh.Count > 0 ? fresh : basic.Shuffled().Take(10).ToList();
+            Shell.Open(new LearnSession(kata ? "Катакана" : "Хирагана", list.Select(c => LearnItem.From(c, kata)), OnShown,
+                () => QuizFor(list, kata, kata ? "Катакана" : "Хирагана", null)));
+        }, "Primary", "");
+        learn.HorizontalAlignment = HorizontalAlignment.Left; learn.Margin = new Thickness(0, 14, 0, 8);
+        sp.Children.Add(learn);
+        var write = U.Btn("Прописи: пиши знаки мышью", () => Shell.Open(new WritingPage()), "", "");
+        write.HorizontalAlignment = HorizontalAlignment.Left;
+        sp.Children.Add(write);
+        return U.Card(sp).M(0, 62, 0, 0).Also(c => c.VerticalAlignment = VerticalAlignment.Top);
     }
 
     Control Table(string title, IReadOnlyList<KanaCell?[]> rows, int cols)
