@@ -17,7 +17,7 @@ for t in src:
             reading = hira(f.kana) if f.kana and f.kana != "*" else w.surface
             lemma = f.orthBase if f.orthBase and f.orthBase != "*" else w.surface
             reading = {"私": "わたし", "何": "なに", "日本": "にほん", "明日": "あした", "宮城": "ぐうじょう", "下": "した", "箱": "はこ",
-                       "宝物": "たからもの", "むし暑い": "むしあつい", "七": "しち", "四": "よ"}.get(w.surface, reading)
+                       "宝物": "たからもの", "むし暑い": "むしあつい", "七": "しち", "四": "よ", "都": "みやこ"}.get(w.surface, reading)
             toks.append([w.surface, reading if has_kanji(w.surface) else "", lemma, f.pos1])
         sents.append({"jp": jp, "ru": ru, "tokens": toks})
     item = {"title": t["title"], "level": t["level"], "sentences": sents, "questions": t["questions"]}

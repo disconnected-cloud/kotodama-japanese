@@ -50,4 +50,27 @@ public class ContentTests
         Assert.True(Math.Abs(y[0]) < 0.01 && Math.Abs(y[^1]) < 0.01); // плавные края — без щелчков
         Assert.True(Math.Abs(y.Skip(4000).Average()) < 0.05);  // постоянная составляющая убрана
     }
+
+    static string RepoRoot
+    {
+        get
+        {
+            var d = new DirectoryInfo(AppContext.BaseDirectory);
+            while (d != null && !Directory.Exists(Path.Combine(d.FullName, "Assets", "emoji"))) d = d.Parent;
+            return d!.FullName;
+        }
+    }
+
+    [Fact]
+    public void JapanArticlesAreComplete()
+    {
+        Assert.True(JapanPage.All.Length >= 12);
+        foreach (var a in JapanPage.All)
+        {
+            Assert.NotEmpty(a.Sections);
+            Assert.True(a.Words.Length >= 5, a.Id);
+            Assert.True(File.Exists(Path.Combine(RepoRoot, "Assets", "emoji", a.Emoji + ".png")), a.Emoji);
+            foreach (var (q, ans, opts) in a.Quiz) Assert.Contains(ans, opts);
+        }
+    }
 }

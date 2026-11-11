@@ -34,6 +34,7 @@ public sealed class ReaderPage : UserControl, IPage
         ["Котоха едет в Японию"] = ("#FF9EC0", "#B23A78", "旅", "Повесть о первом месяце в Токио · N5"),
         ["Японские сказки"] = ("#8FB8FF", "#3446A8", "昔", "Момотаро, Урасима Таро и другие · N5–N4"),
         ["Год в Японии"] = ("#7FE0B0", "#1E8A64", "季", "Праздники и обычаи по сезонам · N4"),
+        ["Пропавший кот"] = ("#FFC56B", "#C76A12", "謎", "Детектив по соседству · N4"),
     };
 
     /// <summary>Обложка книги: градиент, крупный иероглиф, прогресс по главам.</summary>
@@ -53,7 +54,8 @@ public sealed class ReaderPage : UserControl, IPage
         });
         cover.Children.Add(new TextBlock { Text = jp, FontFamily = U.R<FontFamily>("JpSerif"), FontSize = 96, FontWeight = FontWeight.Bold, Foreground = Brushes.White, Opacity = 0.9, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(22, 0, 0, 6) });
         // на обложке — Википе-тан в подходящем образе
-        var pic = book.StartsWith("Котоха") ? Art.Anime("student", 260) : book.Contains("сказк") ? Art.Anime("reading", 180) : Art.Anime("casual", 260);
+        var pic = book.StartsWith("Котоха") ? Art.Anime("student", 260) : book.Contains("сказк") ? Art.Anime("reading", 180)
+            : book.Contains("кот") ? Art.Anime("teacher", 250) : Art.Anime("casual", 260);
         pic.HorizontalAlignment = HorizontalAlignment.Right; pic.VerticalAlignment = VerticalAlignment.Top; pic.Margin = new Thickness(0, 8, 12, -60);
         cover.ClipToBounds = true;
         cover.Children.Add(pic);
@@ -242,6 +244,9 @@ public sealed class TextPage : UserControl, IPage
             var add = new Button { Classes = { "IconButton" }, Content = JDict.InStudy(e) ? "" : ""}.Tip("В мои карточки");
             add.Click += (_, _) => { if (JDict.AddToStudy(e)) { add.Content = ""; Shell.Toast($"«{e.Jp}» добавлено в «Мои слова»", "追加"); } };
             acts.Children.Add(add);
+            var more = new Button { Classes = { "IconButton" }, Content = "" }.Tip("Подробнее: иероглифы, примеры, похожие слова");
+            more.Click += (_, _) => Shell.Open(new WordPage(e));
+            acts.Children.Add(more);
         }
         g.Children.Add(acts.Col(1));
         var card = U.Card(g);
