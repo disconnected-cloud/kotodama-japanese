@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Avalonia;
+using Avalonia.VisualTree;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Controls.Primitives;
@@ -162,10 +163,12 @@ public sealed class TextPage : UserControl, IPage
 {
     readonly RText _t;
     public string Title => _t.Title;
-    bool _furi = true, _ru, _romaji;
+    bool _furi = true, _ru, _romaji, _listen;
+    readonly HashSet<RSentence> _revealed = new();
+    readonly List<(RSentence s, Border card)> _cards = new();
     readonly ContentControl _popup = new();
 
-    public TextPage(RText t) { _t = t; }
+    public TextPage(RText t, bool listen = false) { _t = t; _listen = listen; }
 
     public void OnShown() => Build();
 
@@ -178,9 +181,13 @@ public sealed class TextPage : UserControl, IPage
         bar.Children.Add(Toggle("Фуригана", _furi, v => { _furi = v; Build(); }));
         bar.Children.Add(Toggle("Перевод", _ru, v => { _ru = v; Build(); }));
         bar.Children.Add(Toggle("Латиница", _romaji, v => { _romaji = v; Build(); }));
-        bar.Children.Add(U.Btn("Слушать всё", PlayAll, "", "").M(0, 0, 8, 8));
+        bar.Children.Add(Toggle("На слух", _listen, v => { _listen = v; _revealed.Clear(); Build(); }));
+        bar.Children.Add(U.Btn(_listen ? "Слушать главу" : "Слушать всё", PlayAll, _listen ? "Primary" : "", "").M(0, 0, 8, 8));
         root.Children.Add(bar);
 
+        if (_listen)
+            root.Children.Add(Art.Say("Режим аудирования: текст спрятан. Слушай главу целиком, потом отвечай на вопросы. Нажми на строку, чтобы подсмотреть.", Mood.Think, 90).M(0, 0, 0, 12));
+        _cards.Clear();
         foreach (var s in _t.Sentences) root.Children.Add(SentenceView(s));
         root.Children.Add(_popup.M(0, 6, 0, 0));
         if (_t.Questions.Length > 0) root.Children.Add(Questions());
@@ -196,6 +203,20 @@ public sealed class TextPage : UserControl, IPage
 
     Control SentenceView(RSentence s)
     {
+        if (_listen && !_revealed.Contains(s))
+        {
+            // текст скрыт: полоска-заглушка, по нажатию — подсмотреть
+            int n = Array.IndexOf(_t.Sentences, s) + 1;
+            var hidden = U.Cols("auto", "*", "auto");
+            hidden.Children.Add(U.T(n.ToString(), "H3", 14, U.B("Muted")).CenterV());
+            hidden.Children.Add(new Border { Height = 10, CornerRadius = new CornerRadius(5), Background = U.B("Surface3"), Margin = new Thickness(14, 0, 14, 0), Width = Math.Min(560, 40 + s.Jp.Length * 14), HorizontalAlignment = HorizontalAlignment.Left }.CenterV().Col(1));
+            hidden.Children.Add(U.Row(2, U.SpeakBtn(() => s.Jp, true), U.SpeakBtn(() => s.Jp)).Col(2));
+            var hc = U.Card(hidden, new Thickness(18, 10, 12, 10)).M(0, 0, 0, 8);
+            hc.Cursor = Cursors.Hand;
+            hc.PointerReleased += (_, e) => { if (e.Source is Visual v && v.FindAncestorOfType<Button>(true) == null) { _revealed.Add(s); Build(); } };
+            _cards.Add((s, hc));
+            return hc;
+        }
         var wrap = new WrapPanel();
         foreach (var t in s.Tokens)
         {
@@ -218,7 +239,9 @@ public sealed class TextPage : UserControl, IPage
         if (_ru && s.Ru.Length > 0) col.Children.Add(U.T(s.Ru, "Body", 14, U.B("Muted")).M(0, 4, 0, 0));
         g.Children.Add(col);
         g.Children.Add(U.Row(2, U.SpeakBtn(() => s.Jp, true), U.SpeakBtn(() => s.Jp)).Col(1));
-        return U.Card(g, new Thickness(18, 12, 12, 12)).M(0, 0, 0, 8);
+        var card = U.Card(g, new Thickness(18, 12, 12, 12)).M(0, 0, 0, 8);
+        _cards.Add((s, card));
+        return card;
     }
 
     static string Romaji(RSentence s) => Kana.ToRomaji(string.Join(" ", s.Tokens.Where(t => t.Pos != "補助記号").Select(t =>
@@ -258,8 +281,17 @@ public sealed class TextPage : UserControl, IPage
 
     async void PlayAll()
     {
+        // текущее предложение подсвечивается рамкой — легко следить за текстом
         foreach (var s in _t.Sentences)
-            if (!await Speech.SayAsync(s.Jp)) break;
+        {
+            var card = _cards.FirstOrDefault(c => c.s == s).card;
+            var normal = card?.BorderBrush;
+            if (card != null) { card.BorderBrush = U.B("Accent"); card.BringIntoView(); }
+            bool ok = await Speech.SayAsync(s.Jp);
+            if (card != null) card.BorderBrush = normal;
+            if (!ok) break;
+            await Task.Delay(_listen ? 600 : 250);
+        }
     }
 
     Control Questions()
