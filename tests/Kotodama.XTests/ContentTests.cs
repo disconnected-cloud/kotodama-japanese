@@ -37,4 +37,17 @@ public class ContentTests
             foreach (var s in u.Steps.Where(s => s.T == "speech"))
                 Assert.InRange(s.Id, 1, Db.SpeechLessons.Length);
     }
+
+    [Fact]
+    public void VoiceCleanupNormalizesWithoutClicks()
+    {
+        // тихий тон 200 Гц с постоянным смещением и резким началом
+        var x = Enumerable.Range(0, 24000).Select(i => (float)(0.2 + 0.3 * Math.Sin(i * 2 * Math.PI * 200 / 24000))).ToArray();
+        var (y, rate) = Matsubakira.Platform.Pcm.Decode(Voicevox.Clean(Matsubakira.Platform.Pcm.ToWav(x, 24000)), true);
+        Assert.Equal(24000, rate);
+        Assert.Equal(x.Length, y.Length);
+        Assert.InRange(y.Max(Math.Abs), 0.6f, 0.86f);          // громкость выровнена, без перегруза
+        Assert.True(Math.Abs(y[0]) < 0.01 && Math.Abs(y[^1]) < 0.01); // плавные края — без щелчков
+        Assert.True(Math.Abs(y.Skip(4000).Average()) < 0.05);  // постоянная составляющая убрана
+    }
 }

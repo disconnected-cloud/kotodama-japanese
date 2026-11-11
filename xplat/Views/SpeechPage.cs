@@ -197,7 +197,7 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
             });
         var card = U.Card(sp, new Thickness(26, 18, 26, 22));
         _phrase.Content = card;
-        if (Voicevox.Installed)
+        if (Tts.UseOffline) // VOICEVOX уже работает для озвучки — заодно берём из него мелодику фразы
         {
             var jp = p.Jp;
             Task.Run(() => Voicevox.Accent(jp)).ContinueWith(t =>

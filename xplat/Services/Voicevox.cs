@@ -279,7 +279,8 @@ public static class Voicevox
 
     static void Reset() { lock (Gate) _loadedPacks.Clear(); }
 
-    static void EnsureReady()
+    /// <summary>Готовит синтезатор и загружает только пакет с нужным голосом (а не все ~60 МБ каждый).</summary>
+    static void EnsureReady(uint style)
     {
         if (!BaseInstalled) throw new InvalidOperationException("VOICEVOX не установлен");
         if (!_resolverSet)
@@ -300,7 +301,10 @@ public static class Voicevox
             init.cpu_num_threads = (ushort)Math.Clamp(Environment.ProcessorCount / 2, 2, 8);
             Check(voicevox_synthesizer_new(ort, rc, init, out _synth), "синтезатор");
         }
-        foreach (var pack in InstalledPacks.Where(p => !_loadedPacks.Contains(p)))
+        var installed = InstalledPacks;
+        var need = Catalog.Where(p => installed.Contains(p.File) && p.Chars.Any(c => c.Styles.Any(s => s.Id == style))).Select(p => p.File).Take(1).ToList();
+        if (need.Count == 0) need = installed.Take(1).ToList();
+        foreach (var pack in need.Where(p => !_loadedPacks.Contains(p)))
         {
             Check(voicevox_voice_model_file_open(U8(Path.Combine(ModelsDir, pack)), out var model), "модель " + pack);
             var lo = voicevox_make_default_load_voice_model_options();
@@ -318,7 +322,7 @@ public static class Voicevox
         {
             lock (Gate)
             {
-                EnsureReady();
+                EnsureReady(style);
                 Check(voicevox_synthesizer_create_audio_query(_synth, U8(text), style, out var qPtr), "разбор текста");
                 string q = Marshal.PtrToStringUTF8(qPtr)!;
                 voicevox_json_free(qPtr);
@@ -362,10 +366,10 @@ public static class Voicevox
                 double rc2 = 1.0 / (2 * Math.PI * 9000), b = dt / (rc2 + dt), z = x[0];
                 for (int i = 0; i < x.Length; i++) { z += b * (x[i] - z); x[i] = (float)z; }
             }
-            float peak = 0;
-            foreach (var v in x) peak = Math.Max(peak, Math.Abs(v));
-            float gain = peak > 1e-4f ? Math.Min(4f, 0.84f / peak) : 1f;
             int fade = rate / 125; // 8 мс
+            float peak = 0;
+            for (int i = fade; i < x.Length - fade; i++) peak = Math.Max(peak, Math.Abs(x[i])); // края всё равно гасятся
+            float gain = peak > 1e-4f ? Math.Min(4f, 0.84f / peak) : 1f;
             for (int i = 0; i < x.Length; i++)
             {
                 float g = gain;
@@ -388,8 +392,8 @@ public static class Voicevox
         {
             lock (Gate)
             {
-                EnsureReady();
                 uint style = PickStyle(false);
+                EnsureReady(style);
                 Check(voicevox_synthesizer_create_accent_phrases(_synth, U8(text), style, out var p), "акцент");
                 var json = Marshal.PtrToStringUTF8(p)!;
                 voicevox_json_free(p);

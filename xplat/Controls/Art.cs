@@ -16,7 +16,7 @@ public enum Mood { Happy, Joy, Wink, Think, Sad, Wow }
 /// </summary>
 public static class Art
 {
-    static IBrush C(string hex) => new SolidColorBrush(Color.Parse(hex));
+    static IBrush C(string hex) => Solid.TryGetValue(hex, out var b) ? b : Solid[hex] = new SolidColorBrush(Color.Parse(hex)).ToImmutable();
     static IBrush Grad(string a, string b, double angle = 90)
     {
         var (s, e) = angle == 90 ? (new RelativePoint(0.5, 0, RelativeUnit.Relative), new RelativePoint(0.5, 1, RelativeUnit.Relative))
@@ -24,9 +24,14 @@ public static class Art
         return new LinearGradientBrush { StartPoint = s, EndPoint = e, GradientStops = { new GradientStop(Color.Parse(a), 0), new GradientStop(Color.Parse(b), 1) } };
     }
 
+    // Разобранные пути кэшируются: маскоты и иконки рисуются на многих экранах
+    static readonly Dictionary<string, Geometry> Geo = new();
+    static Geometry G(string data) => Geo.TryGetValue(data, out var g) ? g : Geo[data] = Geometry.Parse(data);
+    static readonly Dictionary<string, IBrush> Solid = new();
+
     static Path P(string data, IBrush? fill, IBrush? stroke = null, double th = 0, double opacity = 1) => new()
     {
-        Data = Geometry.Parse(data), Fill = fill, Stroke = stroke, StrokeThickness = th, Opacity = opacity,
+        Data = G(data), Fill = fill, Stroke = stroke, StrokeThickness = th, Opacity = opacity,
         StrokeLineCap = PenLineCap.Round, StrokeJoin = PenLineJoin.Round,
     };
 
