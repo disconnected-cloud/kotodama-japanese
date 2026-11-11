@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.VisualTree;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Controls.Primitives;
@@ -34,6 +35,26 @@ public sealed class DictPage : UserControl, IPage
     public string Title => "Словарь";
     readonly ListBox _list;
     readonly StackPanel _empty = new();
+    readonly StackPanel _recent = new();
+
+    /// <summary>Недавно открытые слова — одним нажатием обратно к ним.</summary>
+    void FillRecent()
+    {
+        _recent.Children.Clear();
+        var h = ProgressStore.P.DictHistory;
+        if (h.Count == 0 || !JDict.Loaded) return;
+        _recent.Children.Add(U.T("НЕДАВНО СМОТРЕЛ", "Overline").M(0, 10, 0, 6));
+        var wrap = new WrapPanel();
+        foreach (var w in h.Take(12))
+        {
+            var e = JDict.Lookup(w);
+            if (e == null) continue;
+            var b = new Button { Content = U.Row(6, U.Jp(e.Jp, 16), U.T(e.Ru.Split(';')[0].Trim() is var s && s.Length > 18 ? s[..18] + "…" : s, "Muted", 12).CenterV()), Margin = new Thickness(0, 0, 8, 8) };
+            b.Click += (_, _) => Shell.Open(new WordPage(e));
+            wrap.Children.Add(b);
+        }
+        _recent.Children.Add(wrap);
+    }
     readonly TextBox _box = new() { FontSize = 18, Padding = new Thickness(44, 10, 16, 10), VerticalContentAlignment = VerticalAlignment.Center };
     readonly TextBlock _info = U.T("", "Muted");
     readonly DispatcherTimer _debounce = new() { Interval = TimeSpan.FromMilliseconds(160) };
@@ -73,8 +94,10 @@ public sealed class DictPage : UserControl, IPage
             b.Click += (_, _) => { _box.Text = qq; _box.CaretIndex = qq.Length; };
             chips.Children.Add(b);
         }
-        _empty.Children.Add(Controls.Art.Say("Ищи как удобно: по-русски, латиницей, каной или иероглифами. Нажми «+», и слово попадёт в твои карточки.", Controls.Mood.Wink, 130));
-        _empty.Children.Add(chips);
+        _empty.Children.Add(Controls.Art.Say("Ищи как удобно: по-русски, латиницей, каной или иероглифами. Нажми на слово — откроется разбор иероглифов, примеры и похожие слова.", Controls.Mood.Wink, 130));
+        _empty.Children.Add(U.T("Попробуй", "Overline").M(0, 14, 0, 0));
+        _empty.Children.Add(chips.M(0, 6, 0, 0));
+        _empty.Children.Add(_recent);
         _empty.Margin = new Thickness(0, 10, 0, 0);
         root.Children.Add(_empty.RowAt(3));
         Content = root;
@@ -92,6 +115,7 @@ public sealed class DictPage : UserControl, IPage
             _info.Text = "Загружаю словарь…";
             await JDict.LoadAsync();
         }
+        FillRecent();
         Search();
     }
 
@@ -168,6 +192,8 @@ public sealed class DictPage : UserControl, IPage
             Margin = new Thickness(0, 0, 0, 6), Padding = new Thickness(16, 10), CornerRadius = new CornerRadius(12), Background = U.B("Surface"),
             BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(1), Child = g,
         };
+        bd.Cursor = Cursors.Hand;
+        bd.PointerReleased += (_, e) => { if (e.Source is Visual v && v.FindAncestorOfType<Button>(true) == null) Shell.Open(new WordPage(r.E)); };
         bd.PointerEntered += (_, _) => bd.BorderBrush = U.B("StrokeStrong");
         bd.PointerExited += (_, _) => bd.BorderBrush = U.B("Stroke");
         return bd;

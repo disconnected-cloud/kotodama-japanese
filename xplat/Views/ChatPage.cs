@@ -51,6 +51,15 @@ public sealed class ChatPage : UserControl, IPage, IKeyTarget
 
     void Render()
     {
+        // Повторная отрисовка (после скачивания модели, смены сцены) переиспользует эти элементы —
+        // сначала отцепляем их от старой разметки, иначе Avalonia бросает «already has a visual parent»
+        foreach (var c in new Control[] { _top, _scroll, _mic, _input, _send, _hint, _status, _meter })
+            switch (c.Parent)
+            {
+                case Panel p: p.Children.Remove(c); break;
+                case Decorator d: d.Child = null; break;
+                case ContentControl cc: cc.Content = null; break;
+            }
         var root = new Grid { RowDefinitions = new RowDefinitions("auto,auto,*,auto"), Margin = new Thickness(40, 12, 40, 18), MaxWidth = 980 };
         root.Children.Add(U.Header("話", "Разговор с ИИ", "Свободный диалог на японском с нейросетью, которая работает прямо на этом компьютере — без интернета."));
         root.Children.Add(_top.RowAt(1));

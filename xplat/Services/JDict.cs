@@ -100,6 +100,16 @@ public static class JDict
         return res;
     }
 
+    /// <summary>Частые слова, в записи которых есть этот иероглиф.</summary>
+    public static List<DictEntry> WithKanji(char c, int limit = 10)
+    {
+        var res = new List<DictEntry>();
+        if (!Loaded) return res;
+        for (int i = 0; i < _kanji.Length && res.Count < limit; i++)
+            if (_common[i] && _kanji[i].IndexOf(c) >= 0 && _kanji[i].Length <= 4) res.Add(Entry(i));
+        return res;
+    }
+
     // Совпадение целой глоссы: между разделителями «, ; ( » и концом строки
     static bool IsWholeGloss(string ru, int pos, int len)
     {

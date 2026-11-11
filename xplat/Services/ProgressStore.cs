@@ -58,6 +58,7 @@ public sealed class Progress
     public Dictionary<string, int> Mistakes { get; set; } = new();  // id ошибки → счётчик
     public HashSet<string> Achievements { get; set; } = new();
     public HashSet<string> Flags { get; set; } = new();
+    public List<string> DictHistory { get; set; } = new();       // недавно открытые слова словаря
     public List<string[]> CustomWords { get; set; } = new();
     public bool ShowRomaji { get; set; } = true;
     public bool AutoSpeak { get; set; } = true;

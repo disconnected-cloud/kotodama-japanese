@@ -735,6 +735,7 @@ public class MainView : UserControl
             case "mic": Push(new MicCheckPage()); break;
             case "pairs": Push(new PairsPage()); break;
             case "art": Push(new ArtDemo()); break;
+            case "word": JDict.LoadAsync().ContinueWith(_ => Dispatcher.UIThread.Post(() => Push(new WordPage(JDict.Lookup("勉強")!)))); break;
             case "article": Push(new ArticlePage(JapanPage.All[0])); break;
             case "match": Push(new MatchRushGame()); break;
             case "build": Push(new WordBuilderGame()); break;
