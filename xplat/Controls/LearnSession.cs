@@ -12,7 +12,7 @@ namespace Matsubakira.Controls;
 public sealed class LearnItem
 {
     public string Id = "", Front = "", Reading = "", Romaji = "", Meaning = "", Speak = "";
-    public bool IsKanji;
+    public bool IsKanji, IsKana;
     public string? On, Kun, Mnemonic, Topic;
     public string[][] Parts = Array.Empty<string[]>();
     public Example[] Examples = Array.Empty<Example>();
@@ -21,6 +21,15 @@ public sealed class LearnItem
     {
         Id = w.Id, Front = w.Jp, Reading = w.Kana, Romaji = w.Romaji, Meaning = w.Ru, Speak = w.Kana, Topic = w.Topic,
         Examples = w.ExJp.Length > 0 ? new[] { new Example(w.ExJp, "", w.ExRu) } : Array.Empty<Example>(),
+    };
+
+    public static LearnItem From(KanaCell c, bool kata) => new()
+    {
+        Id = (kata ? "k:" : "h:") + c.Hira, Front = kata ? c.Kata : c.Hira, Reading = kata ? c.Kata : c.Hira, Romaji = c.Romaji,
+        Meaning = c.Romaji, Speak = c.Hira, IsKana = true,
+        // пример: короткое частое слово, которое начинается с этого знака
+        Examples = Db.Words.Where(w => w.Level == "N5" && w.Kana.Length <= 5 && (kata ? w.Jp.StartsWith(c.Kata) : w.Kana.StartsWith(c.Hira) && !w.Jp.Any(ch => ch >= 'ァ' && ch <= 'ヶ')))
+            .Take(2).Select(w => new Example(w.Jp, w.Kana, w.Ru)).ToArray(),
     };
 
     public static LearnItem From(KanjiInfo k) => new()
@@ -43,15 +52,18 @@ public sealed class LearnSession : Grid, IPage, IKeyTarget
     readonly List<LearnItem> _items;
     readonly Action? _done;
     int _i = -1;                 // -1 — обзор, Count — итоговый обзор перед проверкой
-    QuizSession? _quiz;
+    Control? _quiz;
+    readonly Func<Control>? _customQuiz;
+    bool Bulk => _items.Count > 15; // больше 15 знаков: обзор таблицей, без показа по одному
     readonly ContentControl _body = new();
     readonly StackPanel _dots = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 14) };
 
-    public LearnSession(string title, IEnumerable<LearnItem> items, Action? done = null)
+    public LearnSession(string title, IEnumerable<LearnItem> items, Action? done = null, Func<Control>? quiz = null)
     {
         Title = title;
         _items = items.ToList();
         _done = done;
+        _customQuiz = quiz;
         Margin = new Thickness(40, 8, 40, 24);
         Children.Add(U.Page(new StackPanel { MaxWidth = 900, HorizontalAlignment = HorizontalAlignment.Center, Children = { _dots, _body } }));
         Render();
@@ -60,14 +72,14 @@ public sealed class LearnSession : Grid, IPage, IKeyTarget
     public static LearnSession Kanji(IEnumerable<KanjiInfo> ks, Action? done = null) => new("Новые кандзи", ks.Select(LearnItem.From), done);
     public static LearnSession Words(string title, IEnumerable<Word> ws, Action? done = null) => new(title, ws.Select(LearnItem.From), done);
 
-    string Noun(int n) => _items.All(x => x.IsKanji)
+    string Noun(int n) => _items.All(x => x.IsKana) ? MainView.Plural(n, "знак", "знака", "знаков") : _items.All(x => x.IsKanji)
         ? MainView.Plural(n, "иероглиф", "иероглифа", "иероглифов")
         : MainView.Plural(n, "слово", "слова", "слов");
 
     void Render()
     {
         _dots.Children.Clear();
-        for (int k = 0; k < _items.Count; k++)
+        for (int k = 0; k < (Bulk ? 0 : _items.Count); k++)
             _dots.Children.Add(new Border
             {
                 Width = k == _i ? 22 : 8, Height = 8, CornerRadius = new CornerRadius(4), Margin = new Thickness(3),
@@ -85,9 +97,11 @@ public sealed class LearnSession : Grid, IPage, IKeyTarget
         var sp = new StackPanel();
         sp.Children.Add(Art.Say(final
                 ? "Отлично! Взгляни на них ещё раз все вместе — и проверим, что запомнилось. Ошибки не страшны: я покажу их снова."
+                : Bulk ? $"Здесь {_items.Count} {Noun(_items.Count)}. Нажимай на любой — услышишь, как он звучит. Когда будешь готов, начнём проверку."
                 : $"Сегодня {_items.Count} {Noun(_items.Count)}. Сначала просто посмотри на все, потом разберём каждый по очереди — и только после этого проверка.",
             final ? Mood.Joy : Mood.Happy, 120).M(0, 0, 0, 18));
         var grid = new UniformGrid { Columns = U.Columns(_items.Count <= 5 ? _items.Count : _items.Count <= 6 ? 3 : 5, 2), Margin = new Thickness(-6, 0, -6, 0) };
+        bool kana = _items.All(x => x.IsKana);
         for (int k = 0; k < _items.Count; k++)
         {
             var it = _items[k];
@@ -96,7 +110,7 @@ public sealed class LearnSession : Grid, IPage, IKeyTarget
             {
                 Classes = { "Card" }, Margin = new Thickness(6), Padding = new Thickness(12, 16), Cursor = Cursors.Hand,
                 Child = U.Stack(
-                    U.Jp(it.Front, it.IsKanji ? 56 : it.Front.Length > 4 ? 26 : 34, null, true).Center(),
+                    U.Jp(it.Front, it.IsKanji || it.IsKana ? (Bulk ? 40 : 56) : it.Front.Length > 4 ? 26 : 34, null, true).Center(),
                     U.Jp(it.Reading, 13, U.B("Accent")).Center().M(0, 6, 0, 0).Also(t => t.IsVisible = it.Reading != it.Front),
                     U.T(it.Meaning, "Body", 13).Center().M(0, 4, 0, 0).Also(t => { t.TextAlignment = TextAlignment.Center; t.TextWrapping = TextWrapping.Wrap; t.MaxHeight = 40; })),
             }.Tip("Нажми — послушать");
@@ -107,8 +121,8 @@ public sealed class LearnSession : Grid, IPage, IKeyTarget
         sp.Children.Add(grid);
         Anim.Stagger(grid, 40, 80);
         var acts = U.Row(10,
-            final ? U.Btn("Посмотреть ещё раз", () => { _i = 0; Render(); }, "", "") : new Border(),
-            U.Btn(final ? "Проверить себя  →" : "Изучить по одному  →", Next, "Primary", ""));
+            final && !Bulk ? U.Btn("Посмотреть ещё раз", () => { _i = 0; Render(); }, "", "") : new Border(),
+            U.Btn(final || Bulk ? "Проверить себя  →" : "Изучить по одному  →", Bulk ? StartQuiz : Next, "Primary", ""));
         acts.HorizontalAlignment = HorizontalAlignment.Center; acts.Margin = new Thickness(0, 22, 0, 0);
         sp.Children.Add(acts);
         sp.Children.Add(U.T("Пробел / → — дальше", "Muted", 12).Center().M(0, 10, 0, 0).DesktopOnly());
@@ -120,7 +134,7 @@ public sealed class LearnSession : Grid, IPage, IKeyTarget
     {
         var g = U.Cols("auto", "28", "*");
         var left = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        if (it.IsKanji)
+        if (it.IsKanji || it.IsKana)
         {
             var sv = new StrokeView(it.Front, 230) { HorizontalAlignment = HorizontalAlignment.Center };
             left.Children.Add(sv);
@@ -147,9 +161,11 @@ public sealed class LearnSession : Grid, IPage, IKeyTarget
 
         var right = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         var head = U.Cols("*", "auto");
-        head.Children.Add(U.T(it.Meaning, "H1", 28).Also(t => t.TextWrapping = TextWrapping.Wrap));
+        head.Children.Add(it.IsKana ? U.T(it.Meaning, "H1", 64, U.B("Accent")) : U.T(it.Meaning, "H1", 28).Also(t => t.TextWrapping = TextWrapping.Wrap));
         head.Children.Add(U.Row(4, U.SpeakBtn(() => it.Speak, true), U.SpeakBtn(() => it.Speak)).Col(1));
         right.Children.Add(head);
+        if (it.IsKana)
+            right.Children.Add(U.T($"Читается «{it.Romaji}». Нажми на динамик и повтори вслух, затем обведи взглядом порядок черт.", "Muted", 14).Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 10, 0, 0));
         if (it.IsKanji)
         {
             var rd = U.Row(18,
@@ -201,7 +217,7 @@ public sealed class LearnSession : Grid, IPage, IKeyTarget
 
     void Next()
     {
-        if (_i >= _items.Count) { StartQuiz(); return; }
+        if (_i >= _items.Count || Bulk) { StartQuiz(); return; }
         _i++;
         Render();
     }
@@ -209,6 +225,14 @@ public sealed class LearnSession : Grid, IPage, IKeyTarget
     // ─────────── Проверка только по изученным ───────────
     void StartQuiz()
     {
+        if (_customQuiz != null)
+        {
+            _quiz = _customQuiz();
+            Children.Clear();
+            Children.Add(_quiz);
+            Margin = new Thickness(0);
+            return;
+        }
         var wrong = new HashSet<string>();
         var meanings = _items.Select(x => x.Meaning).ToArray();
         var fronts = _items.Select(x => x.Front).ToArray();
@@ -270,7 +294,7 @@ public sealed class LearnSession : Grid, IPage, IKeyTarget
 
     public bool HandleKey(Key key)
     {
-        if (_quiz != null) return _quiz.HandleKey(key);
+        if (_quiz != null) return _quiz is IKeyTarget kt && kt.HandleKey(key);
         if (key is Key.Space or Key.Enter or Key.Right) { Next(); return true; }
         if (key == Key.Left && _i >= 0) { _i--; Render(); return true; }
         if (key == Key.R && _i >= 0 && _i < _items.Count) { Speech.Say(_items[_i].Speak); return true; }

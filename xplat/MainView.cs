@@ -741,6 +741,7 @@ public class MainView : UserControl
             case "learn": Push(Controls.LearnSession.Kanji(Db.Kanji.Take(5))); break;
             case "learnw": Push(Controls.LearnSession.Words("Демо", Db.Words.Take(5)).Skip(1)); break;
             case "learn1": Push(Controls.LearnSession.Kanji(Db.Kanji.Skip(20).Take(5)).Skip(2)); break;
+            case "learnk": Push(new Controls.LearnSession("Хирагана", Kana.All.Take(10).Select(c => Controls.LearnItem.From(c, false))).Skip(2)); break;
             case "learnq": Push(Controls.LearnSession.Words("Демо", Db.Words.Take(5)).Skip(7)); break;
 #if !MOBILE
             case "chat": if (Environment.GetEnvironmentVariable("KOTODAMA_LLM") is { } lp) Llm.OverridePath = lp; NavigateRoot("chat"); break;

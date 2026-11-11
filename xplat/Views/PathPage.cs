@@ -87,11 +87,15 @@ public static class Course
                     ? s.Rows.SelectMany(r => Kana.BasicGrid[r]).OfType<KanaCell>()
                     : Kana.All.Where(c => c.Group == (s.Group ?? Kana.Basic));
                 var key = KanaKey(u, i);
-                Shell.Open(KanaPage.QuizFor(cells.ToList(), kata, StepTitle(s), (ok, total) =>
+                var list = cells.ToList();
+                Control Quiz() => KanaPage.QuizFor(list, kata, StepTitle(s), (ok, total) =>
                 {
                     if (total > 0 && ok * 100 / total >= 80) { F.Add(key); ProgressStore.Notify(); Shell.Toast("Шаг пройден!", "合格"); }
                     else Shell.Toast("Нужно 80% верных ответов — попробуй ещё раз", "頑張って");
-                }));
+                });
+                // Впервые — сначала знакомство со всеми знаками (порядок черт, звук), потом квиз
+                if (F.Contains(key)) Shell.Open(Quiz());
+                else Shell.Open(new LearnSession(StepTitle(s), list.Select(c => LearnItem.From(c, kata)), quiz: Quiz));
                 break;
             }
             case "speech": Shell.Open(new SpeechLessonPage(Db.SpeechLessons[s.Id - 1])); break;
@@ -280,7 +284,7 @@ public sealed class UnitPage : UserControl, IPage
 
     static string Hint(CourseStep s) => s.T switch
     {
-        "kana" => "Квиз на 20 вопросов · нужно 80%",
+        "kana" => "Знакомство со знаками → квиз · нужно 80%",
         "speech" => "Повтори все фразы урока вслух",
         "dialog" => "Сыграй свою роль в сценке",
         "grammar" => "Объяснение + упражнения · нужно 70%",
