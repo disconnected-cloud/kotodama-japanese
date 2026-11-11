@@ -39,9 +39,10 @@ public sealed class OnboardingPage : UserControl, IPage
     void Next() { _step++; Render(); }
 
     Control Welcome() => U.Stack(
-        U.Jp("言霊", 64, U.B("Accent"), true).Center(),
-        U.T("Добро пожаловать в Kotodama", "H1").Center().M(0, 12, 0, 6),
-        U.T("Котодама — «душа слова». Здесь ты научишься читать, понимать и говорить по-японски: шаг за шагом, с озвучкой каждой фразы и проверкой произношения.", "Body", 15).Center().M(0, 0, 0, 24),
+        U.Row(0, Controls.Art.Kotoha(220, Controls.Mood.Joy), Controls.Art.Tama(110, Controls.Mood.Happy).Also(t => t.VerticalAlignment = VerticalAlignment.Bottom)).Center(),
+        U.Jp("言霊", 30, U.B("Accent"), true).Center().M(0, 10, 0, 0),
+        U.T("Добро пожаловать в Kotodama", "H1").Center().M(0, 6, 0, 6),
+        U.T("Я Котоха, а это лисичка Тама — мы будем учиться вместе! Сначала я покажу каждый знак и слово, потом мы потренируемся, а говорить можно смело: засчитывается всё, что понятно.", "Body", 15).Center().M(0, 0, 0, 24).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.TextAlignment = TextAlignment.Center; t.MaxWidth = 620; }),
         U.Btn("Начать", Next, "Primary", "").Center(),
         U.Btn("Пропустить настройку", Finish, "Ghost").Center().M(0, 8, 0, 0));
 
