@@ -59,6 +59,9 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget
     readonly StackPanel _chat = new();
     readonly ScrollViewer _scroll;
     readonly List<Border> _bubbles = new();
+    readonly List<Control> _full = new();   // полное содержимое реплики (для режима «по памяти»)
+    bool _recall;
+    internal bool RecallPreview { set { _recall = value; } }
     readonly TextBlock _status = U.T("", "Muted", 13);
     readonly SpeechUi.LevelMeter _meter = new();
     readonly StackPanel _controls = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
@@ -108,6 +111,7 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget
     {
         _chat.Children.Clear();
         _bubbles.Clear();
+        _full.Clear();
         foreach (var line in _d.Lines)
         {
             bool mine = line.Speaker == _role;
@@ -122,12 +126,18 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget
             sp.Children.Add(jpRow);
             sp.Children.Add(U.T(line.Romaji, "Muted", 12.5).M(0, 2, 0, 0));
             sp.Children.Add(U.T(line.Ru, "Body", 13, U.B("Muted")).M(0, 2, 0, 0));
+            _full.Add(sp);
+            Control child = sp;
+            if (mine && _recall)
+                child = U.Stack(U.T(_d.Roles[line.Speaker], "Overline").M(0, 0, 0, 4),
+                    U.T("Скажи по-японски:", "Muted", 12),
+                    U.T("«" + line.Ru + "»", "H3", 16).Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 2, 0, 0));
             var bubble = new Border
             {
                 Background = U.B(mine ? "AccentSoft" : "Surface"), BorderBrush = U.B(mine ? "AccentSoft" : "Stroke"), BorderThickness = new Thickness(1),
                 CornerRadius = mine ? new CornerRadius(16, 16, 4, 16) : new CornerRadius(16, 16, 16, 4),
                 Padding = new Thickness(16, 12, 10, 12), MaxWidth = 560, Margin = new Thickness(0, 0, 0, 10),
-                HorizontalAlignment = mine ? HorizontalAlignment.Right : HorizontalAlignment.Left, Child = sp,
+                HorizontalAlignment = mine ? HorizontalAlignment.Right : HorizontalAlignment.Left, Child = child,
             };
             _bubbles.Add(bubble);
             _chat.Children.Add(bubble);
@@ -140,7 +150,8 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget
     {
         _controls.Children.Clear();
         _controls.Children.Add(U.Btn("Прослушать всё", () => Run(listenOnly: true), "", "").M(0, 0, 8, 0));
-        _controls.Children.Add(U.Btn("Играть роль", () => Run(listenOnly: false), "Primary", ""));
+        _controls.Children.Add(U.Btn("По памяти", () => { _recall = true; BuildChat(); Run(listenOnly: false); }, "", "").M(0, 0, 8, 0).Tip("Твои реплики скрыты — вспомни фразу по переводу"));
+        _controls.Children.Add(U.Btn("Играть роль", () => { if (_recall) { _recall = false; BuildChat(); } Run(listenOnly: false); }, "Primary", ""));
         _status.Text = Asr.Ready ? $"Ты — «{_d.Roles[_role]}». Нажми «Играть роль»: собеседник говорит, ты отвечаешь вслух."
                                  : "Можно прослушать диалог. Для проверки своих реплик скачай модель Whisper.";
         foreach (var b in _bubbles) b.Opacity = 1;
@@ -194,6 +205,7 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget
                     var (check, _) = await SpeechUi.RecordAndScore(line.Jp, line.KanaPlain, rec, ct, s => _status.Text = s);
                     _meter.Attach(null);
                     if (check.Error != null) { _status.Text = check.Error; if (await AskNext(true)) break; continue; }
+                    if (_recall && _bubbles[i].Child != _full[i]) { _bubbles[i].Child = _full[i]; Anim.Pop(_bubbles[i], 0.95); }
                     MarkScore(i, check.Score);
                     if (check.Heard.Length > 0) ProgressStore.SpeechResult(line.Id, check.Score);
                     _status.Text = $"{check.Score} — {check.Verdict}";

@@ -729,6 +729,7 @@ public class MainView : UserControl
             case "onboard": Push(new OnboardingPage()); break;
             case "speech": Push(new SpeechLessonPage(Db.SpeechLessons[1])); break;
             case "dialog": Push(new DialogPage(Db.Dialogs[1])); break;
+            case "dialogr": { var dp = new DialogPage(Db.Dialogs[1]); dp.RecallPreview = true; Push(dp); break; }
             case "unit": Push(new UnitPage(Db.Course[0])); break;
             case "reader": Push(new ReaderPage()); break;
             case "writing": Push(new WritingPage()); break;
