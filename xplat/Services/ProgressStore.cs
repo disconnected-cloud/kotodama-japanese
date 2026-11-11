@@ -117,8 +117,12 @@ public static class ProgressStore
         if (P.LastStudy.Date < DateTime.Today.AddDays(-1)) P.Streak = 0;
     }
 
+    /// <summary>Отладочные снимки экрана не должны менять настоящий прогресс.</summary>
+    public static bool ReadOnly;
+
     public static void Save()
     {
+        if (ReadOnly) return;
         try
         {
             var tmp = FilePath + ".tmp";

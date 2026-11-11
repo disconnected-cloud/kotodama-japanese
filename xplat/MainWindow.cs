@@ -32,7 +32,7 @@ public class MainWindow : Window
         if (args.Any(a => a is "--snap" or "--selftest" or "--offscreen" or "--speechaudit"))
         {
             ShowActivated = false; ShowInTaskbar = false;
-            if (args.Contains("--snap")) Platform.AudioPlayer.Muted = true;
+            if (args.Contains("--snap")) { Platform.AudioPlayer.Muted = true; ProgressStore.ReadOnly = true; }
             WindowStartupLocation = WindowStartupLocation.Manual; Position = new PixelPoint(-20000, 0);
         }
         // проверка телефонной раскладки на компьютере: размер экрана телефона
