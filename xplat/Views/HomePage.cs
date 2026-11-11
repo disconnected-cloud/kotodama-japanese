@@ -95,6 +95,17 @@ public sealed class HomePage : UserControl, IPage
         stats.Children.Add(Stat("Кандзи", kanjiKnown, $"из {Db.Kanji.Length}", "Good"));
         root.Children.Add(stats);
         root.Children.Add(TrainersPage.PlanCard().M(0, 16, 0, 0));
+        // Факт о Японии — каждый день новый, ведёт в раздел «Япония»
+        var facts = JapanPage.All.SelectMany(a => a.Facts.Select(f => (a, f))).ToArray();
+        if (facts.Length > 0)
+        {
+            var (fa, ff) = facts[(DateTime.Today.DayOfYear * 7) % facts.Length];
+            var jf = U.Cols("auto", "*", "auto");
+            jf.Children.Add(Art.Icon("torii", 44).CenterV());
+            jf.Children.Add(U.Stack(U.T("ЯПОНИЯ · ФАКТ ДНЯ", "Overline"), U.T(ff, "Body", 14.5).Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 4, 0, 0)).CenterV().M(16, 0, 12, 0).Col(1));
+            jf.Children.Add(U.Btn(fa.Title, () => Shell.Open(new ArticlePage(fa)), "", "").CenterV().Col(2));
+            root.Children.Add(U.Card(jf, new Thickness(20, 14, 20, 14)).M(0, 16, 0, 0));
+        }
         root.Children.Add(Report.Build().M(0, 16, 0, 0));
         var hint = U.T("Совет: Ctrl+K — быстрый поиск по всему приложению", "Muted", 12).DesktopOnly();
         hint.Margin = new Thickness(2, 10, 0, 0);
