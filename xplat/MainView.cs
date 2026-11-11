@@ -765,16 +765,16 @@ public sealed class ArtDemo : UserControl, IPage
     {
         var root = new StackPanel();
         var row = new WrapPanel();
-        foreach (Controls.Mood m in Enum.GetValues<Controls.Mood>()) row.Children.Add(Controls.Art.Kotoha(220, m).M(0, 0, 16, 16));
+        foreach (Controls.Mood m in Enum.GetValues<Controls.Mood>()) row.Children.Add(Controls.Art.Mascot(220, m).M(0, 0, 16, 16));
         root.Children.Add(row);
         var row2 = new WrapPanel();
-        foreach (Controls.Mood m in Enum.GetValues<Controls.Mood>()) row2.Children.Add(Controls.Art.Tama(110, m).M(0, 0, 16, 16));
+        foreach (var k in new[] { "student", "cheer", "teacher", "casual", "bunny", "astronaut", "hello", "reading", "head", "classic" }) row2.Children.Add(Controls.Art.Anime(k, 160).M(0, 0, 16, 16));
         root.Children.Add(row2);
         var icons = new WrapPanel();
         foreach (var n in new[] { "home","path","kana","words","kanji","grammar","speech","dialogs","chat","reader","books","dict","review","trainers","settings","more","phrases","voice","mic","palette","bell","target","shield","download","trophy","info","flame","games","write","storage","sparkle" })
             icons.Children.Add(Controls.Art.Icon(n, 48).M(0, 0, 12, 12));
         root.Children.Add(icons);
-        root.Children.Add(Controls.Art.Say("Привет! Я Котоха. Давай учить японский вместе!", Controls.Mood.Joy));
+        root.Children.Add(Controls.Art.Say("Привет! Я Википе-тан. Давай учить японский вместе!", Controls.Mood.Joy));
         Content = U.Page(root);
     }
 }

@@ -163,14 +163,15 @@ public sealed class SettingsPage : UserControl, IPage
                 var report = U.Row(10,
                     U.Btn("Сообщить об ошибке", () => CrashReport.Open(), "", ""),
                     U.Btn("Предложить идею", () => { try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo($"https://github.com/{Updater.Repo}/issues/new?labels=enhancement") { UseShellExecute = true }); } catch { } }, "Ghost", ""));
-                yield return U.Card(Art.Say($"Kotodama {Updater.Current.ToString(3)} · 言霊 — «душа слова»: правильно произнесённое слово обретает силу. Я Котоха, а это Тама — будем учиться вместе!", Mood.Joy, 120)).M(0, 0, 0, 16);
+                yield return U.Card(Art.Say($"Kotodama {Updater.Current.ToString(3)} · 言霊 — «душа слова»: правильно произнесённое слово обретает силу. Я Википе-тан — буду помогать тебе учиться!", Mood.Joy, 120)).M(0, 0, 0, 16);
                 yield return Section("Обратная связь", CrashReport.LastEntry() is { } ? "В журнале есть ошибка — отчёт откроется на GitHub уже заполненным, ты только нажмёшь «Submit»." : "Нашёл ошибку или есть идея? Откроется форма на GitHub.", report);
                 yield return Section("Открытые данные", null, U.Stack(
                     U.T("Словарь: JMdict © EDRDG, лицензия CC BY-SA 4.0 (сборка jmdict-simplified).", "Muted"),
                     U.T("Порядок черт: KanjiVG © Ulrich Apel, лицензия CC BY-SA 3.0.", "Muted"),
                     U.T("Питч-акцент: Kanjium (CC BY-SA 4.0). Части кандзи: KRADFILE, KANJIDIC2 © EDRDG (CC BY-SA 4.0).", "Muted"),
                     U.T("Распознавание речи: OpenAI Whisper (MIT) через whisper.cpp / Whisper.net.", "Muted"),
-                    U.T("Иллюстрации: Microsoft Fluent Emoji (MIT). Персонажи Котоха и Тама и иконки — собственные.", "Muted"),
+                    U.T("Иллюстрации: Microsoft Fluent Emoji (MIT); иконки — собственные.", "Muted"),
+                    U.T("Аниме-маскот Википе-тан: Wikimedia Commons, CC BY-SA 3.0/4.0 — художники Kasuga, David Revoy, 燃灯, Di, SunRuikang, Tommyang.", "Muted"),
                     U.T("Офлайн-синтез: VOICEVOX (голоса — по условиям персонажей). Примеры фраз: Tatoeba (CC BY 2.0 FR).", "Muted"),
                     U.T("Морфологический разбор при подготовке латиницы: MeCab + UniDic.", "Muted")));
                 break;

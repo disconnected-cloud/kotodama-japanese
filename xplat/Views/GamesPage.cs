@@ -31,7 +31,7 @@ static class GameUi
         ProgressStore.AddXp(Math.Clamp(score / 20, 2, 30));
         Sfx.Done();
         var sp = U.Stack(
-            Controls.Art.Kotoha(130, record ? Controls.Mood.Joy : score > 0 ? Controls.Mood.Happy : Controls.Mood.Think).Center().M(0, 0, 0, 8),
+            Controls.Art.Mascot(130, record ? Controls.Mood.Joy : score > 0 ? Controls.Mood.Happy : Controls.Mood.Think).Center().M(0, 0, 0, 8),
             U.Jp(record ? "新記録！" : "お疲れ様！", 36, U.B("Accent"), true).Center(),
             U.T(record ? "Новый рекорд!" : title, "H2").Center().M(0, 8, 0, 0),
             U.T(score.ToString(), "H1", 56).Center().M(0, 10, 0, 0),

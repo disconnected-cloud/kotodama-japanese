@@ -3,6 +3,8 @@ using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Matsubakira.Services;
 using Path = Avalonia.Controls.Shapes.Path;
 
@@ -11,8 +13,8 @@ namespace Matsubakira.Controls;
 public enum Mood { Happy, Joy, Wink, Think, Sad, Wow }
 
 /// <summary>
-/// Собственная векторная графика приложения: маскоты (Котоха и дух-лисичка Тама) и набор цветных иконок.
-/// Всё рисуется путями — чётко при любом масштабе и ничего не весит.
+/// Графика приложения: аниме-маскот Википе-тан (иллюстрации с Wikimedia Commons) и собственный набор
+/// цветных векторных иконок.
 /// </summary>
 public static class Art
 {
@@ -45,155 +47,39 @@ public static class Art
     static Control Box(Canvas c, double w, double h, double size) =>
         new Viewbox { Width = size * w / h, Height = size, Stretch = Stretch.Uniform, Child = c.Also(x => { x.Width = w; x.Height = h; }) };
 
-    // ─────────── Котоха ───────────
-    const string Hair = "#2E2547", HairLight = "#4A3D72", Skin = "#FFE6D8", SkinShade = "#F6CDBB", Line = "#22183A";
+    // ─────────── Аниме-маскот: Википе-тан (Wikimedia Commons, CC BY-SA, см. Assets/anime/CREDITS.txt) ───────────
+    static readonly Dictionary<string, Bitmap?> Pics = new();
 
-    /// <summary>Котоха — девушка-проводник в мир японского. size — высота в пикселях.</summary>
-    public static Control Kotoha(double size, Mood mood = Mood.Happy)
+    /// <summary>Иллюстрация из Assets/anime по ключу; height — высота в пикселях.</summary>
+    public static Control Anime(string key, double height)
     {
-        var c = new Canvas();
-        var hair = Grad(HairLight, Hair);
-        // Волосы сзади
-        c.Children.Add(P("M100 24 C152 24 174 60 171 108 C169 148 176 176 188 198 C162 204 146 190 141 170 L59 170 C54 190 38 204 12 198 C24 176 31 148 29 108 C26 60 48 24 100 24 Z", hair));
-        // Шея и тело в матроске
-        c.Children.Add(P("M87 148 L87 180 L113 180 L113 148 Z", C(SkinShade)));
-        c.Children.Add(P("M40 240 C42 204 64 182 100 178 C136 182 158 204 160 240 Z", Grad("#FFFFFF", "#E9E6F4")));
-        c.Children.Add(P("M58 196 C72 184 86 179 100 179 C114 179 128 184 142 196 L100 232 Z", Grad("#4A5A96", "#2F3C70")));
-        c.Children.Add(P("M66 197 L100 226 L134 197", null, C("#FFFFFF"), 2, 0.85));
-        c.Children.Add(P("M85 182 L100 210 L115 182 C110 180 105 179.5 100 179.5 C95 179.5 90 180 85 182 Z", C(SkinShade)));
-        c.Children.Add(P("M100 214 L82 204 L85 225 Z M100 214 L118 204 L115 225 Z", Grad("#FF7FA4", "#E2457A")));
-        c.Children.Add(E(100, 214, 5, 5, C("#D63A6E")));
-        // Лицо
-        c.Children.Add(P("M56 88 C56 128 74 158 100 166 C126 158 144 128 144 88 C144 60 124 46 100 46 C76 46 56 60 56 88 Z", Grad("#FFEDE3", Skin)));
-        // Румянец
-        c.Children.Add(E(70, 139, 9, 4.5, C("#FF8FAB"), mood == Mood.Sad ? 0.25 : 0.5));
-        c.Children.Add(E(130, 139, 9, 4.5, C("#FF8FAB"), mood == Mood.Sad ? 0.25 : 0.5));
-        // Глаза
-        switch (mood)
+        if (!Pics.TryGetValue(key, out var bmp))
         {
-            case Mood.Joy:
-                c.Children.Add(P("M67 122 C72 112 88 112 93 122", null, C(Line), 4));
-                c.Children.Add(P("M133 122 C128 112 112 112 107 122", null, C(Line), 4));
-                break;
-            case Mood.Wink:
-                Eye(c, 80, false, mood);
-                c.Children.Add(P("M107 120 C112 126 128 126 133 120", null, C(Line), 4));
-                break;
-            default:
-                Eye(c, 80, false, mood);
-                Eye(c, 120, true, mood);
-                break;
+            try { using var st = AssetLoader.Open(new Uri($"avares://Kotodama/Assets/anime/{key}.png")); bmp = new Bitmap(st); }
+            catch { bmp = null; }
+            Pics[key] = bmp;
         }
-        // Брови (видны сквозь чёлку)
-        if (mood == Mood.Sad)
-        {
-            c.Children.Add(P("M69 104 C76 102 84 99 90 95", null, C(Line), 2.4, 0.75));
-            c.Children.Add(P("M131 104 C124 102 116 99 110 95", null, C(Line), 2.4, 0.75));
-        }
-        // Нос и рот
-        c.Children.Add(P("M100.5 131 L98.8 134.5", null, C("#D99A88"), 1.6));
-        c.Children.Add(mood switch
-        {
-            Mood.Joy => P("M90 143 C92 156 108 156 110 143 Z", Grad("#C24A63", "#9C2F4C"), C(Line), 1.5),
-            Mood.Happy => P("M92 144 C94 152 106 152 108 144 Z", Grad("#C24A63", "#9C2F4C"), C(Line), 1.4),
-            Mood.Wink => P("M92 145 C96 151 104 151 108 145", null, C("#9C2F4C"), 2.6),
-            Mood.Think => P("M95 147 C99 145 103 146 106 148", null, C("#9C2F4C"), 2.4),
-            Mood.Sad => P("M93 149 C97 144 103 144 107 149", null, C("#9C2F4C"), 2.6),
-            _ => E(100, 148, 4.5, 5.5, C("#9C2F4C")),
-        });
-        if (mood is Mood.Joy or Mood.Happy) c.Children.Add(P("M95 150 C98 147 102 147 105 150 C102 152 98 152 95 150 Z", C("#FF8FA0"), null, 0, mood == Mood.Joy ? 1 : 0.8));
-        // Чёлка и пряди
-        c.Children.Add(P("M50 102 C44 56 70 32 100 32 C130 32 156 56 150 102 C146 90 141 80 134 73 C134 85 130 93 124 99 C122 87 118 77 112 71 C110 83 104 91 96 95 C98 85 96 77 92 71 C86 81 78 89 67 95 C69 85 70 79 70 73 C62 81 56 90 50 102 Z", hair));
-        c.Children.Add(P("M57 92 C49 122 51 152 60 176 C65 162 67 140 67 112 Z", hair));
-        c.Children.Add(P("M143 92 C151 122 149 152 140 176 C135 162 133 140 133 112 Z", hair));
-        c.Children.Add(P("M72 50 C86 42 114 42 128 50", null, C("#FFFFFF"), 4, 0.16));
-        c.Children.Add(P("M60 120 C58 136 60 150 63 160", null, C("#FFFFFF"), 2, 0.1));
-        // Заколка-сакура
-        c.Children.Add(Sakura(139, 70, 1.05));
-        if (mood == Mood.Think) c.Children.Add(P("M164 70 C164 62 176 62 176 70 C176 75 170 76 170 81 M170 87 L170 88", null, Grad("#B79CFF", "#7C5CE0"), 3.2));
-        if (mood == Mood.Wow) c.Children.Add(P("M166 58 L166 76 M166 84 L166 85", null, Grad("#FFC861", "#F29A2E"), 4));
-        if (mood == Mood.Joy) { c.Children.Add(Spark(28, 70, 1)); c.Children.Add(Spark(176, 120, 0.7)); }
-        return Box(c, 200, 240, size);
+        if (bmp == null) return new Border { Height = height };
+        var img = new Image { Source = bmp, Height = height, Stretch = Stretch.Uniform };
+        RenderOptions.SetBitmapInterpolationMode(img, Avalonia.Media.Imaging.BitmapInterpolationMode.HighQuality);
+        return img;
     }
 
-    static void Eye(Canvas c, double cx, bool right, Mood mood)
+    /// <summary>Википе-тан в полный рост — поза под настроение.</summary>
+    public static Control Mascot(double size, Mood mood = Mood.Happy) => Anime(mood switch
     {
-        double dx = mood == Mood.Think ? 3 : 0, dy = mood == Mood.Think ? -3 : 0;
-        double ry = mood == Mood.Wow ? 14 : 13;
-        c.Children.Add(E(cx, 121, 11, ry + 1, C("#FFFFFF")));
-        c.Children.Add(E(cx + dx, 122 + dy, 9.5, ry - 1, Grad("#3A2A6E", "#D0609E")));
-        c.Children.Add(E(cx + dx, 123 + dy, 4.8, 6.5, C("#1A1030")));
-        c.Children.Add(E(cx + dx - 3.5, 116 + dy, 3.4, 3.8, C("#FFFFFF")));
-        c.Children.Add(E(cx + dx + 4, 128 + dy, 1.6, 1.6, C("#FFFFFF"), 0.85));
-        // Ресницы
-        var lash = right ? $"M{cx + 14} 112 C{cx + 8} 102 {cx - 10} 102 {cx - 15} 110" : $"M{cx - 14} 112 C{cx - 8} 102 {cx + 10} 102 {cx + 15} 110";
-        c.Children.Add(P(lash, null, C(Line), 3.6));
-        c.Children.Add(P(right ? $"M{cx + 14} 112 L{cx + 18} 108.5" : $"M{cx - 14} 112 L{cx - 18} 108.5", null, C(Line), 2.6));
-        if (mood == Mood.Sad) c.Children.Add(E(cx + (right ? -6 : 6), 136, 2.2, 3.2, C("#8FD3FF"), 0.9));
-    }
+        Mood.Joy => "cheer", Mood.Wink => "casual", Mood.Think => "teacher", Mood.Sad => "classic", Mood.Wow => "astronaut", _ => "student",
+    }, mood == Mood.Joy ? size * 0.75 : size);
 
-    static Control Sakura(double x, double y, double scale)
-    {
-        var c = new Canvas();
-        for (int i = 0; i < 5; i++)
-        {
-            var petal = P("M0 -2 C-5 -6 -5 -13 -1.5 -14.5 L0 -12.5 L1.5 -14.5 C5 -13 5 -6 0 -2 Z", Grad("#FFE0EA", "#FF9DBA"), C("#F27CA0"), 0.8);
-            petal.RenderTransform = new RotateTransform(i * 72);
-            petal.RenderTransformOrigin = new RelativePoint(0, 0, RelativeUnit.Absolute);
-            c.Children.Add(petal);
-        }
-        c.Children.Add(E(0, 0, 2.6, 2.6, C("#F0507F")));
-        c.RenderTransform = new ScaleTransform(scale, scale);
-        c.RenderTransformOrigin = new RelativePoint(0, 0, RelativeUnit.Absolute);
-        Canvas.SetLeft(c, x); Canvas.SetTop(c, y);
-        return c;
-    }
-
-    static Control Spark(double x, double y, double s)
-    {
-        var p = P("M0 -10 C1 -3 3 -1 10 0 C3 1 1 3 0 10 C-1 3 -3 1 -10 0 C-3 -1 -1 -3 0 -10 Z", Grad("#FFE38A", "#FFB547"));
-        p.RenderTransform = new ScaleTransform(s, s);
-        p.RenderTransformOrigin = new RelativePoint(0, 0, RelativeUnit.Absolute);
-        Canvas.SetLeft(p, x); Canvas.SetTop(p, y);
-        return p;
-    }
-
-    // ─────────── Тама — дух-лисичка ───────────
-    public static Control Tama(double size, Mood mood = Mood.Happy)
-    {
-        var c = new Canvas();
-        c.Children.Add(P("M88 92 C112 90 118 62 106 46 C104 64 98 74 84 80 Z", Grad("#FFFFFF", "#FFD3E0"), C("#EBC9D5"), 1.5));
-        c.Children.Add(P("M104 52 C108 58 109 64 107 70", null, C("#FF9DBA"), 3, 0.8));
-        c.Children.Add(P("M28 46 L33 12 L54 32 Z M92 46 L87 12 L66 32 Z", C("#FFFDFB"), C("#EBDCD3"), 1.5));
-        c.Children.Add(P("M34 38 L36 20 L47 31 Z M86 38 L84 20 L73 31 Z", C("#FFB3C8")));
-        c.Children.Add(P("M18 72 C18 42 38 28 60 28 C82 28 102 42 102 72 C102 98 84 110 60 110 C36 110 18 98 18 72 Z", Grad("#FFFFFF", "#F6EEF2"), C("#EBDCD3"), 1.5));
-        c.Children.Add(P("M60 38 C55 45 57 50 60 53 C63 50 65 45 60 38 Z", Grad("#FF8FB0", "#E2457A")));
-        if (mood is Mood.Joy or Mood.Wink)
-        {
-            c.Children.Add(P("M39 68 C42 61 50 61 53 68", null, C(Line), 3.2));
-            c.Children.Add(P("M67 68 C70 61 78 61 81 68", null, C(Line), 3.2));
-        }
-        else
-        {
-            c.Children.Add(E(46, 67, 5, mood == Mood.Wow ? 7.5 : 6.5, C(Line)));
-            c.Children.Add(E(74, 67, 5, mood == Mood.Wow ? 7.5 : 6.5, C(Line)));
-            c.Children.Add(E(44.3, 64, 1.9, 2.1, C("#FFFFFF")));
-            c.Children.Add(E(72.3, 64, 1.9, 2.1, C("#FFFFFF")));
-        }
-        c.Children.Add(E(36, 80, 6, 3.4, C("#FF8FAB"), 0.45));
-        c.Children.Add(E(84, 80, 6, 3.4, C("#FF8FAB"), 0.45));
-        c.Children.Add(mood == Mood.Sad
-            ? P("M54 82 C57 78 63 78 66 82", null, C(Line), 2.2)
-            : mood == Mood.Wow ? E(60, 81, 3, 3.6, C("#9C2F4C"))
-            : P("M53 77 C56 82 60 80 60 77 C60 80 64 82 67 77", null, C(Line), 2.2));
-        return Box(c, 120, 120, size);
-    }
+    /// <summary>Небольшой портрет для подсказок, игр и облачков.</summary>
+    public static Control Chibi(double size, Mood mood = Mood.Happy) => Anime(mood switch { Mood.Joy => "bunny", Mood.Wow => "cheer", _ => "head" }, size * 0.8);
 
     /// <summary>Маскот с репликой в облачке — для пустых экранов, итогов и подсказок.</summary>
     public static Control Say(string text, Mood mood = Mood.Happy, double size = 120, bool tama = false)
     {
         var g = new Grid { ColumnDefinitions = new ColumnDefinitions("auto,*") };
-        g.Children.Add(tama ? Tama(size * 0.8, mood) : Kotoha(size, mood));
+        // в облачке нужен крупный портрет, а не фигура в полный рост
+        g.Children.Add(Anime(mood switch { Mood.Joy => "cheer", Mood.Wow => "bunny", _ => "head" }, size * 0.85).Also(i => i.VerticalAlignment = VerticalAlignment.Center));
         var bubble = new Border
         {
             Background = U.B("Surface2"), BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(1),

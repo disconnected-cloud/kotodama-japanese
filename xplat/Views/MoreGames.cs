@@ -328,7 +328,7 @@ public sealed class ListenCatchGame : Grid, IPage, IKeyTarget
     void Next()
     {
         if (_round >= Rounds) { _tick.Stop(); Children.Clear(); Children.Add(GameUi.Over($"Поймано {_hits} из {Rounds}", _points, Key, Start)); return; }
-        _mascot.Content = Art.Tama(64, Mood.Think);
+        _mascot.Content = Art.Chibi(64, Mood.Think);
         var opts = _pool.Skip(_round * 3 % Math.Max(1, _pool.Count - 6)).Take(6).ToList();
         if (opts.Count < 6) opts = _pool.Shuffled().Take(6).ToList();
         _target = opts[U.Rng.Next(opts.Count)];
@@ -362,7 +362,7 @@ public sealed class ListenCatchGame : Grid, IPage, IKeyTarget
             if (b != null) { b.Background = U.B("BadSoft"); b.BorderBrush = U.B("Bad"); }
             Sfx.Bad(); Mistakes.Add(_target.Id);
         }
-        _mascot.Content = Art.Tama(64, ok ? Mood.Joy : Mood.Sad);
+        _mascot.Content = Art.Chibi(64, ok ? Mood.Joy : Mood.Sad);
         _round++;
         DispatcherTimer.RunOnce(Next, TimeSpan.FromMilliseconds(ok ? 900 : 1700));
     }

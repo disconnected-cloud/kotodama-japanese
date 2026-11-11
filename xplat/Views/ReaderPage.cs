@@ -52,10 +52,11 @@ public sealed class ReaderPage : UserControl, IPage
             },
         });
         cover.Children.Add(new TextBlock { Text = jp, FontFamily = U.R<FontFamily>("JpSerif"), FontSize = 96, FontWeight = FontWeight.Bold, Foreground = Brushes.White, Opacity = 0.9, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(22, 0, 0, 6) });
-        if (book.StartsWith("Котоха"))
-            cover.Children.Add(Art.Kotoha(140, Mood.Joy).Also(k => { k.HorizontalAlignment = HorizontalAlignment.Right; k.VerticalAlignment = VerticalAlignment.Bottom; k.Margin = new Thickness(0, 0, 14, 0); }));
-        else
-            cover.Children.Add(Art.Tama(96, book.Contains("сказк") ? Mood.Wow : Mood.Happy).Also(k => { k.HorizontalAlignment = HorizontalAlignment.Right; k.VerticalAlignment = VerticalAlignment.Bottom; k.Margin = new Thickness(0, 0, 18, 10); }));
+        // на обложке — Википе-тан в подходящем образе
+        var pic = book.StartsWith("Котоха") ? Art.Anime("student", 260) : book.Contains("сказк") ? Art.Anime("reading", 180) : Art.Anime("casual", 260);
+        pic.HorizontalAlignment = HorizontalAlignment.Right; pic.VerticalAlignment = VerticalAlignment.Top; pic.Margin = new Thickness(0, 8, 12, -60);
+        cover.ClipToBounds = true;
+        cover.Children.Add(pic);
         var info = U.Stack(U.T(book, "H3", 16), U.T(sub, "Muted", 12.5).M(0, 3, 0, 10),
             U.Cols("*", "auto").Also(g =>
             {

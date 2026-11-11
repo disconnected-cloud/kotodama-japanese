@@ -35,7 +35,7 @@ public sealed class HomePage : UserControl, IPage
             < 18 => ("こんにちは", "Добрый день"),
             _ => ("こんばんは", "Добрый вечер"),
         };
-        // ─────────── Баннер: Котоха + продолжить путь ───────────
+        // ─────────── Баннер: Википе-тан + продолжить путь ───────────
         var u = Course.Current;
         int d = Course.DoneCount(u), t = Course.Total(u);
         int due = p.Cards.Count(kv => kv.Value.Due <= DateTime.Now);
@@ -67,9 +67,10 @@ public sealed class HomePage : UserControl, IPage
 
         var hero = U.Cols("*", "auto");
         hero.Children.Add(left.M(28, 22, 12, 22));
-        var kotoha = Art.Kotoha(230, mood);
-        kotoha.VerticalAlignment = VerticalAlignment.Bottom;
-        kotoha.Margin = new Thickness(0, 12, 26, -2);
+        // крупно и по пояс: баннер обрезает низ картинки
+        var kotoha = Art.Mascot(mood == Mood.Joy ? 330 : 480, mood);
+        kotoha.VerticalAlignment = VerticalAlignment.Top;
+        kotoha.Margin = new Thickness(0, 14, 30, mood == Mood.Joy ? 0 : -400);
         hero.Children.Add(kotoha.DesktopOnly().Col(1));
         var heroCard = new Border
         {

@@ -347,7 +347,7 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
         var sp = new StackPanel();
 
         var top = U.Cols("auto", "*", "auto");
-        if (Speech.Easy) top.Children.Add(Art.Tama(78, r.Ok ? (r.Score >= 85 ? Mood.Joy : Mood.Happy) : Mood.Think).CenterV().Col(2));
+        if (Speech.Easy) top.Children.Add(Art.Chibi(78, r.Ok ? (r.Score >= 85 ? Mood.Joy : Mood.Happy) : Mood.Think).CenterV().Col(2));
         var ring = new Grid { Width = 92, Height = 92 };
         ring.Children.Add(new Ellipse { Stroke = U.B("Surface3"), StrokeThickness = 7 });
         var arc = Results.Ring(46, 42.5, r.Score / 100.0);

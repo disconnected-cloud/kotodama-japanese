@@ -39,10 +39,10 @@ public sealed class OnboardingPage : UserControl, IPage
     void Next() { _step++; Render(); }
 
     Control Welcome() => U.Stack(
-        U.Row(0, Controls.Art.Kotoha(220, Controls.Mood.Joy), Controls.Art.Tama(110, Controls.Mood.Happy).Also(t => t.VerticalAlignment = VerticalAlignment.Bottom)).Center(),
+        Controls.Art.Anime("hello", 230).Center(),
         U.Jp("言霊", 30, U.B("Accent"), true).Center().M(0, 10, 0, 0),
         U.T("Добро пожаловать в Kotodama", "H1").Center().M(0, 6, 0, 6),
-        U.T("Я Котоха, а это лисичка Тама — мы будем учиться вместе! Сначала я покажу каждый знак и слово, потом мы потренируемся, а говорить можно смело: засчитывается всё, что понятно.", "Body", 15).Center().M(0, 0, 0, 24).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.TextAlignment = TextAlignment.Center; t.MaxWidth = 620; }),
+        U.T("Привет! Я Википе-тан, буду учиться вместе с тобой. Сначала я покажу каждый знак и слово, потом мы потренируемся, а говорить можно смело: засчитывается всё, что понятно.", "Body", 15).Center().M(0, 0, 0, 24).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.TextAlignment = TextAlignment.Center; t.MaxWidth = 620; }),
         U.Btn("Начать", Next, "Primary", "").Center(),
         U.Btn("Пропустить настройку", Finish, "Ghost").Center().M(0, 8, 0, 0));
 

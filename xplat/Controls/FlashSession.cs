@@ -87,7 +87,7 @@ public sealed class FlashSession : Grid, IPage, IKeyTarget
     {
         Children.Clear();
         Children.Add(U.Stack(
-            Art.Kotoha(200, Mood.Joy).Center().M(0, 0, 0, 10),
+            Art.Mascot(200, Mood.Joy).Center().M(0, 0, 0, 10),
             U.Jp("お疲れ様！", 44, U.B("Accent"), true).Center(),
             U.T("Сейчас нечего повторять — всё выучено вовремя.", "H2").Center().M(0, 12, 0, 6),
             U.T("Загляни позже или выучи новые слова.", "Muted").Center(),
