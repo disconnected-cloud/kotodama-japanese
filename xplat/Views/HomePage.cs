@@ -127,6 +127,7 @@ public sealed class HomePage : UserControl, IPage
         sections.Children.Add(Section("torii", "Япония", $"{JapanPage.All.Length} статей о культуре", "japan"));
         sections.Children.Add(Section("trainers", "Игры", "6 игр на слова и кану", "trainers"));
         sections.Children.Add(Section("chat", "Разговор с ИИ", "свободный диалог", "chat").DesktopOnly());
+        sections.Children.Add(Section("kanji", "Ключи кандзи", "из чего состоят знаки", "radicals"));
         root.Children.Add(sections);
         Anim.Stagger(sections, 30, 120);
 
@@ -157,7 +158,7 @@ public sealed class HomePage : UserControl, IPage
         g.Children.Add(U.Stack(U.T(title, "H3", 14), U.T(sub, "Muted", 12)).CenterV().M(12, 0, 0, 0).Col(1));
         var card = new Border { Classes = { "Card" }, Child = g, Margin = new Thickness(6), Padding = new Thickness(16, 12, 16, 12), Cursor = Cursors.Hand };
         Hover(card);
-        card.PointerReleased += (_, _) => Shell.Go(key);
+        card.PointerReleased += (_, _) => { if (key == "radicals") Shell.Open(new RadicalsPage()); else Shell.Go(key); };
         return card;
     }
 

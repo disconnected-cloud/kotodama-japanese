@@ -736,6 +736,7 @@ public class MainView : UserControl
             case "mic": Push(new MicCheckPage()); break;
             case "pairs": Push(new PairsPage()); break;
             case "art": Push(new ArtDemo()); break;
+            case "report": Push(new UserControl { Content = U.Page(Report.Build()) }); break;
             case "radicals": Push(new RadicalsPage()); break;
             case "textl": Push(new TextPage(ReaderPage.Texts.First(t => t.Book != null), true)); break;
             case "word": JDict.LoadAsync().ContinueWith(_ => Dispatcher.UIThread.Post(() => Push(new WordPage(JDict.Lookup("勉強")!)))); break;

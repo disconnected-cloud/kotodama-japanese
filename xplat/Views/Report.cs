@@ -50,7 +50,42 @@ public static class Report
             hs.Children.Add(row);
         }
         g.Children.Add(hs.Col(4));
-        return U.Card(g, new Thickness(22));
+        var all = new StackPanel();
+        all.Children.Add(g);
+        all.Children.Add(new Border { Height = 1, Background = U.B("Stroke"), Margin = new Thickness(0, 18, 0, 14) });
+        all.Children.Add(Goal());
+        return U.Card(all, new Thickness(22));
+    }
+
+    /// <summary>Цель уровня JLPT: сколько слов, кандзи и грамматики осталось и когда при текущем темпе уровень будет пройден.</summary>
+    static Control Goal()
+    {
+        var p = ProgressStore.P;
+        string lvl = p.Level is "N4" or "N3" ? p.Level : "N5";
+        var words = Db.WordsOf(lvl).ToList();
+        var kanji = Db.KanjiOf(lvl).ToList();
+        var gram = Db.Grammar.Where(x => x.Level == lvl).ToList();
+        int wk = words.Count(w => ProgressStore.Card(w.Id) != null), kk = kanji.Count(k => ProgressStore.Card(k.Id) != null), gk = gram.Count(x => p.GrammarDone.Contains(x.Id));
+        int left = words.Count - wk + kanji.Count - kk + (gram.Count - gk) * 5; // урок грамматики ≈ 5 карточек по времени
+        // темп: новые карточки за 2 недели (карточки с 1–3 повторениями, открытые недавно)
+        int recent = p.Cards.Values.Count(c => c.Reps <= 3 && c.LastReview >= DateTime.Now.AddDays(-14));
+        double pace = recent / 14.0;
+        string forecast = left <= 0 ? $"Уровень {lvl} пройден — пора к следующему!"
+            : pace >= 1 ? $"В твоём темпе (~{pace:0} в день) {lvl} будет пройден примерно к {DateTime.Today.AddDays(Math.Ceiling(left / pace)):d MMMM yyyy}."
+            : $"Если учить по 10 новых слов и кандзи в день, {lvl} будет пройден примерно к {DateTime.Today.AddDays(Math.Ceiling(left / 10.0)):d MMMM yyyy}.";
+        var g = U.Cols("*", "20", "*", "20", "*");
+        g.Children.Add(Meter("Слова " + lvl, wk, words.Count, "Info"));
+        g.Children.Add(Meter("Кандзи " + lvl, kk, kanji.Count, "Good").Col(2));
+        g.Children.Add(Meter("Грамматика " + lvl, gk, gram.Count, "Accent2").Col(4));
+        return U.Stack(U.T("ЦЕЛЬ: JLPT " + lvl, "Overline"), U.T(forecast, "H3", 15).Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 4, 0, 12), U.Stackify(g));
+    }
+
+    static Control Meter(string label, int done, int total, string brush)
+    {
+        var head = U.Cols("*", "auto");
+        head.Children.Add(U.T(label, "Muted", 12.5));
+        head.Children.Add(U.T($"{done} / {total}", "Body", 12.5).Col(1));
+        return U.Stack(head, new ProgressBar { Maximum = Math.Max(1, total), Value = done, Height = 6, Foreground = U.B(brush), Margin = new Thickness(0, 6, 0, 0) });
     }
 
     static Control Bars(string title, string total, int[] values, string[] labels, string brush, bool highlightLast)
