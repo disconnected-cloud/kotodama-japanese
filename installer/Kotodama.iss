@@ -2,7 +2,7 @@
 ; Установка для текущего пользователя, без прав администратора; данные хранятся в %AppData%\Matsubakira.
 
 #define AppName "Kotodama"
-#define AppVersion "1.3.0"
+#define AppVersion "1.3.1"
 #define AppExe "Kotodama.exe"
 
 [Setup]

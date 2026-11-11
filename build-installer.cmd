@@ -9,5 +9,5 @@ if not exist "%ISCC%" (echo Inno Setup 6 не найден. Установи: wi
 "%ISCC%" installer\Kotodama.iss
 if errorlevel 1 (echo. & echo Ошибка сборки, см. сообщения выше. & pause & exit /b 1)
 echo.
-echo Готово: release\Kotodama-Setup-1.3.0.exe
+echo Готово: release\Kotodama-Setup-1.3.1.exe
 pause

@@ -124,7 +124,7 @@ public static class SpeechUi
             head.Children.Add(new TextBlock { Text = "", FontFamily = U.R<FontFamily>("Icons"), FontSize = 18, Foreground = U.B(Asr.Ready ? "Good" : "Accent"), VerticalAlignment = VerticalAlignment.Center });
             head.Children.Add(U.Stack(
                 U.T(Asr.Ready ? "Проверка произношения готова" : "Проверка произношения", "H3"),
-                U.T(Asr.Ready ? $"Модель Whisper ({Asr.Models.First(m => m.id == Asr.ModelId).title.ToLower()}) работает офлайн на этом компьютере."
+                U.T(Asr.Ready ? $"Модель Whisper ({Asr.Models.First(m => m.id == Asr.ModelId).title.ToLower()}) работает офлайн на {(Shell.Compact ? "телефоне" : "этом компьютере")}."
                               : "Нужна бесплатная модель распознавания OpenAI Whisper. Скачивается один раз и дальше работает без интернета.", "Muted")).M(14, 0, 0, 0).Col(1));
             sp.Children.Add(head);
             if (!Recorder.HasMicrophone)

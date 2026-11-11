@@ -30,10 +30,7 @@ public sealed class SpeechPage : UserControl, IPage
         root.Children.Add(mic);
 
         root.Children.Add(U.T("Уроки", "H2").M(0, 26, 0, 12));
-        var grid = new UniformGrid { Columns = U.Columns(3), Margin = new Thickness(-6, 0, -6, 0) };
-#if !MOBILE
-        grid.Children.Add(ChatCard());
-#endif
+        var grid = new UniformGrid { Columns = U.Columns(3, 2), Margin = new Thickness(-6, 0, -6, 0) };
         grid.Children.Add(PersonalCard());
         grid.Children.Add(PairsCard());
         foreach (var l in Db.SpeechLessons) grid.Children.Add(LessonCard(l));
@@ -69,19 +66,6 @@ public sealed class SpeechPage : UserControl, IPage
         var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
         HomePage.Hover(card);
         card.PointerReleased += (_, _) => Shell.OpenFrom(card, new SpeechLessonPage(PersonalLesson()));
-        return card;
-    }
-
-    static Border ChatCard()
-    {
-        var sp = new StackPanel();
-        sp.Children.Add(Art.Icon("chat", 44).Also(t => t.HorizontalAlignment = HorizontalAlignment.Left));
-        sp.Children.Add(U.T("Разговор с ИИ", "H3", 15).M(0, 12, 0, 3));
-        sp.Children.Add(U.T("Свободный диалог голосом с нейросетью — кафе, знакомство, дорога…", "Muted").Also(t => t.MinHeight = 36));
-        sp.Children.Add(U.Pill("Особое", U.B("AccentSoft"), U.B("Accent")).Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 10, 0, 0); }));
-        var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
-        HomePage.Hover(card);
-        card.PointerReleased += (_, _) => Shell.Go("chat");
         return card;
     }
 

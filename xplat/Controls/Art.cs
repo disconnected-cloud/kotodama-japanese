@@ -98,6 +98,8 @@ public static class Art
 
     static readonly Dictionary<string, IconDef> Icons = new()
     {
+        ["grid"] = new("#B3BCD1", "#6C7690", "M4.5 4.5 H10 V10 H4.5 Z M14 4.5 H19.5 V10 H14 Z M4.5 14 H10 V19.5 H4.5 Z M14 14 H19.5 V19.5 H14 Z"),
+        ["back"] = new("#B3BCD1", "#6C7690", "M19.5 12 H4.8 M11 5.5 L4.5 12 L11 18.5"),
         ["home"] = new("#FF8FB1", "#E8457C", "M4 11 L12 4 L20 11 M6.5 9.5 V19.5 H17.5 V9.5 M10 19.5 V14.5 H14 V19.5"),
         ["path"] = new("#B28BFF", "#7148E0", "M5 19.5 C9.5 19.5 9 13 13 13 C17 13 17 8.5 18 8 M18 9.5 V2.8 L22 4.4 L18 6", Fill: "M3.4 19.5 A1.6 1.6 0 1 0 6.6 19.5 A1.6 1.6 0 1 0 3.4 19.5 Z"),
         ["kana"] = new("#FF9F80", "#EC5B3C", Glyph: "あ"),

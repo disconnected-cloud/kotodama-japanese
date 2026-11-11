@@ -9,7 +9,7 @@
     <AssemblyName>Kotodama</AssemblyName>
     <Product>Kotodama</Product>
     <RootNamespace>Matsubakira</RootNamespace>
-    <Version>1.3.0</Version>
+    <Version>1.3.1</Version>
     <ApplicationIcon>../Assets/app.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <TieredPGO>true</TieredPGO>
@@ -45,8 +45,6 @@
     <PackageReference Include="NAudio.WinMM" Version="2.2.1" />
     <PackageReference Include="NAudio.Core" Version="2.2.1" />
     <PackageReference Include="NLayer" Version="3.0.1" />
-    <PackageReference Include="LLamaSharp" Version="0.30.0" />
-    <PackageReference Include="LLamaSharp.Backend.Cpu" Version="0.30.0" />
     <PackageReference Include="Whisper.net" Version="1.9.1" />
     <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
   </ItemGroup>

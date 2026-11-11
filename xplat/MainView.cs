@@ -32,6 +32,7 @@ public class MainView : UserControl
     readonly TranslateTransform _navShift = new();
     readonly Dictionary<string, RadioButton> _navItems = new();
     readonly Button _backBtn;
+    TextBlock? _brand;
     readonly TextBlock _crumb = new() { FontSize = 12.5, VerticalAlignment = VerticalAlignment.Center };
     readonly Border _toast = new();
     readonly TextBlock _toastJp = new(), _toastText = new();
@@ -43,7 +44,7 @@ public class MainView : UserControl
     readonly Button? _maxBtn;
     static readonly bool CustomChrome = OperatingSystem.IsWindows() && !Shell.Compact;
     readonly Grid _tabs = new();
-    readonly Dictionary<string, (TextBlock ico, TextBlock label)> _tabItems = new();
+    readonly Dictionary<string, TabItem> _tabItems = new();
     string _rootKey = "home";
 
     /// <summary>Окно, в котором показан интерфейс (на телефоне — null).</summary>
@@ -76,7 +77,7 @@ public class MainView : UserControl
         layout.Children.Add(_sidebar);
 
         // ── Основная область: строка заголовка + страница
-        var main = new Grid { RowDefinitions = new RowDefinitions(Shell.Compact ? "48,*,auto" : "44,*") };
+        var main = new Grid { RowDefinitions = new RowDefinitions(Shell.Compact ? "56,*,auto" : "44,*") };
         var bar = new Grid { Background = Brushes.Transparent };
         var left = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(20, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
         _backBtn = new Button
@@ -96,7 +97,19 @@ public class MainView : UserControl
         _backBtn.Click += (_, _) => Pop();
         _crumb.Foreground = U.B("Faint");
         left.Children.Add(_backBtn); left.Children.Add(_crumb);
-        if (Shell.Compact) { left.Margin = new Thickness(8, 0, 0, 0); _crumb.FontSize = 15; _crumb.FontWeight = FontWeight.SemiBold; _crumb.Margin = new Thickness(6, 0, 0, 0); }
+        if (Shell.Compact)
+        {
+            // телефон: верхняя панель как в Android — круглая стрелка «назад» и крупный заголовок экрана
+            left.Margin = new Thickness(6, 0, 0, 0);
+            _crumb.FontSize = 20; _crumb.FontWeight = FontWeight.SemiBold; _crumb.Foreground = U.B("Text"); _crumb.Margin = new Thickness(10, 0, 0, 0);
+            _crumb.TextTrimming = TextTrimming.CharacterEllipsis; _crumb.MaxWidth = 300;
+            _brand = new TextBlock { Text = "言霊", FontFamily = U.R<FontFamily>("JpSerif"), FontSize = 22, Foreground = U.B("Accent"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
+            left.Children.Insert(0, _brand);
+            _backBtn.Content = Controls.Art.Glyph("back", 22, U.B("Text"));
+            _backBtn.Width = _backBtn.Height = 44; _backBtn.Padding = new Thickness(0); _backBtn.Margin = new Thickness(0);
+            _backBtn.CornerRadius = new CornerRadius(22);
+            _backBtn.HorizontalContentAlignment = HorizontalAlignment.Center; _backBtn.VerticalContentAlignment = VerticalAlignment.Center;
+        }
         bar.Children.Add(left);
         if (CustomChrome)
         {
@@ -144,6 +157,14 @@ public class MainView : UserControl
             _opened = true;
             // системная кнопка «Назад» на телефоне — шаг назад по страницам
             if (TopLevel.GetTopLevel(this) is { } tl) tl.BackRequested += (_, e) => { if (_overlay != null) { CloseOverlay(); e.Handled = true; } else if (_stack.Count > 1) { Pop(); e.Handled = true; } };
+            // Android 15+ рисует приложение под строкой состояния и жестовой панелью — отступаем на их высоту
+            if (TopLevel.GetTopLevel(this)?.InsetsManager is { } im)
+            {
+                im.DisplayEdgeToEdgePreference = true;
+                im.SystemBarColor = ((ISolidColorBrush)U.B("Bg")).Color;
+                Padding = im.SafeAreaPadding;
+                im.SafeAreaChanged += (_, e) => Padding = e.SafeAreaPadding;
+            }
             Dispatcher.UIThread.Post(OnOpened, DispatcherPriority.Loaded);
         };
     }
@@ -181,10 +202,6 @@ public class MainView : UserControl
         if (oi > 0 && oi + 1 < args.Length) DebugOpen(args[oi + 1]);
         int pt = Array.IndexOf(args, "--playtest");
         if (pt > 0 && pt + 1 < args.Length) DebugPlay(args[pt + 1]);
-#if !MOBILE
-        int li = Array.IndexOf(args, "--llmtest");
-        if (li > 0 && li + 2 < args.Length) DebugLlm(args[li + 1], args[li + 2]);
-#endif
         int bi = Array.IndexOf(args, "--asrbench");
         if (bi > 0 && bi + 2 < args.Length) DebugAsrBench(args[bi + 1], args[bi + 2]);
         int si = Array.IndexOf(args, "--snap");
@@ -259,9 +276,6 @@ public class MainView : UserControl
         Header("ГОВОРИТЬ");
         Item("speech", "speech", "Говорение");
         Item("dialogs", "dialogs", "Диалоги");
-#if !MOBILE
-        Item("chat", "chat", "Разговор с ИИ");
-#endif
         Header("ЧИТАТЬ И ИГРАТЬ");
         Item("reader", "books", "Книги и тексты");
         Item("japan", "torii", "Япония");
@@ -301,49 +315,64 @@ public class MainView : UserControl
     }
 
     // ─────────── Телефон: нижние вкладки ───────────
-    static readonly (string key, string glyph, string label)[] Tabs =
+    static readonly (string key, string icon, string label)[] Tabs =
     {
-        ("home", "家", "Главная"), ("path", "道", "Путь"), ("review", "復", "Повтор"), ("speech", "話", "Говорить"), ("more", "\u2630", "Ещё"),
+        ("home", "home", "Главная"), ("path", "path", "Путь"), ("review", "review", "Повтор"), ("speech", "speech", "Говорить"), ("more", "grid", "Ещё"),
     };
 
+    /// <summary>Нижняя панель в духе Material 3: иконка в «пилюле» у активной вкладки, подпись снизу.</summary>
     Control BuildTabs()
     {
         _tabs.ColumnDefinitions = new ColumnDefinitions(string.Join(",", Tabs.Select(_ => "*")));
-        _tabs.Background = U.B("Sidebar");
+        _tabs.Background = U.B("Surface");
         for (int i = 0; i < Tabs.Length; i++)
         {
-            var (key, glyph, label) = Tabs[i];
-            var ico = new TextBlock { Text = glyph, FontFamily = U.R<FontFamily>(key == "more" ? "UiFont" : "JpSerif"), FontSize = 19, HorizontalAlignment = HorizontalAlignment.Center };
-            var lab = new TextBlock { Text = label, FontSize = 10.5, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 2, 0, 0) };
-            var cell = new Grid { Background = Brushes.Transparent, Cursor = Cursors.Hand, Height = 58 };
-            var stack = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Children = { ico, lab } };
-            cell.Children.Add(stack);
+            var (key, icon, label) = Tabs[i];
+            var off = Controls.Art.Glyph(icon, 22, U.B("Muted")).Also(g => g.HorizontalAlignment = HorizontalAlignment.Center);
+            var on = Controls.Art.Glyph(icon, 22, U.B("Accent")).Also(g => { g.HorizontalAlignment = HorizontalAlignment.Center; g.IsVisible = false; });
+            var pillScale = new ScaleTransform(1, 1);
+            var pill = new Border { Width = 60, Height = 32, CornerRadius = new CornerRadius(16), Background = U.B("AccentSoft"), Opacity = 0, RenderTransform = pillScale };
+            var top = new Grid { Width = 60, Height = 32, HorizontalAlignment = HorizontalAlignment.Center, Children = { pill, off, on } };
+            var lab = new TextBlock { Text = label, FontSize = 11.5, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 4, 0, 0) };
+            var cell = new Grid { Background = Brushes.Transparent, Cursor = Cursors.Hand, Height = 72 };
+            cell.Children.Add(new StackPanel { VerticalAlignment = VerticalAlignment.Center, Children = { top, lab } });
             if (key == "review")
             {
                 // число карточек к повторению — на вкладке
-                var badge = new Border { Background = U.B("Accent"), CornerRadius = new CornerRadius(8), Padding = new Thickness(5, 0), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(26, 6, 0, 0), IsVisible = false,
-                    Child = new TextBlock { FontSize = 10, FontWeight = FontWeight.SemiBold, Foreground = U.B("OnAccent") } };
+                var badge = new Border { Background = U.B("Accent"), CornerRadius = new CornerRadius(8), Padding = new Thickness(5, 0), MinWidth = 16, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(30, 8, 0, 0), IsVisible = false,
+                    Child = new TextBlock { FontSize = 10, FontWeight = FontWeight.SemiBold, Foreground = U.B("OnAccent"), HorizontalAlignment = HorizontalAlignment.Center } };
                 _tabBadge = badge;
                 cell.Children.Add(badge);
             }
             var k = key;
             cell.PointerReleased += (_, _) => { if (_rootKey == k && _stack.Count > 1) ShowRoot(k); else NavigateRoot(k); };
-            _tabItems[key] = (ico, lab);
+            _tabItems[key] = new TabItem(pill, pillScale, off, on, lab);
             _tabs.Children.Add(cell.Col(i));
         }
         HighlightTab();
         return new Border { BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(0, 1, 0, 0), Child = _tabs };
     }
 
+    sealed record TabItem(Border Pill, ScaleTransform Scale, Control Off, Control On, TextBlock Label) { public bool Active; }
     Border? _tabBadge;
 
     void HighlightTab()
     {
         string active = Tabs.Any(t => t.key == _rootKey) ? _rootKey : "more";
-        foreach (var (k, (ico, lab)) in _tabItems)
+        foreach (var (k, t) in _tabItems)
         {
-            var b = U.B(k == active ? "Accent" : "Muted");
-            ico.Foreground = b; lab.Foreground = k == active ? U.B("Text") : U.B("Muted");
+            bool on = k == active;
+            t.Label.Foreground = U.B(on ? "Text" : "Muted");
+            t.Label.FontWeight = on ? FontWeight.SemiBold : FontWeight.Normal;
+            t.On.IsVisible = on; t.Off.IsVisible = !on;
+            if (on && !t.Active)
+            {
+                // «пилюля» раскрывается от центра — только transform и прозрачность, без перерасчёта разметки
+                Anim.Run((t.Scale, "x"), 0.5, 1, 260, v => t.Scale.ScaleX = v, Ease.QuinticOut);
+                Anim.Opacity(t.Pill, 0, 1, 180);
+            }
+            else if (!on) { Anim.Stop((t.Scale, "x")); t.Pill.Opacity = 0; }
+            t.Active = on;
         }
     }
 
@@ -365,9 +394,6 @@ public class MainView : UserControl
         ["reader"] = () => new ReaderPage(),
         ["japan"] = () => new JapanPage(),
         ["more"] = () => new MorePage(),
-#if !MOBILE
-        ["chat"] = () => new ChatPage(),
-#endif
     };
 
     public void NavigateRoot(string key)
@@ -419,7 +445,9 @@ public class MainView : UserControl
         _sidebar.IsVisible = !focus && !Shell.Compact;
         _tabs.IsVisible = Shell.Compact && !focus;
         _backBtn.IsVisible = _stack.Count > 1;
-        _crumb.Text = Shell.Compact ? (_stack.Count > 1 ? (_stack[^1] as IPage)?.Title ?? "" : (_stack[^1] as IPage)?.Title ?? "Kotodama")
+        if (_brand != null) _brand.IsVisible = _stack.Count <= 1;
+        // телефон: на корневых экранах — логотип (у страниц свой баннер с названием), внутри — название экрана
+        _crumb.Text = Shell.Compact ? (_stack.Count > 1 ? (_stack[^1] as IPage)?.Title ?? "" : "Kotodama")
             : string.Join("  ›  ", _stack.OfType<IPage>().Select(p => p.Title));
         (page as IPage)?.OnShown();
         Anim.Opacity(_host, 0, 1, 220);
@@ -669,38 +697,6 @@ public class MainView : UserControl
     }
 
 #if !MOBILE
-    /// <summary>Проверка языковой модели: диалог, исправление, перевод — с замером времени.</summary>
-    async void DebugLlm(string model, string outPath)
-    {
-        var log = new List<string>();
-        void L(string x) { log.Add(x); System.IO.File.WriteAllLines(outPath, log); }
-        try
-        {
-            Llm.OverridePath = model;
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            var cafe = Views.ChatPrompts.Scenes.First(x => x.Key == "cafe");
-            var hist = new List<(string, string)> { ("system", Views.ChatPrompts.System(cafe, "N5")), ("user", Views.ChatPrompts.Opener(cafe)) };
-            var r1 = await Llm.AskAsync(hist, 140, 0.7f);
-            L($"load+first: {sw.ElapsedMilliseconds} ms :: {r1}");
-            hist[^1] = ("assistant", r1);
-            hist.Add(("user", "コーヒーをください。ミルクはいらないです。"));
-            sw.Restart();
-            var r2 = await Llm.AskAsync(hist, 140, 0.7f);
-            L($"reply2: {sw.ElapsedMilliseconds} ms :: {r2}");
-            foreach (var t in new[] { "わたしはきのう学校に行きます。", "コーヒーをください。", "わたしは日本語を勉強しますでした。" })
-            {
-                sw.Restart();
-                L($"correct '{t}': {sw.ElapsedMilliseconds} ms :: {await Llm.AskAsync(Views.ChatPrompts.Correct(t), 80, 0.1f)}");
-            }
-            sw.Restart();
-            L($"translate: {await Llm.AskAsync(Views.ChatPrompts.Translate(r2), 120, 0.2f)} ({sw.ElapsedMilliseconds} ms)");
-            sw.Restart();
-            L($"hint: {await Llm.AskAsync(Views.ChatPrompts.Hint(cafe, "N5", r2), 60, 0.5f)} ({sw.ElapsedMilliseconds} ms)");
-        }
-        catch (Exception ex) { L("ERROR " + ex); }
-        Environment.Exit(0);
-    }
-
     /// <summary>Беззвучная проверка воспроизведения: озвучка обычная и медленная, своя запись, звуки интерфейса.</summary>
     async void DebugPlay(string outPath)
     {
@@ -752,7 +748,6 @@ public class MainView : UserControl
             case "learnk": Push(new Controls.LearnSession("Хирагана", Kana.All.Take(10).Select(c => Controls.LearnItem.From(c, false))).Skip(2)); break;
             case "learnq": Push(Controls.LearnSession.Words("Демо", Db.Words.Take(5)).Skip(7)); break;
 #if !MOBILE
-            case "chat": if (Environment.GetEnvironmentVariable("KOTODAMA_LLM") is { } lp) Llm.OverridePath = lp; NavigateRoot("chat"); break;
 #endif
             case "wod": WordOfDay.Show(); break;
             case "quiz":
@@ -779,7 +774,7 @@ public sealed class ArtDemo : UserControl, IPage
         foreach (var k in new[] { "student", "cheer", "teacher", "casual", "bunny", "astronaut", "hello", "reading", "head", "classic" }) row2.Children.Add(Controls.Art.Anime(k, 160).M(0, 0, 16, 16));
         root.Children.Add(row2);
         var icons = new WrapPanel();
-        foreach (var n in new[] { "home","path","kana","words","kanji","grammar","speech","dialogs","chat","reader","books","dict","review","trainers","settings","more","phrases","voice","mic","palette","bell","target","shield","download","trophy","info","flame","games","write","storage","sparkle" })
+        foreach (var n in new[] { "home","path","kana","words","kanji","grammar","speech","dialogs","reader","books","dict","review","trainers","settings","more","phrases","voice","mic","palette","bell","target","shield","download","trophy","info","flame","games","write","storage","sparkle" })
             icons.Children.Add(Controls.Art.Icon(n, 48).M(0, 0, 12, 12));
         root.Children.Add(icons);
         root.Children.Add(Controls.Art.Say("Привет! Я Википе-тан. Давай учить японский вместе!", Controls.Mood.Joy));

@@ -126,7 +126,6 @@ public sealed class HomePage : UserControl, IPage
         sections.Children.Add(Section("books", "Книги", "книги и рассказы", "reader"));
         sections.Children.Add(Section("torii", "Япония", $"{JapanPage.All.Length} статей о культуре", "japan"));
         sections.Children.Add(Section("trainers", "Игры", "6 игр на слова и кану", "trainers"));
-        sections.Children.Add(Section("chat", "Разговор с ИИ", "свободный диалог", "chat").DesktopOnly());
         sections.Children.Add(Section("kanji", "Ключи кандзи", "из чего состоят знаки", "radicals"));
         root.Children.Add(sections);
         Anim.Stagger(sections, 30, 120);

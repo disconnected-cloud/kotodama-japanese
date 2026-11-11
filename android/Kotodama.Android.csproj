@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Kotodama для Android: общий код из ../xplat (без ИИ-собеседника, трея и окна компьютера) -->
+  <!-- Kotodama для Android: общий код из ../xplat (без трея и окна компьютера) -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0-android</TargetFramework>
@@ -11,9 +11,9 @@
     <AssemblyName>Kotodama</AssemblyName>
     <ApplicationId>io.github.disconnectedcloud.kotodama</ApplicationId>
     <ApplicationTitle>Kotodama</ApplicationTitle>
-    <ApplicationVersion>120</ApplicationVersion>
-    <ApplicationDisplayVersion>1.2.0</ApplicationDisplayVersion>
-    <Version>1.2.0</Version>
+    <ApplicationVersion>131</ApplicationVersion>
+    <ApplicationDisplayVersion>1.3.1</ApplicationDisplayVersion>
+    <Version>1.3.1</Version>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
     <DefineConstants>$(DefineConstants);MOBILE</DefineConstants>
@@ -25,6 +25,12 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <AndroidLinkMode>SdkOnly</AndroidLinkMode>
     <DebugType>none</DebugType>
+    <!-- Без лагов: весь код заранее скомпилирован в машинный (нет JIT при первом открытии экранов),
+         сборщик мусора работает параллельно и не останавливает интерфейс -->
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <AndroidStripILAfterAOT>true</AndroidStripILAfterAOT>
+    <AndroidEnableSGenConcurrent>true</AndroidEnableSGenConcurrent>
   </PropertyGroup>
 
   <!-- Подпись: ключ передаётся из CI (секреты), иначе — отладочный ключ -->
@@ -48,7 +54,7 @@
 
   <ItemGroup>
     <Compile Include="../xplat/**/*.cs" LinkBase="Shared"
-             Exclude="../xplat/obj/**;../xplat/bin/**;../xplat/Program.cs;../xplat/MainWindow.cs;../xplat/Services/Llm.cs;../xplat/Services/Tray.cs;../xplat/Services/Badge.cs;../xplat/Views/ChatPage.cs;../xplat/Views/ChatPrompts.cs" />
+             Exclude="../xplat/obj/**;../xplat/bin/**;../xplat/Program.cs;../xplat/MainWindow.cs;../xplat/Services/Tray.cs;../xplat/Services/Badge.cs" />
     <AvaloniaXaml Include="../xplat/App.axaml" Link="App.axaml" />
     <EmbeddedResource Include="../Data/*.json;../Data/*.gz" LogicalName="%(Filename)%(Extension)" />
     <AvaloniaResource Include="../Assets/app.png" Link="Assets/app.png" />

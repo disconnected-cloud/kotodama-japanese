@@ -374,9 +374,13 @@ public sealed class TrainersPage : UserControl, IPage
         var items = PlanItems();
         var sp = new StackPanel();
         int done = Enumerable.Range(0, items.Count).Count(i => p.Flags.Contains(PlanKey(i)));
+        var title = U.Stack(U.T("ПЛАН НА СЕГОДНЯ", "Overline"), U.T(done == items.Count ? "План выполнен! お疲れ様！" : $"Выполнено {done} из {items.Count} · ~15 минут", "H3", 16).M(0, 4, 0, 0));
+        var bar = new ProgressBar { Width = 120, Maximum = items.Count, Value = done, VerticalAlignment = VerticalAlignment.Center };
+        if (Shell.Compact) { bar.Width = double.NaN; bar.MinWidth = 0; }
         var head = U.Cols("*", "auto");
-        head.Children.Add(U.Stack(U.T("ПЛАН НА СЕГОДНЯ", "Overline"), U.T(done == items.Count ? "План выполнен! お疲れ様！" : $"Выполнено {done} из {items.Count} · ~15 минут", "H3", 16).M(0, 4, 0, 0)));
-        head.Children.Add(U.Row(12, new ProgressBar { Width = 120, Maximum = items.Count, Value = done, VerticalAlignment = VerticalAlignment.Center },
+        if (Shell.Compact) { sp.Children.Add(title); head.Margin = new Thickness(0, 12, 0, 4); head.Children.Add(bar); } // телефон: полоска под заголовком на всю ширину
+        else head.Children.Add(title);
+        head.Children.Add(U.Row(12, Shell.Compact ? new Border() : bar,
             done < items.Count ? U.Btn("Следующий шаг", () => NextPlanStep(), "Primary", "") : new Border()).Col(1));
         sp.Children.Add(head);
         for (int i = 0; i < items.Count; i++)
@@ -396,7 +400,7 @@ public sealed class TrainersPage : UserControl, IPage
             row.Children.Add(U.Btn(ok ? "Ещё раз" : "Начать", () => { p.Flags.Add(PlanKey(idx)); ProgressStore.Notify(); go(); }, ok ? "Ghost" : "").CenterV().Col(2));
             sp.Children.Add(row);
         }
-        return U.Card(sp, new Thickness(22));
+        return U.Card(sp, Shell.Compact ? new Thickness(16) : new Thickness(22));
     }
 
     // ─────────── Ошибки ───────────

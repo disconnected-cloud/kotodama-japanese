@@ -238,6 +238,7 @@ public sealed class SettingsPage : UserControl, IPage
         foreach (var it in Storage.Items)
         {
             long size = Storage.Size(it);
+            if (it.Key == "llm" && size == 0) continue;
             var row = U.Cols("*", "auto", "auto");
             row.Margin = new Thickness(0, 0, 0, 10);
             row.Children.Add(U.Stack(U.T(it.Title, "H3", 14), U.T(it.Desc, "Muted", 12)));

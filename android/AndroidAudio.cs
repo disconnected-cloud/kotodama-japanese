@@ -47,6 +47,8 @@ sealed class AndroidMic : IMic
 
     public void Start()
     {
+        if (!MainActivity.EnsureMic())
+            throw new InvalidOperationException("Разреши доступ к микрофону в появившемся окне и нажми запись ещё раз.");
         int min = AudioRecord.GetMinBufferSize(16000, ChannelIn.Mono, Encoding.Pcm16bit);
         _rec = new AudioRecord(AudioSource.VoiceRecognition, 16000, ChannelIn.Mono, Encoding.Pcm16bit, Math.Max(min, 16000));
         if (_rec.State != State.Initialized)

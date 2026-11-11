@@ -15,6 +15,7 @@ public static class Storage
         new Item("audio", "Кэш озвучки", "Сохранённые фразы — скачаются заново при прослушивании", Tts.CacheDir, true),
         new Item("models", "Модели распознавания (Whisper)", "Нужны для проверки произношения", System.IO.Path.Combine(ProgressStore.Folder, "models"), true),
         new Item("voicevox", "Офлайн-голоса VOICEVOX", "Ядро, словарь и пакеты голосов", Voicevox.Dir, true),
+        new Item("llm", "Модель ИИ-собеседника", "Раздел убран в версии 1.3.1 — файлы больше не нужны", System.IO.Path.Combine(ProgressStore.Folder, "llm"), true),
         new Item("logs", "Журналы и временные файлы", "crash.log, профиль запуска, старые записи", ProgressStore.Folder, false),
     };
 

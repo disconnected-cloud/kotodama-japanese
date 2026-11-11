@@ -47,8 +47,6 @@ public sealed class Progress
     public Dictionary<string, int> GameBest { get; set; } = new();
     public bool AutoUpdate { get; set; } = true;
     public string Goal { get; set; } = "";
-    public string LlmModel { get; set; } = "";
-    public bool ChatAutoSpeak { get; set; } = true;
     public string WordOfDayTime { get; set; } = "09:00";   // "" — выключено
     public DateTime LastWordOfDay { get; set; }
     public bool WordOfDaySpeak { get; set; } = true;
