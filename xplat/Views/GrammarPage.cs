@@ -82,7 +82,7 @@ public sealed class GrammarLessonPage : UserControl, IPage
     void Build()
     {
         var root = new StackPanel { MaxWidth = 900 };
-        root.Children.Add(U.Header(_l.Id.ToString(), _l.Title, "Урок " + _l.Id + " · " + _l.Level));
+        root.Children.Add(U.Header("文", _l.Title, "Урок " + _l.Id + " · " + _l.Level));
 
         root.Children.Add(U.Card(U.T(_l.Intro, "Body", 15)));
 
