@@ -261,13 +261,12 @@ public sealed class BuilderSession : Grid, IPage, IKeyTarget
 
 public sealed class TrainersPage : UserControl, IPage
 {
-    public string Title => "Тренажёры";
+    public string Title => "Тренажёры и игры";
 
     public void OnShown()
     {
         var root = new StackPanel();
-        root.Children.Add(U.Header("練", "Тренажёры", "План на день, работа над ошибками и упражнения на грамматику, счёт и слух."));
-        root.Children.Add(PlanCard());
+        root.Children.Add(U.Header("練", "Тренажёры и игры", "Игры, план на день, работа над ошибками и упражнения на грамматику, счёт и слух."));
 
         var grid = new UniformGrid { Columns = U.Columns(3), Margin = new Thickness(-6, 18, -6, 0) };
         grid.Children.Add(Tile("誤", "Тетрадь ошибок", Mistakes.Count > 0 ? $"{Mistakes.Count} ошибок ждут исправления" : "Ошибок нет — отлично!", () => { var q = MistakesQuiz(); if (q != null) Shell.Open(q); else Shell.Toast("Ошибок пока нет", "完璧"); }));
@@ -278,8 +277,20 @@ public sealed class TrainersPage : UserControl, IPage
         grid.Children.Add(Tile("組", "Собери предложение", "Расставь слова по порядку", () => Shell.Open(new BuilderSession())));
         grid.Children.Add(Tile("書", "Прописи", "Пиши кандзи мышью или пером — проверка порядка черт", () => Shell.Open(new WritingPage())));
         grid.Children.Add(Tile("試", "Пробный тест JLPT", $"30 вопросов уровня {ProgressStore.P.Level}", () => Shell.Open(MockTest(ProgressStore.P.Level))));
-        root.Children.Add(grid);
-        Anim.Stagger(grid, 35, 80);
+        root.Children.Add(U.T("Игры", "H2").M(0, 0, 0, 4));
+        root.Children.Add(U.T("Закрепляют уже изученные слова — учиться веселее, а ошибки попадают в тетрадь.", "Muted").M(0, 0, 0, 10));
+        var games = new UniformGrid { Columns = U.Columns(3), Margin = new Thickness(-6, 0, -6, 0) };
+        games.Children.Add(Game("games", "Пары на скорость", "Соедини слово и перевод — минута на всё", "match", () => Shell.Open(new MatchRushGame())));
+        games.Children.Add(Game("words", "Собери слово", "Сложи чтение из слогов каны", "build", () => Shell.Open(new WordBuilderGame())));
+        games.Children.Add(Game("voice", "Ловец звуков", "Услышь слово и поймай его первым", "listen", () => Shell.Open(new ListenCatchGame())));
+        games.Children.Add(Game("kana", "Кана-дождь", "Печатай чтение падающих знаков", "rain-h", () => Shell.Open(new KanaRainGame(false))));
+        games.Children.Add(Game("sparkle", "Найди пару", "Мемори: открой карточки и запомни", "memory", () => Shell.Open(new MemoryGame())));
+        games.Children.Add(Game("flame", "Спринт 60 секунд", "Верно или нет — как можно быстрее", "sprint", () => Shell.Open(new SprintGame())));
+        root.Children.Add(games);
+        root.Children.Add(PlanCard().M(0, 24, 0, 0));
+        root.Children.Add(grid.Also(g => g.Margin = new Thickness(-6, 0, -6, 0)));
+        root.Children.Insert(root.Children.IndexOf(grid), U.T("Упражнения", "H2").M(0, 26, 0, 12));
+        Anim.Stagger(games, 35, 80);
         Content = U.Page(root);
     }
 
@@ -288,6 +299,20 @@ public sealed class TrainersPage : UserControl, IPage
         ["誤"] = "memo", ["活"] = "gear", ["数"] = "input_numbers", ["聞"] = "headphone", ["組"] = "puzzle_piece", ["試"] = "graduation_cap",
         ["書"] = "writing_hand", ["雨"] = "cloud_with_rain", ["対"] = "game_die", ["速"] = "stopwatch",
     };
+
+    /// <summary>Плитка игры: своя иконка, описание и рекорд.</summary>
+    static Border Game(string icon, string title, string sub, string bestKey, Action go)
+    {
+        int best = GameUi.Best(bestKey);
+        var head = U.Cols("auto", "*");
+        head.Children.Add(Art.Icon(icon, 46));
+        if (best > 0) head.Children.Add(U.Pill($"рекорд {best}", U.B("AccentSoft"), U.B("Accent")).Also(p => { p.HorizontalAlignment = HorizontalAlignment.Right; p.VerticalAlignment = VerticalAlignment.Top; }).Col(1));
+        var sp = U.Stack(head, U.T(title, "H3", 15).M(0, 12, 0, 3), U.T(sub, "Muted").Also(t => t.MinHeight = 34));
+        var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
+        HomePage.Hover(card);
+        card.PointerReleased += (_, _) => { Shell.Main.PendingExpand = card; go(); };
+        return card;
+    }
 
     static Border Tile(string jp, string title, string sub, Action go)
     {

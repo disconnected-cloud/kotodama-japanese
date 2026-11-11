@@ -12,19 +12,69 @@ using Avalonia.Threading;
 using RadioButton = Matsubakira.Compat.RadioButton;
 using CheckBox = Matsubakira.Compat.CheckBox;
 using ToggleButton = Matsubakira.Compat.ToggleButton;
+using Matsubakira.Controls;
 using Matsubakira.Services;
 
 namespace Matsubakira.Views;
 
 public sealed record RToken(string Surface, string Reading, string Lemma, string Pos);
 public sealed record RSentence(string Jp, string Ru, RToken[] Tokens);
-public sealed record RText(string Title, string Level, RSentence[] Sentences, (string q, string a, string[] opts)[] Questions);
+public sealed record RText(string Title, string Level, RSentence[] Sentences, (string q, string a, string[] opts)[] Questions, string? Book = null);
 
 /// <summary>Читалка: тексты с фуриганой, озвучкой, переводом и словарём по клику; можно вставить свой текст.</summary>
 public sealed class ReaderPage : UserControl, IPage
 {
-    public string Title => "Чтение";
+    public string Title => "Книги и тексты";
     static readonly Lazy<RText[]> _texts = new(Load);
+
+    public static RText[] Texts => _texts.Value;
+
+    static readonly Dictionary<string, (string a, string b, string jp, string sub)> Covers = new()
+    {
+        ["Котоха едет в Японию"] = ("#FF9EC0", "#B23A78", "旅", "Повесть о первом месяце в Токио · N5"),
+        ["Японские сказки"] = ("#8FB8FF", "#3446A8", "昔", "Момотаро, Урасима Таро и другие · N5–N4"),
+        ["Год в Японии"] = ("#7FE0B0", "#1E8A64", "季", "Праздники и обычаи по сезонам · N4"),
+    };
+
+    /// <summary>Обложка книги: градиент, крупный иероглиф, прогресс по главам.</summary>
+    static Control BookCard(string book, RText[] chapters)
+    {
+        var (ca, cb, jp, sub) = Covers.TryGetValue(book, out var c) ? c : ("#C59BFF", "#6A3FD0", "本", "");
+        int read = chapters.Count(t => ProgressStore.P.Flags.Contains("read:" + t.Title));
+        var cover = new Grid { Height = 150 };
+        cover.Children.Add(new Border
+        {
+            CornerRadius = new CornerRadius(16, 16, 0, 0),
+            Background = new LinearGradientBrush
+            {
+                StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative), EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
+                GradientStops = { new GradientStop(Color.Parse(ca), 0), new GradientStop(Color.Parse(cb), 1) },
+            },
+        });
+        cover.Children.Add(new TextBlock { Text = jp, FontFamily = U.R<FontFamily>("JpSerif"), FontSize = 96, FontWeight = FontWeight.Bold, Foreground = Brushes.White, Opacity = 0.9, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(22, 0, 0, 6) });
+        if (book.StartsWith("Котоха"))
+            cover.Children.Add(Art.Kotoha(140, Mood.Joy).Also(k => { k.HorizontalAlignment = HorizontalAlignment.Right; k.VerticalAlignment = VerticalAlignment.Bottom; k.Margin = new Thickness(0, 0, 14, 0); }));
+        else
+            cover.Children.Add(Art.Tama(96, book.Contains("сказк") ? Mood.Wow : Mood.Happy).Also(k => { k.HorizontalAlignment = HorizontalAlignment.Right; k.VerticalAlignment = VerticalAlignment.Bottom; k.Margin = new Thickness(0, 0, 18, 10); }));
+        var info = U.Stack(U.T(book, "H3", 16), U.T(sub, "Muted", 12.5).M(0, 3, 0, 10),
+            U.Cols("*", "auto").Also(g =>
+            {
+                g.Children.Add(new ProgressBar { Maximum = chapters.Length, Value = read, Height = 5, VerticalAlignment = VerticalAlignment.Center });
+                g.Children.Add(U.T($"{read}/{chapters.Length} глав", "Muted", 12).M(10, 0, 0, 0).Col(1));
+            }));
+        var card = new Border
+        {
+            Classes = { "Card" }, Padding = new Thickness(0), Margin = new Thickness(8), Cursor = Cursors.Hand, ClipToBounds = true,
+            Child = U.Stack(cover, info.M(18, 14, 18, 16)),
+        };
+        HomePage.Hover(card);
+        card.PointerReleased += (_, _) =>
+        {
+            var next = chapters.FirstOrDefault(t => !ProgressStore.P.Flags.Contains("read:" + t.Title)) ?? chapters[0];
+            Shell.OpenFrom(card, new BookPage(book, chapters));
+        };
+        return card;
+    }
 
     static RText[] Load()
     {
@@ -34,15 +84,27 @@ public sealed class ReaderPage : UserControl, IPage
             t.GetProperty("title").GetString()!, t.GetProperty("level").GetString()!,
             t.GetProperty("sentences").EnumerateArray().Select(x => new RSentence(x.GetProperty("jp").GetString()!, x.GetProperty("ru").GetString()!,
                 x.GetProperty("tokens").EnumerateArray().Select(k => new RToken(k[0].GetString()!, k[1].GetString()!, k[2].GetString()!, k[3].GetString()!)).ToArray())).ToArray(),
-            t.GetProperty("questions").EnumerateArray().Select(q => (q[0].GetString()!, q[1].GetString()!, q[2].GetString()!.Split('|'))).ToArray())).ToArray();
+            t.GetProperty("questions").EnumerateArray().Select(q => (q[0].GetString()!, q[1].GetString()!, q[2].GetString()!.Split('|'))).ToArray(),
+            t.TryGetProperty("book", out var b) ? b.GetString() : null)).ToArray();
     }
 
     public void OnShown()
     {
         var root = new StackPanel();
-        root.Children.Add(U.Header("読", "Чтение", "Тексты с фуриганой и озвучкой. Нажми на любое слово — перевод и «+» в карточки."));
+        root.Children.Add(U.Header("読", "Книги и тексты", "Фуригана, озвучка, перевод по клику на слово и «+» в карточки."));
+        // ─────────── Книги ───────────
+        root.Children.Add(U.T("Книги", "H2").M(0, 0, 0, 4));
+        root.Children.Add(U.T("Читай по главам: каждая глава — 8–11 предложений с озвучкой и вопросами.", "Muted").M(0, 0, 0, 12));
+        var books = new UniformGrid { Columns = U.Columns(3), Margin = new Thickness(-8, 0, -8, 0) };
+        foreach (var g in Texts.Where(t => t.Book != null).GroupBy(t => t.Book!))
+            books.Children.Add(BookCard(g.Key, g.ToArray()));
+        root.Children.Add(books);
+        Anim.Stagger(books, 50, 60);
+
+        // ─────────── Рассказы ───────────
+        root.Children.Add(U.T("Короткие рассказы", "H2").M(0, 26, 0, 12));
         var grid = new UniformGrid { Columns = U.Columns(3), Margin = new Thickness(-6, 0, -6, 0) };
-        foreach (var t in _texts.Value)
+        foreach (var t in Texts.Where(t => t.Book == null))
         {
             bool done = ProgressStore.P.Flags.Contains("read:" + t.Title);
             var sp = U.Stack(Emoji.Img(Emoji.For(t.Title, "open_book"), 44).Also(i => { i.HorizontalAlignment = HorizontalAlignment.Left; i.Margin = new Thickness(0, 0, 0, 8); }), U.Row(8, U.Pill(t.Level), done ? U.Pill("✓ прочитано", U.B("GoodSoft"), U.B("Good")) : new Border()),
@@ -107,7 +169,7 @@ public sealed class TextPage : UserControl, IPage
     void Build()
     {
         var root = new StackPanel { MaxWidth = 860, HorizontalAlignment = HorizontalAlignment.Center };
-        root.Children.Add(U.T(_t.Level, "Overline"));
+        root.Children.Add(U.T(_t.Book != null ? $"{_t.Book} · {_t.Level}" : _t.Level, "Overline"));
         root.Children.Add(U.T(_t.Title, "H1").M(0, 4, 0, 14));
         var bar = new WrapPanel();
         bar.Children.Add(Toggle("Фуригана", _furi, v => { _furi = v; Build(); }));
@@ -219,6 +281,12 @@ public sealed class TextPage : UserControl, IPage
                         ProgressStore.P.Flags.Add("read:" + _t.Title);
                         ProgressStore.AddXp(5 + correct * 3);
                         Shell.Toast($"Текст прочитан: {correct}/{answered} верно", "読");
+                        if (_t.Book != null && ReaderPage.Texts.SkipWhile(x => x != _t).Skip(1).FirstOrDefault() is { } nx && nx.Book == _t.Book)
+                        {
+                            var nb = U.Btn("Следующая глава: " + nx.Title, () => { Shell.Back(); Shell.Open(new TextPage(nx)); }, "Primary", "");
+                            nb.HorizontalAlignment = HorizontalAlignment.Left; nb.Margin = new Thickness(0, 14, 0, 0);
+                            sp.Children.Add(nb);
+                        }
                     }
                 };
                 wrap.Children.Add(b);
@@ -226,5 +294,43 @@ public sealed class TextPage : UserControl, IPage
             sp.Children.Add(wrap);
         }
         return U.Card(sp).M(0, 12, 0, 0);
+    }
+}
+
+/// <summary>Оглавление книги.</summary>
+public sealed class BookPage : UserControl, IPage
+{
+    readonly string _book;
+    readonly RText[] _chapters;
+    public string Title => _book;
+    public BookPage(string book, RText[] chapters) { _book = book; _chapters = chapters; }
+
+    public void OnShown()
+    {
+        var root = new StackPanel { MaxWidth = 820, HorizontalAlignment = HorizontalAlignment.Center };
+        root.Children.Add(U.Header("本", _book, $"{_chapters.Length} глав · нажми на главу, чтобы читать"));
+        bool prevRead = true;
+        for (int i = 0; i < _chapters.Length; i++)
+        {
+            var t = _chapters[i];
+            bool read = ProgressStore.P.Flags.Contains("read:" + t.Title);
+            bool next = !read && prevRead;
+            var g = U.Cols("auto", "*", "auto");
+            g.Children.Add(new Border
+            {
+                Width = 40, Height = 40, CornerRadius = new CornerRadius(12), Background = U.B(read ? "GoodSoft" : next ? "AccentSoft" : "Surface2"),
+                Child = U.T(read ? "✓" : (i + 1).ToString(), "H3", 15, U.B(read ? "Good" : next ? "Accent" : "Muted")).Center().CenterV(),
+            });
+            g.Children.Add(U.Stack(U.T(t.Title, "H3", 15), U.Jp(t.Sentences[0].Jp, 13.5, U.B("Muted")).Also(x => { x.TextTrimming = TextTrimming.CharacterEllipsis; x.TextWrapping = TextWrapping.NoWrap; }))
+                .CenterV().M(14, 0, 12, 0).Col(1));
+            var text = t;
+            g.Children.Add(U.Btn(read ? "Перечитать" : "Читать", () => Shell.Open(new TextPage(text)), next ? "Primary" : "", "").CenterV().Col(2));
+            var card = new Border { Classes = { "Card" }, Child = g, Padding = new Thickness(14, 12), Margin = new Thickness(0, 0, 0, 8) };
+            if (next) card.BorderBrush = U.B("AccentSoft");
+            root.Children.Add(card);
+            prevRead = read;
+        }
+        Anim.Stagger(root, 40, 0, 14);
+        Content = U.Page(root);
     }
 }

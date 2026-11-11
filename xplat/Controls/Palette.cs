@@ -75,6 +75,9 @@ public sealed class Palette : Grid
         yield return new Item("雨", "Кана-дождь", "Игра", () => Shell.Open(new KanaRainGame(false)));
         yield return new Item("対", "Найди пару", "Игра", () => Shell.Open(new MemoryGame()));
         yield return new Item("速", "Спринт 60 секунд", "Игра", () => Shell.Open(new SprintGame()));
+        yield return new Item("対", "Пары на скорость", "Игра", () => Shell.Open(new MatchRushGame()));
+        yield return new Item("組", "Собери слово", "Игра", () => Shell.Open(new WordBuilderGame()));
+        yield return new Item("聞", "Ловец звуков", "Игра", () => Shell.Open(new ListenCatchGame()));
         foreach (var u in Db.Course) yield return new Item("道", $"Юнит {u.Id}. {u.Title}", "Путь · " + u.Level, () => Shell.Open(new UnitPage(u)));
         foreach (var g in Db.Grammar) yield return new Item("文", g.Title, "Грамматика · урок " + g.Id, () => Shell.Open(new GrammarLessonPage(g)));
         foreach (var l in Db.SpeechLessons) yield return new Item("話", l.Title, "Говорение", () => Shell.Open(new SpeechLessonPage(l)));

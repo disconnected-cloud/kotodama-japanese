@@ -217,14 +217,14 @@ public class MainView : UserControl
         _goalBar.Foreground = U.B("Gold");
         _xpBar.Tip("Прогресс до следующего уровня");
         var top = new Grid();
-        top.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { new TextBlock { Text = "火", FontFamily = U.R<FontFamily>("JpSerif"), FontSize = 15, Foreground = U.B("Gold"), VerticalAlignment = VerticalAlignment.Center }, _streak } });
+        top.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { Controls.Art.Icon("flame", 22), _streak } });
         top.Children.Add(_levelText);
-        var goalRow = new Grid { Margin = new Thickness(0, 10, 0, 6) };
+        var goalRow = new Grid { Margin = new Thickness(0, 8, 0, 5) };
         goalRow.Children.Add(new TextBlock { Text = "Сегодня", FontSize = 11.5, Foreground = U.B("Faint") });
         goalRow.Children.Add(_goalText);
         var summary = new Border
         {
-            Margin = new Thickness(14, 0, 14, 16), Padding = new Thickness(14, 12), CornerRadius = new CornerRadius(12),
+            Margin = new Thickness(14, 6, 14, 12), Padding = new Thickness(12, 10), CornerRadius = new CornerRadius(14),
             Background = U.B("Surface"), BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(1),
             Child = new StackPanel { Children = { top, goalRow, _goalBar, _xpBar } },
         };
@@ -232,19 +232,19 @@ public class MainView : UserControl
         dock.Children.Add(summary);
 
         // Меню со скользящей подложкой выбранного пункта
-        _navIndicator.VerticalAlignment = VerticalAlignment.Top; _navIndicator.Height = 40; _navIndicator.Margin = new Thickness(12, 0);
+        _navIndicator.VerticalAlignment = VerticalAlignment.Top; _navIndicator.Height = 36; _navIndicator.Margin = new Thickness(12, 0);
         _navIndicator.CornerRadius = new CornerRadius(10); _navIndicator.Background = U.B("SelectedTint"); _navIndicator.Opacity = 0; _navIndicator.IsHitTestVisible = false;
         _navIndicator.RenderTransform = _navShift;
         _navIndicator.Child = new Border { Width = 3, Height = 16, CornerRadius = new CornerRadius(2), Background = U.B("Accent"), HorizontalAlignment = HorizontalAlignment.Left };
         void Item(string key, string icon, object content)
         {
-            var rb = new RadioButton { Tag = Controls.Art.Icon(icon, 26), Content = content, GroupName = "nav" };
+            var rb = new RadioButton { Tag = Controls.Art.Icon(icon, 24), Content = content, GroupName = "nav" };
             rb.Classes.Add("NavItem");
             rb.Checked += (_, _) => { MoveNavIndicator(rb); ShowRoot(key); };
             _navItems[key] = rb;
             _nav.Children.Add(rb);
         }
-        void Header(string t) => _nav.Children.Add(U.T(t, "Overline").M(28, 12, 0, 5));
+        void Header(string t) => _nav.Children.Add(U.T(t, "Overline").M(28, 9, 0, 3));
         _dueText.FontSize = 11; _dueText.FontWeight = FontWeight.SemiBold; _dueText.Foreground = U.B("OnAccent");
         _dueBadge.HorizontalAlignment = HorizontalAlignment.Right; _dueBadge.Background = U.B("Accent"); _dueBadge.CornerRadius = new CornerRadius(8);
         _dueBadge.Padding = new Thickness(6, 0); _dueBadge.IsVisible = false; _dueBadge.Child = _dueText;
@@ -411,7 +411,8 @@ public class MainView : UserControl
         _host.Content = null; // страница может быть закэширована — сначала отцепляем
         _host.Content = page;
         // Режим фокуса: во время упражнений боковое меню скрывается
-        bool focus = page is Controls.QuizSession or Controls.FlashSession or BuilderSession or SpeechLessonPage or DialogPage or WritingPage or KanaRainGame or MemoryGame or SprintGame or OnboardingPage;
+        bool focus = page is Controls.QuizSession or Controls.FlashSession or BuilderSession or SpeechLessonPage or DialogPage or WritingPage or KanaRainGame or MemoryGame or SprintGame or OnboardingPage
+            or Controls.LearnSession or MatchRushGame or WordBuilderGame or ListenCatchGame;
         _sideCol.Width = new GridLength(focus || Shell.Compact ? 0 : 232);
         _sidebar.IsVisible = !focus && !Shell.Compact;
         _tabs.IsVisible = Shell.Compact && !focus;
@@ -732,6 +733,10 @@ public class MainView : UserControl
             case "mic": Push(new MicCheckPage()); break;
             case "pairs": Push(new PairsPage()); break;
             case "art": Push(new ArtDemo()); break;
+            case "match": Push(new MatchRushGame()); break;
+            case "build": Push(new WordBuilderGame()); break;
+            case "listen": Push(new ListenCatchGame()); break;
+            case "book": Push(new BookPage("Японские сказки", ReaderPage.Texts.Where(t => t.Book == "Японские сказки").ToArray())); break;
             case "setvoice": SettingsPage._tab = "voice"; NavigateRoot("settings"); break;
             case "learn": Push(Controls.LearnSession.Kanji(Db.Kanji.Take(5))); break;
             case "learnw": Push(Controls.LearnSession.Words("Демо", Db.Words.Take(5)).Skip(1)); break;

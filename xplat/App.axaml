@@ -180,7 +180,7 @@
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Margin" Value="12,1"/>
       <Setter Property="FontSize" Value="14"/>
-      <Setter Property="Height" Value="40"/>
+      <Setter Property="Height" Value="36"/>
       <Setter Property="HorizontalAlignment" Value="Stretch"/>
       <Setter Property="Template">
         <ControlTemplate>
@@ -189,7 +189,7 @@
               <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.15"/></Transitions></Border.Transitions>
             </Border>
             <StackPanel Orientation="Horizontal" Margin="14,0" VerticalAlignment="Center">
-              <ContentPresenter Name="ico" Content="{TemplateBinding Tag}" Width="26" Height="26" VerticalAlignment="Center" Opacity="0.82"/>
+              <ContentPresenter Name="ico" Content="{TemplateBinding Tag}" Width="24" Height="24" VerticalAlignment="Center" Opacity="0.82"/>
               <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center" Margin="10,0,0,0"/>
             </StackPanel>
           </Grid>

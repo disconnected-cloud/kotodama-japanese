@@ -54,6 +54,9 @@ public static class Emoji
         // говорение
         ["Первые звуки"] = "musical_note", ["Приветствия"] = "sunrise", ["Вежливость"] = "wrapped_gift", ["В кафе и магазине"] = "shortcake",
         ["Дорога и транспорт"] = "station", ["Выручалочки"] = "light_bulb", ["Повседневные фразы"] = "calendar",
+        ["В ресторане"] = "sushi", ["Покупки"] = "department_store", ["Отель"] = "hotel", ["Вокзал и транспорт"] = "bullet_train",
+        ["У врача и в аптеке"] = "pill", ["Реакции и эмоции"] = "smiling_face_with_hearts", ["Светская беседа"] = "speech_balloon",
+        ["Экстренные ситуации"] = "alarm_clock",
         // чтение
         ["Мой день"] = "sun_with_face", ["Моя семья"] = "house", ["Весна в Японии"] = "cherry_blossom", ["Первый день в Токио"] = "tokyo_tower",
         ["Японский язык"] = "books",

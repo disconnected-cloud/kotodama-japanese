@@ -16,9 +16,12 @@ for t in src:
             f = w.feature
             reading = hira(f.kana) if f.kana and f.kana != "*" else w.surface
             lemma = f.orthBase if f.orthBase and f.orthBase != "*" else w.surface
-            reading = {"私": "わたし", "何": "なに"}.get(w.surface, reading)
+            reading = {"私": "わたし", "何": "なに", "日本": "にほん", "明日": "あした", "宮城": "ぐうじょう", "下": "した", "箱": "はこ",
+                       "宝物": "たからもの", "むし暑い": "むしあつい", "七": "しち", "四": "よ"}.get(w.surface, reading)
             toks.append([w.surface, reading if has_kanji(w.surface) else "", lemma, f.pos1])
         sents.append({"jp": jp, "ru": ru, "tokens": toks})
-    out.append({"title": t["title"], "level": t["level"], "sentences": sents, "questions": t["questions"]})
+    item = {"title": t["title"], "level": t["level"], "sentences": sents, "questions": t["questions"]}
+    if t.get("book"): item["book"] = t["book"]
+    out.append(item)
 json.dump(out, open(D("texts.json"), "w", encoding="utf8"), ensure_ascii=False, separators=(",", ":"))
 print("texts:", len(out), "tokens:", sum(len(s["tokens"]) for t in out for s in t["sentences"]))
