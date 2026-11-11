@@ -312,7 +312,7 @@ public static class U
     static readonly Dictionary<string, string> HeaderIcons = new()
     {
         ["Путь обучения"] = "path", ["Кандзи"] = "kanji", ["Слова"] = "words", ["Грамматика"] = "grammar", ["Говорение"] = "speech",
-        ["Диалоги"] = "dialogs", ["Словарь"] = "dict", ["Настройки"] = "settings", ["Тренажёры"] = "trainers", ["Тренажёры и игры"] = "trainers", ["Япония"] = "torii", ["Чтение"] = "books",
+        ["Диалоги"] = "dialogs", ["Словарь"] = "dict", ["Настройки"] = "settings", ["Тренажёры"] = "trainers", ["Тренажёры и игры"] = "trainers", ["Япония"] = "torii", ["Ключи кандзи"] = "kanji", ["Чтение"] = "books",
         ["Книги и тексты"] = "books", ["Разговор с ИИ"] = "chat", ["Прописи"] = "write", ["Минимальные пары"] = "voice",
         ["Проверка микрофона"] = "mic", ["Кана"] = "kana", ["Ещё"] = "more", ["Счётные слова"] = "target",
         ["話"] = "speech", ["対"] = "dialogs", ["道"] = "path", ["耳"] = "mic", ["書"] = "write", ["練"] = "trainers", ["数"] = "target",

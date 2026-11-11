@@ -51,7 +51,8 @@ public sealed class KanjiPage : UserControl, IPage
         rev.IsEnabled = due > 0;
         acts.Children.Add(rev);
         acts.Children.Add(U.Btn("Квиз: значение", () => Quiz(false), "", "").M(0, 0, 10, 0));
-        acts.Children.Add(U.Btn("Квиз: чтение слов", () => Quiz(true), "", ""));
+        acts.Children.Add(U.Btn("Квиз: чтение слов", () => Quiz(true), "", "").M(0, 0, 10, 0));
+        acts.Children.Add(U.Btn("Ключи: из чего состоят", () => Shell.Open(new RadicalsPage()), "", ""));
         root.Children.Add(acts.RowAt(1));
 
         var body = U.Cols("*", "20", "400");
