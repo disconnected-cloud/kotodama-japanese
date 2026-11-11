@@ -183,9 +183,29 @@ public class SpeechScoringTests
     [Fact]
     public void KanaVersionOfKanjiPhraseMatches() => Assert.True(Speech.Score("にほんごをべんきょうしています", 0.8f, "日本語を勉強しています", "にほんごをべんきょうしています").Score >= 90);
 
+#if XPLAT
+    [Fact]
+    public void DifferentPhraseScoresLow()
+    {
+        // в любом режиме чужая фраза не засчитывается; в обычном — балл совсем низкий
+        var r = Speech.Score("さようなら", 0.9f, "ありがとうございます", "ありがとうございます");
+        Assert.False(r.Ok);
+        Assert.True(r.Score < 45);
+        var mode = ProgressStore.P.SpeechMode;
+        try { ProgressStore.P.SpeechMode = "normal"; Assert.True(Speech.Score("さようなら", 0.9f, "ありがとうございます", "ありがとうございます").Score < 35); }
+        finally { ProgressStore.P.SpeechMode = mode; }
+    }
+
+    [Fact]
+    public void EasyModeForgivesSmallSlip() =>
+        // одна неточная мора («ございまう») — в лёгком режиме это зачёт, как в Duolingo
+        Assert.True(Speech.Score("ありがとうございまう", 0.8f, "ありがとうございます", "ありがとうございます").Ok);
+
+#else
     [Fact]
     public void DifferentPhraseScoresLow() => Assert.True(Speech.Score("さようなら", 0.9f, "ありがとうございます", "ありがとうございます").Score < 35);
 
+#endif
     [Fact]
     public void EmptyRecognitionIsZero() => Assert.Equal(0, Speech.Score("", 0, "はい", "はい").Score);
 

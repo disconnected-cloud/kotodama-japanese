@@ -80,7 +80,14 @@ public static class Results
         buttons.Children.Add(b2);
         sp.Children.Add(buttons);
 
-        root.Children.Add(card);
+        // Котоха радуется вместе с учеником (или подбадривает)
+        var line = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        var mascot = Art.Kotoha(250, pct >= 90 ? Mood.Joy : pct >= 70 ? Mood.Happy : pct >= 50 ? Mood.Wink : Mood.Think);
+        mascot.VerticalAlignment = VerticalAlignment.Bottom; mascot.Margin = new Thickness(0, 0, 18, 30);
+        if (!Shell.Compact) line.Children.Add(mascot);
+        line.Children.Add(card);
+        root.Children.Add(line);
+        Anim.FadeUp(mascot, 120, 30, 500);
         Anim.FadeUp(card, 0, 24, 450);
         Anim.Pop(card, 0.9);
         if (pct >= 70) root.Loaded += (_, _) => Confetti(root);

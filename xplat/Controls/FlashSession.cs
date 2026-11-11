@@ -81,14 +81,17 @@ public sealed class FlashSession : Grid, IPage, IKeyTarget
         Render();
     }
 
+    public bool IsEmpty => _total == 0;
+
     void ShowEmpty()
     {
         Children.Clear();
         Children.Add(U.Stack(
+            Art.Kotoha(200, Mood.Joy).Center().M(0, 0, 0, 10),
             U.Jp("お疲れ様！", 44, U.B("Accent"), true).Center(),
             U.T("Сейчас нечего повторять — всё выучено вовремя.", "H2").Center().M(0, 12, 0, 6),
             U.T("Загляни позже или выучи новые слова.", "Muted").Center(),
-            U.Btn("На главную", () => Shell.Go("home"), "Primary").Center().M(0, 24, 0, 0)
+            U.Row(10, U.Btn("Учить новые слова", () => Shell.Go("words"), "Primary"), U.Btn("Сыграть в игру", () => Shell.Go("trainers"), "")).Center().M(0, 24, 0, 0)
         ).CenterV());
     }
 

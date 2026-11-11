@@ -62,10 +62,10 @@ public sealed class SpeechPage : UserControl, IPage
     {
         int cards = ProgressStore.P.Cards.Count;
         var sp = new StackPanel();
-        sp.Children.Add(Emoji.Img(Emoji.For("Мои слова", "speaking_head"), 40).Also(e => e.HorizontalAlignment = HorizontalAlignment.Left));
+        sp.Children.Add(Art.Icon("mic", 44).Also(e => e.HorizontalAlignment = HorizontalAlignment.Left));
         sp.Children.Add(U.T("Мои слова вслух", "H3", 15).M(0, 12, 0, 3));
         sp.Children.Add(U.T(cards > 0 ? "10 слов из твоих карточек — каждый раз новые" : "10 слов твоего уровня", "Muted").Also(t => t.MinHeight = 36));
-        sp.Children.Add(U.Pill("Новое", U.B("AccentSoft"), U.B("Accent")).Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 10, 0, 0); }));
+        sp.Children.Add(U.Pill("Особое", U.B("AccentSoft"), U.B("Accent")).Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 10, 0, 0); }));
         var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
         HomePage.Hover(card);
         card.PointerReleased += (_, _) => Shell.OpenFrom(card, new SpeechLessonPage(PersonalLesson()));
@@ -75,10 +75,10 @@ public sealed class SpeechPage : UserControl, IPage
     static Border ChatCard()
     {
         var sp = new StackPanel();
-        sp.Children.Add(U.Jp("会", 30, U.B("Accent"), true).Also(t => t.HorizontalAlignment = HorizontalAlignment.Left));
+        sp.Children.Add(Art.Icon("chat", 44).Also(t => t.HorizontalAlignment = HorizontalAlignment.Left));
         sp.Children.Add(U.T("Разговор с ИИ", "H3", 15).M(0, 12, 0, 3));
         sp.Children.Add(U.T("Свободный диалог голосом с нейросетью — кафе, знакомство, дорога…", "Muted").Also(t => t.MinHeight = 36));
-        sp.Children.Add(U.Pill("Новое", U.B("AccentSoft"), U.B("Accent")).Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 10, 0, 0); }));
+        sp.Children.Add(U.Pill("Особое", U.B("AccentSoft"), U.B("Accent")).Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 10, 0, 0); }));
         var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
         HomePage.Hover(card);
         card.PointerReleased += (_, _) => Shell.Go("chat");
@@ -88,10 +88,10 @@ public sealed class SpeechPage : UserControl, IPage
     static Border PairsCard()
     {
         var sp = new StackPanel();
-        sp.Children.Add(U.Jp("対", 30, U.B("Accent"), true).Also(t => t.HorizontalAlignment = HorizontalAlignment.Left));
+        sp.Children.Add(Art.Icon("voice", 44).Also(t => t.HorizontalAlignment = HorizontalAlignment.Left));
         sp.Children.Add(U.T("Минимальные пары", "H3", 15).M(0, 12, 0, 3));
         sp.Children.Add(U.T("おばさん или おばあさん? Долгота, っ, звонкость", "Muted").Also(t => t.MinHeight = 36));
-        sp.Children.Add(U.Pill("Новое", U.B("AccentSoft"), U.B("Accent")).Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 10, 0, 0); }));
+        sp.Children.Add(U.Pill("Особое", U.B("AccentSoft"), U.B("Accent")).Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 10, 0, 0); }));
         var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
         HomePage.Hover(card);
         card.PointerReleased += (_, _) => Shell.OpenFrom(card, new PairsPage());
@@ -165,7 +165,7 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
         var nav = U.Cols("auto", "*", "auto");
         nav.Margin = new Thickness(0, 20, 0, 0);
         nav.Children.Add(U.Btn("Назад", () => Go(-1), "Ghost", ""));
-        nav.Children.Add(U.T("Пробел — говорить · L — слушать · S — медленно · M — моя запись", "Muted", 12).DesktopOnly().Center().CenterV().Col(1));
+        nav.Children.Add(U.T("Пробел — говорить · L — слушать · S — медленно", "Muted", 12).Also(t => t.TextTrimming = TextTrimming.CharacterEllipsis).DesktopOnly().Center().CenterV().Col(1));
         nav.Children.Add(U.Btn("Дальше", () => Go(1), "", "").Col(2));
         root.Children.Add(nav);
 

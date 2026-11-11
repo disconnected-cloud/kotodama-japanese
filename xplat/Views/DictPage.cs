@@ -33,6 +33,7 @@ public sealed class DictPage : UserControl, IPage
 {
     public string Title => "Словарь";
     readonly ListBox _list;
+    readonly StackPanel _empty = new();
     readonly TextBox _box = new() { FontSize = 18, Padding = new Thickness(44, 10, 16, 10), VerticalContentAlignment = VerticalAlignment.Center };
     readonly TextBlock _info = U.T("", "Muted");
     readonly DispatcherTimer _debounce = new() { Interval = TimeSpan.FromMilliseconds(160) };
@@ -63,6 +64,19 @@ public sealed class DictPage : UserControl, IPage
         root.Children.Add(search.RowAt(1));
         root.Children.Add(_info.M(2, 10, 0, 10).RowAt(2));
         root.Children.Add(_list.RowAt(3));
+        // Пустой экран: подсказка и примеры запросов
+        var chips = new WrapPanel { Margin = new Thickness(0, 14, 0, 0) };
+        foreach (var q in new[] { "кошка", "taberu", "ありがとう", "猫", "вкусный", "benkyou", "友達", "путешествие" })
+        {
+            var b = new Button { Content = q, Classes = { "Chip" }, Margin = new Thickness(0, 0, 8, 8) };
+            var qq = q;
+            b.Click += (_, _) => { _box.Text = qq; _box.CaretIndex = qq.Length; };
+            chips.Children.Add(b);
+        }
+        _empty.Children.Add(Controls.Art.Say("Ищи как удобно: по-русски, латиницей, каной или иероглифами. Нажми «+», и слово попадёт в твои карточки.", Controls.Mood.Wink, 130));
+        _empty.Children.Add(chips);
+        _empty.Margin = new Thickness(0, 10, 0, 0);
+        root.Children.Add(_empty.RowAt(3));
         Content = root;
     }
 
@@ -88,9 +102,11 @@ public sealed class DictPage : UserControl, IPage
         if (q.Trim().Length == 0)
         {
             _list.ItemsSource = null;
+            _empty.IsVisible = true;
             _info.Text = $"{JDict.Count:N0} статей. Введи слово — по-русски, латиницей, каной или кандзи. Кнопка «+» добавит слово в твои карточки.";
             return;
         }
+        _empty.IsVisible = false;
         var res = await Task.Run(() => JDict.Search(q));
         if (id != _searchId) return; // пришёл более новый запрос
         _list.ItemsSource = res.Select(e => new DictRow(e)).ToList();
