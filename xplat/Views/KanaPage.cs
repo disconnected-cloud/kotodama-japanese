@@ -173,6 +173,30 @@ public sealed class KanaPage : UserControl, IPage
         return Build(chosen, pool, kata, false, title, finished);
     }
 
+    // Похожие знаки — объяснение показывается при ошибке
+    static readonly (string chars, string tip)[] LookAlike =
+    {
+        ("さち", "さ (sa) — нижний штрих открыт влево; ち (chi) — изгиб вправо, как цифра 5."),
+        ("きさ", "き (ki) — две горизонтальные черты; さ (sa) — одна."),
+        ("はほ", "は (ha) — одна горизонталь справа; ほ (ho) — две, сверху закрыто."),
+        ("ぬめ", "ぬ (nu) — с петелькой на конце; め (me) — без петли."),
+        ("るろ", "る (ru) — с петлёй внизу; ろ (ro) — без петли."),
+        ("われね", "わ (wa) — конец плавно закруглён; れ (re) — хвостик наружу; ね (ne) — петелька."),
+        ("いこ", "い (i) — черты вертикальные; こ (ko) — горизонтальные."),
+        ("あお", "あ (a) — две черты крестом сверху; お (o) — точка справа вверху."),
+        ("シツ", "シ (shi) — чёрточки слева, длинный штрих снизу вверх; ツ (tsu) — чёрточки сверху, штрих сверху вниз."),
+        ("ソン", "ソ (so) — чёрточка сверху, штрих вниз; ン (n) — чёрточка слева, штрих снизу вверх."),
+        ("クケタ", "ク (ku) — без лишних черт; タ (ta) — черта внутри; ケ (ke) — длинная горизонталь вправо."),
+        ("ウワ", "ウ (u) — с чёрточкой сверху; ワ (wa) — без неё."),
+        ("ナメ", "ナ (na) — горизонталь и косая; メ (me) — косой крест."),
+        ("コユ", "コ (ko) — две равные горизонтали; ユ (yu) — нижняя черта выступает влево."),
+        ("チテ", "チ (chi) — наклонная черта сверху; テ (te) — две горизонтали сверху."),
+        ("ねれ", "ね (ne) — петелька на конце; れ (re) — хвостик наружу."),
+        ("けは", "け (ke) — правая часть без петли; は (ha) — с петелькой внизу."),
+    };
+
+    static string? HintFor(string ch) => LookAlike.Where(l => l.chars.Contains(ch)).Select(l => "Похожие знаки! " + l.tip).FirstOrDefault();
+
     static QuizSession Build(List<KanaCell> chosen, List<KanaCell> pool, bool kata, bool typing, string title, Action<int, int>? finished)
     {
         var romajiPool = pool.Select(c => c.Romaji).ToArray();
@@ -185,12 +209,12 @@ public sealed class KanaPage : UserControl, IPage
                 {
                     Prompt = ch, Sub = "Введи чтение латиницей", Typing = true, PromptSize = 110,
                     Answer = c.Romaji + (Alt.TryGetValue(c.Romaji, out var a) ? "|" + a : ""),
-                    Speak = ch, OnResult = ok => ProgressStore.KanaAnswer(key, ok), Key = key,
+                    Speak = ch, OnResult = ok => ProgressStore.KanaAnswer(key, ok), Key = key, WrongHint = HintFor(ch),
                 };
             bool reverse = U.Rng.Next(3) == 0;
             return reverse
                 ? new QuizQ { Prompt = c.Romaji, Sub = "Найди нужный знак", PromptJp = false, PromptSize = 56, Answer = ch, OptionsJp = true, Options = QuizSession.MakeOptions(ch, kanaPool), Speak = ch, OnResult = ok => ProgressStore.KanaAnswer(key, ok), Key = key }
-                : new QuizQ { Prompt = ch, Sub = "Как читается этот знак?", PromptSize = 110, Answer = c.Romaji, Options = QuizSession.MakeOptions(c.Romaji, romajiPool), Speak = ch, OnResult = ok => ProgressStore.KanaAnswer(key, ok), Key = key };
+                : new QuizQ { Prompt = ch, Sub = "Как читается этот знак?", PromptSize = 110, Answer = c.Romaji, Options = QuizSession.MakeOptions(c.Romaji, romajiPool), Speak = ch, OnResult = ok => ProgressStore.KanaAnswer(key, ok), Key = key, WrongHint = HintFor(ch) };
         });
         return new QuizSession(title, qs, finished);
     }

@@ -28,6 +28,7 @@ public sealed class QuizQ
     public string? Speak;                   // что произнести после ответа
     public bool SpeakOnShow;                // произнести сразу (аудирование)
     public string? Explain;
+    public string? WrongHint;               // подсказка только при ошибке (чем похожие знаки отличаются)
     public Action<bool>? OnResult;
     public string? Key;                     // для тетради ошибок
 }
@@ -255,7 +256,8 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
         _fbIcon.Foreground = U.B(ok ? "Good" : "Bad");
         _fbTitle.Text = ok ? Praise() : $"Правильно: {first}";
         _fbTitle.Foreground = U.B(ok ? "Good" : "Bad");
-        _fbText.Text = q.Explain ?? (ok ? "" : "Этот вопрос вернётся в конце.");
+        _fbText.Text = !ok && q.WrongHint != null ? q.WrongHint + (q.Explain != null ? "\n" + q.Explain : "")
+                     : q.Explain ?? (ok ? "" : "Этот вопрос вернётся в конце.");
         _fbText.IsVisible = string.IsNullOrEmpty(_fbText.Text) ? false : true;
         _feedback.IsHitTestVisible = true;
         Anim.FadeUp(_feedback, 0, 8, 220);
