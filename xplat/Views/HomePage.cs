@@ -60,6 +60,7 @@ public sealed class HomePage : UserControl, IPage
         left.Children.Add(bar.Also(x => x.MaxWidth = 420).Also(x => x.HorizontalAlignment = HorizontalAlignment.Left));
         var acts = new WrapPanel { Margin = new Thickness(0, 16, 0, 0) };
         acts.Children.Add(U.Btn(d == 0 ? "Начать урок" : "Продолжить", () => { Shell.Go("path"); Shell.Open(new UnitPage(u)); }, "Primary", "").M(0, 0, 10, 6));
+        if (!TrainersPage.PlanDone) acts.Children.Add(U.Btn("Урок дня", () => TrainersPage.NextPlanStep(), "", "").M(0, 0, 10, 6).Tip("Пройди план на сегодня по шагам: повторение, новые слова, речь, игра"));
         var rb = U.Btn(due > 0 ? $"Повторить ({due})" : "Всё повторено ✓", () => Shell.Go("review"), "", "");
         rb.IsEnabled = due > 0;
         acts.Children.Add(rb.M(0, 0, 10, 6));

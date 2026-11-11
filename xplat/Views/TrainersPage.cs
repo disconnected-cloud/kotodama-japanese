@@ -328,7 +328,25 @@ public sealed class TrainersPage : UserControl, IPage
     // ─────────── План на сегодня ───────────
     static string PlanKey(int i) => $"plan:{DateTime.Today:yyyy-MM-dd}:{i}";
 
-    public static Border PlanCard()
+    /// <summary>«Урок дня»: запускает первый невыполненный пункт плана. false — план уже выполнен.</summary>
+    public static bool NextPlanStep()
+    {
+        var items = PlanItems();
+        for (int i = 0; i < items.Count; i++)
+            if (!ProgressStore.P.Flags.Contains(PlanKey(i)))
+            {
+                // нечего повторять — пункт засчитывается сам, идём дальше
+                if (items[i].title == "Повторение" && !ProgressStore.P.Cards.Values.Any(c => c.Due <= DateTime.Now)) { ProgressStore.P.Flags.Add(PlanKey(i)); continue; }
+                ProgressStore.P.Flags.Add(PlanKey(i)); ProgressStore.Notify();
+                items[i].go();
+                return true;
+            }
+        return false;
+    }
+
+    public static bool PlanDone => Enumerable.Range(0, PlanItems().Count).All(i => ProgressStore.P.Flags.Contains(PlanKey(i)));
+
+    static List<(string title, string sub, Action go)> PlanItems()
     {
         var p = ProgressStore.P;
         int due = p.Cards.Count(kv => kv.Value.Due <= DateTime.Now);
@@ -346,12 +364,20 @@ public sealed class TrainersPage : UserControl, IPage
             (DateTime.Today.DayOfYear % 2 == 0 ? "Спряжение" : "Счётные слова", "Тренажёр дня", () => Shell.Open(DateTime.Today.DayOfYear % 2 == 0 ? Conj.Quiz() : Counters.Quiz())),
         };
         if (Mistakes.Count > 0) items.Insert(1, ("Ошибки", $"{Math.Min(Mistakes.Count, 15)} на исправление", () => { var q = MistakesQuiz(); if (q != null) Shell.Open(q); }));
+        items.Add(("Игра", "Закрепи слова в игре", (Action)(() => Shell.Open((DateTime.Today.DayOfYear % 3) switch { 0 => new MatchRushGame(), 1 => (Control)new WordBuilderGame(), _ => new ListenCatchGame() }))));
+        return items;
+    }
 
+    public static Border PlanCard()
+    {
+        var p = ProgressStore.P;
+        var items = PlanItems();
         var sp = new StackPanel();
         int done = Enumerable.Range(0, items.Count).Count(i => p.Flags.Contains(PlanKey(i)));
         var head = U.Cols("*", "auto");
         head.Children.Add(U.Stack(U.T("ПЛАН НА СЕГОДНЯ", "Overline"), U.T(done == items.Count ? "План выполнен! お疲れ様！" : $"Выполнено {done} из {items.Count} · ~15 минут", "H3", 16).M(0, 4, 0, 0)));
-        head.Children.Add(new ProgressBar { Width = 140, Maximum = items.Count, Value = done, VerticalAlignment = VerticalAlignment.Center }.Col(1));
+        head.Children.Add(U.Row(12, new ProgressBar { Width = 120, Maximum = items.Count, Value = done, VerticalAlignment = VerticalAlignment.Center },
+            done < items.Count ? U.Btn("Следующий шаг", () => NextPlanStep(), "Primary", "") : new Border()).Col(1));
         sp.Children.Add(head);
         for (int i = 0; i < items.Count; i++)
         {
