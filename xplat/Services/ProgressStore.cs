@@ -37,7 +37,8 @@ public sealed class Progress
     public bool Sounds { get; set; } = true;
     public string TtsEngine { get; set; } = "auto";   // auto | online | offline
     public uint OfflineStyle { get; set; }            // устарело (0 совпадало с реальным стилем)
-    public int OfflineStyleId { get; set; } = -1;      // выбранный стиль VOICEVOX, -1 — по умолчанию (女声1)
+    public int OfflineStyleId { get; set; } = -1;      // выбранный стиль VOICEVOX, -1 — лучший чёткий из установленных
+    public string SpeechMode { get; set; } = "easy";     // easy — как в Duolingo, normal, strict
     public string MicMode { get; set; } = "auto";      // auto — стоп по паузе, manual — стоп кнопкой
     public double MicPause { get; set; } = 1.5;         // сколько секунд тишины считать концом фразы
     public int MicDevice { get; set; } = -1;            // индекс микрофона, -1 — по умолчанию
@@ -108,6 +109,8 @@ public static class ProgressStore
         }
         // v0.3: декор по умолчанию выключен (лепестки заметно нагружали CPU) — сбрасываем один раз
         if (P.Flags.Add("mig-v3")) P.Petals = false;
+        // Голоса 女声/男声 звучали с придыханием — переключаем на чёткий голос по умолчанию
+        if (P.Flags.Add("mig-vv2") && P.OfflineStyleId >= 10000) P.OfflineStyleId = -1;
         if (P.Xp > 0) P.Flags.Add("onboarded"); // у кого уже есть прогресс — помощник первого запуска не нужен
         // Серия сгорает, если пропущен день
         if (P.LastStudy.Date < DateTime.Today.AddDays(-1)) P.Streak = 0;

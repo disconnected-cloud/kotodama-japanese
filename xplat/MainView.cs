@@ -732,6 +732,7 @@ public class MainView : UserControl
             case "mic": Push(new MicCheckPage()); break;
             case "pairs": Push(new PairsPage()); break;
             case "art": Push(new ArtDemo()); break;
+            case "setvoice": SettingsPage._tab = "voice"; NavigateRoot("settings"); break;
             case "learn": Push(Controls.LearnSession.Kanji(Db.Kanji.Take(5))); break;
             case "learnw": Push(Controls.LearnSession.Words("Демо", Db.Words.Take(5)).Skip(1)); break;
             case "learn1": Push(Controls.LearnSession.Kanji(Db.Kanji.Skip(20).Take(5)).Skip(2)); break;

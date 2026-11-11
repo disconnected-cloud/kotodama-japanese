@@ -72,9 +72,9 @@ public static class SpeechUi
     /// </summary>
     public static int Combine(int text, ProsodyResult? pr)
     {
-        if (pr == null || text < 40) return text;
+        if (pr == null || text < 40 || Speech.Easy) return text; // лёгкий режим: интонация — только подсказка
         int t = (int)Math.Round(text * 0.6 + pr.Intonation * 0.25 + pr.Rhythm * 0.15);
-        return text >= 70 ? Math.Max(t, Math.Max(70, text - 15)) : t;
+        return text >= Speech.PassScore ? Math.Max(t, Math.Max(Speech.PassScore, text - 15)) : t;
     }
 
     /// <summary>Подсказки по ошибкам (っ, долгота, ん, звонкость) — под результатом.</summary>

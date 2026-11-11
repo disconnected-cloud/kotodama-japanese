@@ -308,19 +308,29 @@ public static class U
         return g;
     }
 
-    /// <summary>Шапка страницы: японский заголовок-иероглиф, название и подзаголовок.</summary>
+    /// <summary>Какая иконка у раздела: по названию страницы, иначе по иероглифу.</summary>
+    static readonly Dictionary<string, string> HeaderIcons = new()
+    {
+        ["Путь обучения"] = "path", ["Кандзи"] = "kanji", ["Слова"] = "words", ["Грамматика"] = "grammar", ["Говорение"] = "speech",
+        ["Диалоги"] = "dialogs", ["Словарь"] = "dict", ["Настройки"] = "settings", ["Тренажёры"] = "trainers", ["Чтение"] = "books",
+        ["Книги и тексты"] = "books", ["Разговор с ИИ"] = "chat", ["Прописи"] = "write", ["Минимальные пары"] = "voice",
+        ["Проверка микрофона"] = "mic", ["Кана"] = "kana", ["Ещё"] = "more", ["Счётные слова"] = "target",
+        ["話"] = "speech", ["対"] = "dialogs", ["道"] = "path", ["耳"] = "mic", ["書"] = "write", ["練"] = "trainers", ["数"] = "target",
+        ["漢"] = "kanji", ["語"] = "words", ["文"] = "grammar", ["辞"] = "dict", ["読"] = "books", ["設"] = "settings", ["あ"] = "kana",
+    };
+
+    /// <summary>
+    /// Шапка страницы: у каждого раздела свой цветной баннер — иконка, название, подзаголовок
+    /// и крупный иероглиф-водяной знак в цвет раздела.
+    /// </summary>
     public static Control Header(string jp, string title, string subtitle, Control? right = null)
     {
+        string icon = HeaderIcons.TryGetValue(title, out var i1) ? i1 : HeaderIcons.TryGetValue(jp, out var i2) ? i2 : "sparkle";
+        var (ca, cb) = Controls.Art.IconColors(icon);
         var g = Cols("auto", "*", "auto");
-        g.Margin = new Thickness(0, 4, 0, Shell.Compact ? 16 : 24);
-        var badge = new Border
-        {
-            Width = Shell.Compact ? 42 : 52, Height = Shell.Compact ? 42 : 52, CornerRadius = new CornerRadius(14), Background = B("AccentSoft"),
-            Child = new TextBlock { Text = jp, FontFamily = R<FontFamily>("JpSerif"), FontSize = jp.Length > 1 ? 20 : 26, Foreground = B("Accent"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, -2, 0, 0) },
-        };
-        g.Children.Add(badge);
-        var sp = Stack(T(title, "H1", Shell.Compact ? 22 : null), T(subtitle, "Muted", Shell.Compact ? 12.5 : 13.5).M(0, 3, 0, 0));
-        sp.VerticalAlignment = VerticalAlignment.Center; sp.Margin = new Thickness(16, 0, 0, 0);
+        g.Children.Add(Shell.Compact ? Controls.Art.Icon(icon, 42) : Controls.Art.Icon(icon, 58));
+        var sp = Stack(T(title, "H1", Shell.Compact ? 22 : 28), T(subtitle, "Muted", Shell.Compact ? 12.5 : 13.5).Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 3, 0, 0));
+        sp.VerticalAlignment = VerticalAlignment.Center; sp.Margin = new Thickness(18, 0, 12, 0);
         g.Children.Add(sp.Col(1));
         if (right != null)
         {
@@ -334,7 +344,52 @@ public static class U
             if (Shell.Compact) { g.RowDefinitions = new RowDefinitions("auto,auto"); right.Margin = new Thickness(0, 12, 0, 0); right.HorizontalAlignment = HorizontalAlignment.Left; Grid.SetColumnSpan(right, 3); g.Children.Add(right.RowAt(1)); }
             else { right.VerticalAlignment = VerticalAlignment.Center; g.Children.Add(right.Col(2)); }
         }
-        return g;
+        if (Shell.Compact) { g.Margin = new Thickness(0, 4, 0, 16); return g; }
+
+        var layers = new Grid();
+        layers.Children.Add(new TextBlock
+        {
+            Text = jp, FontFamily = R<FontFamily>("JpSerif"), FontSize = 150, FontWeight = FontWeight.Bold, Opacity = 0.07,
+            Foreground = new SolidColorBrush(cb), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, -40, right != null ? 260 : 30, -40), IsHitTestVisible = false,
+        });
+        layers.Children.Add(g.M(22, 18, 22, 18));
+        return new Border
+        {
+            Margin = new Thickness(0, 4, 0, 22), CornerRadius = new CornerRadius(22), ClipToBounds = true,
+            BorderBrush = B("Stroke"), BorderThickness = new Thickness(1), Child = layers,
+            Background = new LinearGradientBrush
+            {
+                StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative), EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
+                GradientStops =
+                {
+                    new GradientStop(Color.FromArgb(0x30, ca.R, ca.G, ca.B), 0),
+                    new GradientStop(Color.FromArgb(0x10, cb.R, cb.G, cb.B), 0.55),
+                    new GradientStop(Color.FromArgb(0x00, cb.R, cb.G, cb.B), 1),
+                },
+            },
+        };
+    }
+
+    /// <summary>Переключатель-«тумблер» со строкой описания: вся строка кликабельна.</summary>
+    public static Control Switch(string text, bool on, Action<bool> set, string? sub = null)
+    {
+        var knobT = new TranslateTransform(on ? 20 : 0, 0);
+        var knob = new Border { Width = 20, Height = 20, CornerRadius = new CornerRadius(10), Background = Brushes.White, RenderTransform = knobT, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(3, 0, 0, 0), BoxShadow = BoxShadows.Parse("0 1 3 0 #40000000") };
+        var track = new Border { Width = 46, Height = 26, CornerRadius = new CornerRadius(13), Background = on ? B("Accent") : B("Surface3"), Child = knob, VerticalAlignment = VerticalAlignment.Center };
+        var g = Cols("*", "auto");
+        g.Children.Add(sub == null ? T(text, "Body", 14).Also(t => t.TextWrapping = TextWrapping.Wrap).CenterV() : Stack(T(text, "Body", 14), T(sub, "Muted", 12)).CenterV());
+        g.Children.Add(track.M(16, 0, 0, 0).Col(1));
+        var row = new Border { Child = g, Background = Brushes.Transparent, Padding = new Thickness(0, 7), Cursor = Cursors.Hand };
+        bool state = on;
+        row.PointerReleased += (_, _) =>
+        {
+            state = !state;
+            track.Background = state ? B("Accent") : B("Surface3");
+            Anim.Run((knobT, "x"), knobT.X, state ? 20 : 0, 200, v => knobT.X = v);
+            set(state);
+        };
+        return row;
     }
 
     /// <summary>Стандартная прокручиваемая страница с отступами.</summary>

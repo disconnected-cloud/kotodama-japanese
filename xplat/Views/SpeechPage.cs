@@ -53,7 +53,7 @@ public sealed class SpeechPage : UserControl, IPage
         var mine = p.Cards.Where(kv => byId.ContainsKey(kv.Key)).OrderBy(kv => kv.Value.Due).Select(kv => byId[kv.Key]).ToList();
         if (mine.Count < 10) mine.AddRange(Db.WordsOf(p.Level).Where(w => !mine.Contains(w)).Take(10 - mine.Count));
         int Best(Word w) => p.SpeechBest.TryGetValue("sw:" + w.Id, out var s) ? s : -1;
-        var pick = mine.OrderBy(w => Best(w) >= 70 ? 1 : 0).ThenBy(_ => Random.Shared.Next()).Take(10).ToArray();
+        var pick = mine.OrderBy(w => Best(w) >= Speech.PassScore ? 1 : 0).ThenBy(_ => Random.Shared.Next()).Take(10).ToArray();
         var items = pick.Select(w => new Phrase("sw:" + w.Id, w.Jp, w.Kana, w.Ru, w.ExJp.Length > 0 ? $"В речи: {w.ExJp} — {w.ExRu}" : null)).ToArray();
         return new SpeechLesson(900, "Мои слова вслух", "声", "10 слов из твоих карточек", items);
     }
@@ -100,7 +100,7 @@ public sealed class SpeechPage : UserControl, IPage
 
     static Border LessonCard(SpeechLesson l)
     {
-        int done = l.Items.Count(i => ProgressStore.P.SpeechBest.TryGetValue(i.Id, out var s) && s >= 70);
+        int done = l.Items.Count(i => ProgressStore.P.SpeechBest.TryGetValue(i.Id, out var s) && s >= Speech.PassScore);
         double avg = l.Items.Average(i => ProgressStore.P.SpeechBest.TryGetValue(i.Id, out var s) ? s : 0);
         var sp = new StackPanel();
         var head = U.Cols("auto", "*", "auto");
@@ -230,7 +230,7 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
             _dots.Children.Add(new Border
             {
                 Width = i == _i ? 22 : 8, Height = 8, CornerRadius = new CornerRadius(4), Margin = new Thickness(3),
-                Background = i == _i ? U.B("Accent") : best >= 70 ? U.B("Good") : best >= 0 ? U.B("Gold") : U.B("Surface3"),
+                Background = i == _i ? U.B("Accent") : best >= Speech.PassScore ? U.B("Good") : best >= 0 ? U.B("Gold") : U.B("Surface3"),
             });
         }
     }
@@ -271,7 +271,7 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
             _last = rec;
             ProsodyResult? pr = null;
             int textScore = check.Score;
-            if (check.Error == null && rec is { Heard: true } && check.Score >= 40)
+            if (check.Error == null && rec is { Heard: true } && check.Score >= 40 && !Speech.Easy)
             {
                 _status.Text = "Анализирую интонацию…";
                 pr = await SpeechUi.AnalyzeProsody(p.Jp, rec);
@@ -346,11 +346,12 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
         _status.Text = "";
         var sp = new StackPanel();
 
-        var top = U.Cols("auto", "*");
+        var top = U.Cols("auto", "*", "auto");
+        if (Speech.Easy) top.Children.Add(Art.Tama(78, r.Ok ? (r.Score >= 85 ? Mood.Joy : Mood.Happy) : Mood.Think).CenterV().Col(2));
         var ring = new Grid { Width = 92, Height = 92 };
         ring.Children.Add(new Ellipse { Stroke = U.B("Surface3"), StrokeThickness = 7 });
         var arc = Results.Ring(46, 42.5, r.Score / 100.0);
-        arc.Stroke = U.B(r.Score >= 75 ? "Good" : r.Score >= 50 ? "Gold" : "Bad");
+        arc.Stroke = U.B(r.Ok ? "Good" : r.Score >= 35 ? "Gold" : "Bad");
         arc.StrokeThickness = 7; arc.StrokeLineCap = PenLineCap.Round;
         ring.Children.Add(arc);
         var num = U.T("0", "H1", 26);
@@ -358,7 +359,8 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
         Anim.CountUp(num, r.Score);
         top.Children.Add(ring);
         var info = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(20, 0, 0, 0) };
-        info.Children.Add(U.T(r.Verdict, "H3", 15, U.B(r.Score >= 75 ? "Good" : r.Score >= 50 ? "Gold" : "Bad")));
+        if (r.Ok) info.Children.Add(U.Pill("✓ ЗАСЧИТАНО", U.B("GoodSoft"), U.B("Good")).Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 0, 0, 6); }));
+        info.Children.Add(U.T(r.Verdict, "H3", 15, U.B(r.Ok ? "Good" : r.Score >= 35 ? "Gold" : "Bad")));
         if (r.Heard.Length > 0)
         {
             info.Children.Add(U.T("РАСПОЗНАНО", "Overline").M(0, 10, 0, 3));
@@ -369,22 +371,47 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
         top.Children.Add(info.Col(1));
         sp.Children.Add(top);
         if (SpeechUi.HintsPanel(r) is { } hints) sp.Children.Add(hints);
-        if (r.Score >= 70 && SpeechDetail.UnclearCount(r.Tokens) > 0)
+        if (r.Ok && !Speech.Easy && SpeechDetail.UnclearCount(r.Tokens) > 0)
             sp.Children.Add(U.T("Засчитано, но часть мор прозвучала нечётко (оранжевая рамка) — открывай рот чуть шире и не глотай окончания.", "Body", 13, U.B("Gold")).M(0, 10, 0, 0));
+        // Лёгкий режим: подробный разбор (питч-акцент, интонация, волны) — по кнопке, чтобы не перегружать
+        var det = sp;
+        if (Speech.Easy && rec is { Heard: true })
+        {
+            det = new StackPanel();
+            var more = U.Btn("Подробный разбор: интонация и волны", () => { }, "Ghost", "");
+            more.HorizontalAlignment = HorizontalAlignment.Left; more.Margin = new Thickness(0, 10, 0, 0);
+            var detail = det;
+            more.Click += async (_, _) =>
+            {
+                more.IsVisible = false;
+                var pros = await SpeechUi.AnalyzeProsody(p.Jp, rec);
+                if (pros != null)
+                {
+                    detail.Children.Insert(Math.Min(2, detail.Children.Count), new Border { Height = 1, Background = U.B("Stroke"), Margin = new Thickness(0, 16, 0, 12) });
+                    detail.Children.Insert(Math.Min(3, detail.Children.Count), SpeechUi.ProsodyPanel(textScore, pros));
+                }
+                detail.IsVisible = true;
+                Anim.FadeUp(detail, 0, 8, 260);
+            };
+            det.IsVisible = false;
+            sp.Children.Add(more);
+            sp.Children.Add(det);
+        }
         if (rec != null && rec.Heard && SpeechDetail.AccentPanel(p.Jp, p.KanaPlain, rec.Wav) is { } accent)
         {
-            sp.Children.Add(new Border { Height = 1, Background = U.B("Stroke"), Margin = new Thickness(0, 16, 0, 12) });
-            sp.Children.Add(accent);
+            det.Children.Add(new Border { Height = 1, Background = U.B("Stroke"), Margin = new Thickness(0, 16, 0, 12) });
+            det.Children.Add(accent);
         }
         if (pr != null)
         {
-            sp.Children.Add(new Border { Height = 1, Background = U.B("Stroke"), Margin = new Thickness(0, 16, 0, 12) });
-            sp.Children.Add(SpeechUi.ProsodyPanel(textScore, pr));
+            det.Children.Add(new Border { Height = 1, Background = U.B("Stroke"), Margin = new Thickness(0, 16, 0, 12) });
+            det.Children.Add(SpeechUi.ProsodyPanel(textScore, pr));
         }
 
         // Волны «образец / ты»: видно длину и ритм — долгие гласные и паузы っ
         if (rec != null && rec.Heard)
         {
+            var sp0 = sp; sp = det;
             sp.Children.Add(new Border { Height = 1, Background = U.B("Stroke"), Margin = new Thickness(0, 16, 0, 12) });
             var sample = new WaveView(U.B("Accent"));
             var mine = new WaveView(U.B("Info"));
@@ -393,6 +420,7 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
             sp.Children.Add(WaveRow("Ты", mine, () => _ = Speech.PlayWavAsync(rec.Wav), out var mineSec).M(0, 8, 0, 0));
             mineSec.Text = $"{rec.Seconds:0.0} с";
             _ = LoadSampleWave(p.Jp, sample, sampleSec);
+            sp = sp0;
         }
 
         var acts = U.Row(8,

@@ -240,6 +240,9 @@ public static class Art
         ["sparkle"] = new("#C59BFF", "#8452E8", Fill: "M12 2.5 C12.9 8 15.5 10.8 21.5 12 C15.5 13.2 12.9 16 12 21.5 C11.1 16 8.5 13.2 2.5 12 C8.5 10.8 11.1 8 12 2.5 Z"),
     };
 
+    public static (Color a, Color b) IconColors(string name) =>
+        Icons.TryGetValue(name, out var d) ? (Color.Parse(d.A), Color.Parse(d.B)) : (Color.Parse("#C59BFF"), Color.Parse("#8452E8"));
+
     public static bool HasIcon(string name) => Icons.ContainsKey(name);
 
     /// <summary>Цветная иконка-плитка. size — сторона плитки.</summary>

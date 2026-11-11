@@ -197,7 +197,7 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget
                     MarkScore(i, check.Score);
                     if (check.Heard.Length > 0) ProgressStore.SpeechResult(line.Id, check.Score);
                     _status.Text = $"{check.Score} — {check.Verdict}";
-                    if (check.Score >= 70) { _scores.Add(check.Score); await Task.Delay(700, ct); break; }
+                    if (check.Ok) { _scores.Add(check.Score); await Task.Delay(700, ct); break; }
                     // Слабый результат: даём повторить
                     if (await AskNext(true)) { _scores.Add(check.Score); break; }
                     // false означает «повторить» — Speech образца и снова запись

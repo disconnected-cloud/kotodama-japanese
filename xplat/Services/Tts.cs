@@ -39,7 +39,7 @@ public static class Tts
     public static string CachePath(string text, bool slow, bool male)
     {
         bool off = UseOffline;
-        var voice = off ? "vv" + Voicevox.PickStyle(male) : male ? "m" : "f";
+        var voice = off ? "vv2-" + Voicevox.PickStyle(male) : male ? "m" : "f"; // vv2 — после чистки звука
         var key = $"{voice}|{(slow ? "s" : "n")}|{text.Trim()}";
         var hash = Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes(key)))[..20];
         return Path.Combine(CacheDir, hash + (off ? ".wav" : ".mp3"));
@@ -70,7 +70,7 @@ public static class Tts
         if (path.EndsWith(".wav"))
         {
             // Офлайн: VOICEVOX
-            data = Voicevox.Synthesize(text, Voicevox.PickStyle(male), slow ? 0.72 : 1.0);
+            data = Voicevox.Synthesize(text, Voicevox.PickStyle(male), slow ? 0.8 : 1.0);
             if (data is { Length: > 1000 })
             {
                 Directory.CreateDirectory(CacheDir);
@@ -104,7 +104,7 @@ public static class Tts
         if (data is not { Length: > 600 } && Voicevox.Installed)
         {
             // Онлайн недоступен — офлайн-голос как последний запасной вариант
-            data = Voicevox.Synthesize(text, Voicevox.PickStyle(male), slow ? 0.72 : 1.0);
+            data = Voicevox.Synthesize(text, Voicevox.PickStyle(male), slow ? 0.8 : 1.0);
             if (data is { Length: > 1000 }) path = Path.ChangeExtension(path, ".wav");
         }
         if (data is not { Length: > 600 } && Platform.Hooks.SystemTts is { } sys)

@@ -7,7 +7,7 @@ namespace Matsubakira.Services;
 public sealed record SpeechCheck(bool Ok, int Score, string Heard, string Verdict, string? Error = null, string HeardKana = "", string[]? Hints = null, (string text, float p)[]? Tokens = null)
 {
     /// <summary>Тот же результат с другим баллом (вердикт пересчитывается).</summary>
-    public SpeechCheck WithScore(int score) => this with { Score = score, Ok = score >= 70, Verdict = Speech.VerdictFor(score, Heard) };
+    public SpeechCheck WithScore(int score) => this with { Score = score, Ok = score >= Speech.PassScore, Verdict = Speech.VerdictFor(score, Heard) };
 }
 
 /// <summary>
@@ -98,6 +98,10 @@ public static class Speech
     }
 
     // ─────────── Оценка произношения ───────────
+    public static bool Easy => ProgressStore.P.SpeechMode == "easy";
+    /// <summary>Порог «засчитано»: лёгкий режим прощает акцент — главное, чтобы фразу поняли.</summary>
+    public static int PassScore => ProgressStore.P.SpeechMode switch { "strict" => 82, "normal" => 70, _ => 55 };
+
     /// <summary>
     /// Сравнивает распознанное Whisper с целевой фразой. Главное — звучание: распознанный текст переводится
     /// в кану (кандзи, цифры) и сравнивается с чтением фразы по латинице, поэтому «お願いします» и «おねがいします»,
@@ -121,11 +125,13 @@ public static class Speech
         }
         double sim = Math.Max(surface, sound);
         double conf = confidence <= 0.001 ? 1 : 0.85 + 0.15 * Math.Clamp(confidence, 0, 1);
-        int score = (int)Math.Round(100 * Math.Pow(sim, 1.3) * conf);
+        double curve = ProgressStore.P.SpeechMode switch { "strict" => 1.5, "normal" => 1.3, _ => 0.85 };
+        int score = (int)Math.Round(100 * Math.Pow(sim, curve) * conf);
         if (sim > 0.999) score = Math.Max(score, 92); // полное совпадение — всегда высокий балл
+        else if (Easy && sim >= 0.8) score = Math.Max(score, 80); // мелкие неточности не мешают пониманию
         score = Math.Min(score, cap);
         var hints = sim > 0.999 ? new List<string>() : Reading.Hints(tKana, hKana);
-        return new SpeechCheck(score >= 70, score, heardRaw.Trim(), Verdict(score, sim < 0.999 ? heardRaw.Trim() : null), null, hKana, hints.ToArray());
+        return new SpeechCheck(score >= PassScore, score, heardRaw.Trim(), Verdict(score, sim < 0.999 ? heardRaw.Trim() : null), null, hKana, hints.ToArray());
     }
 
     /// <summary>Whisper на тишине и шуме «досочиняет» фразы из субтитров YouTube — такие ответы отбрасываем.</summary>
@@ -139,7 +145,14 @@ public static class Speech
 
     public static string VerdictFor(int score, string heard) => Verdict(score, score < 90 && heard.Length > 0 ? heard : null);
 
-    static string Verdict(int score, string? heardOther) => score switch
+    static string Verdict(int score, string? heardOther) => Easy ? score switch
+    {
+        >= 90 => "Превосходно! 素晴らしい！",
+        >= 75 => "Отлично! Тебя прекрасно поймут.",
+        >= 55 => "Засчитано! Понятно — можно чуть чётче.",
+        >= 30 => heardOther != null ? $"Почти! Я услышал «{heardOther}». Попробуй ещё раз." : "Почти! Попробуй ещё раз.",
+        _ => "Не расслышал. Послушай образец и скажи громче.",
+    } : score switch
     {
         >= 90 => "Превосходно! Звучит как у носителя. 素晴らしい！",
         >= 75 => "Отлично! Очень близко к образцу.",

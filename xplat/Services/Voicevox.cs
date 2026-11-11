@@ -152,21 +152,35 @@ public static class Voicevox
             .GroupBy(v => v.Id).Select(g => g.First()).ToList();
     }
 
-    static readonly string[] MaleNames = { "男声1", "男声2", "男声3", "玄野武宏", "青山龍星", "白上虎太郎", "剣崎雌雄", "雀松朱司", "麒ヶ島宗麟", "ちび式じい" };
+    static readonly string[] MaleNames = { "玄野武宏", "青山龍星", "白上虎太郎", "雀松朱司", "剣崎雌雄", "麒ヶ島宗麟", "離途", "黒沢冴白", "男声1", "男声2", "男声3", "ちび式じい" };
 
-    /// <summary>Стиль для озвучки: выбранный пользователем, а для мужских ролей — мужской голос, если установлен.</summary>
+    /// <summary>
+    /// Чёткие голоса для учёбы: ровная дикция, без придыхания, шёпота и эмоций. Порядок — от лучшего.
+    /// Голоса 女声/男声 (пакет n0) звучат с придыханием, поэтому идут последними.
+    /// </summary>
+    static readonly uint[] ClearFemale = { 8, 30, 14, 16, 2, 107, 109, 29, 31, 10, 20, 54, 46, 23, 74, 90, 94, 118, 122, 10005, 10007, 10004 };
+    static readonly uint[] ClearMale = { 11, 13, 12, 52, 21, 53, 99, 100, 10001, 10000, 10002 };
+    public static readonly HashSet<uint> Clear = ClearFemale.Concat(ClearMale).ToHashSet();
+    /// <summary>Рекомендуемый набор пакетов: 7 чётких голосов (женские и мужские) ≈ 300 МБ.</summary>
+    public static readonly string[] Recommended = { "0.vvm", "1.vvm", "4.vvm", "6.vvm", "15.vvm" };
+    public static bool IsMale(VoiceStyle s) => MaleNames.Contains(s.Character);
+
+    /// <summary>Стиль для озвучки: выбранный пользователем, а для мужских ролей — чёткий мужской голос, если установлен.</summary>
     public static uint PickStyle(bool male)
     {
         var styles = InstalledStyles();
         if (styles.Count == 0) return 0;
+        var ids = styles.Select(s => s.Id).ToHashSet();
         if (male)
         {
-            var m = styles.Where(s => MaleNames.Contains(s.Character)).OrderBy(s => Array.IndexOf(MaleNames, s.Character)).FirstOrDefault();
+            foreach (var id in ClearMale) if (ids.Contains(id)) return id;
+            var m = styles.FirstOrDefault(IsMale);
             if (m != null) return m.Id;
         }
         var chosen = ProgressStore.P.OfflineStyleId >= 0 ? styles.FirstOrDefault(s => s.Id == (uint)ProgressStore.P.OfflineStyleId) : null;
         if (chosen != null) return chosen.Id;
-        return (styles.FirstOrDefault(s => s.Character == "女声1") ?? styles[0]).Id;
+        foreach (var id in ClearFemale) if (ids.Contains(id)) return id;
+        return styles[0].Id;
     }
 
     // ─────────── Установка ───────────
@@ -312,18 +326,56 @@ public static class Voicevox
                 // Меняем только существующие поля — формат AudioQuery строгий
                 void Set(string key, double v) { if (node[key] != null) node[key] = v; }
                 Set("speedScale", speed);
-                Set("prePhonemeLength", 0.08);
-                Set("postPhonemeLength", 0.15);
-                Set("intonationScale", 1.1);   // чуть ярче мелодика — полезно для учёбы
+                Set("prePhonemeLength", 0.1);
+                Set("postPhonemeLength", 0.2);
+                Set("intonationScale", 1.0);   // естественная мелодика: завышенная даёт «подвывание» на гласных
+                Set("volumeScale", 1.0);
                 Check(voicevox_synthesizer_synthesis(_synth, U8(node.ToJsonString()), style, voicevox_make_default_synthesis_options(), out var len, out var wav), "синтез");
                 var bytes = new byte[(int)len];
                 Marshal.Copy(wav, bytes, 0, bytes.Length);
                 voicevox_wav_free(wav);
                 LastError = null;
-                return bytes;
+                return Clean(bytes);
             }
         }
         catch (Exception ex) { LastError = ex.Message; return null; }
+    }
+
+    /// <summary>
+    /// Чистка звука: убираем постоянную составляющую и низкочастотный гул (фильтр 70 Гц),
+    /// мягко срезаем резкие «с/ш» выше 9 кГц, выравниваем громкость (пик −1.5 дБ) и делаем
+    /// плавные края, чтобы не было щелчков в начале и конце.
+    /// </summary>
+    public static byte[] Clean(byte[] wav)
+    {
+        try
+        {
+            var (x, rate) = Platform.Pcm.Decode(wav, true);
+            if (x.Length < rate / 20) return wav;
+            // ВЧ-фильтр 1-го порядка (≈70 Гц)
+            double rc = 1.0 / (2 * Math.PI * 70), dt = 1.0 / rate, a = rc / (rc + dt);
+            double prevX = x[0], prevY = 0;
+            for (int i = 0; i < x.Length; i++) { double y = a * (prevY + x[i] - prevX); prevX = x[i]; prevY = y; x[i] = (float)y; }
+            // НЧ-фильтр 1-го порядка (≈9 кГц) — убирает «песок» и свист на шипящих
+            if (rate > 20000)
+            {
+                double rc2 = 1.0 / (2 * Math.PI * 9000), b = dt / (rc2 + dt), z = x[0];
+                for (int i = 0; i < x.Length; i++) { z += b * (x[i] - z); x[i] = (float)z; }
+            }
+            float peak = 0;
+            foreach (var v in x) peak = Math.Max(peak, Math.Abs(v));
+            float gain = peak > 1e-4f ? Math.Min(4f, 0.84f / peak) : 1f;
+            int fade = rate / 125; // 8 мс
+            for (int i = 0; i < x.Length; i++)
+            {
+                float g = gain;
+                if (i < fade) g *= (float)i / fade;
+                else if (i > x.Length - fade) g *= (float)(x.Length - i) / fade;
+                x[i] *= g;
+            }
+            return Platform.Pcm.ToWav(x, rate);
+        }
+        catch { return wav; }
     }
 
     /// <summary>
