@@ -76,6 +76,7 @@ public sealed class Palette : Grid
         yield return new Item("対", "Найди пару", "Игра", () => Shell.Open(new MemoryGame()));
         yield return new Item("速", "Спринт 60 секунд", "Игра", () => Shell.Open(new SprintGame()));
         yield return new Item("対", "Пары на скорость", "Игра", () => Shell.Open(new MatchRushGame()));
+        foreach (var a in JapanPage.All) yield return new Item("日", a.Title, "Япония", () => Shell.Open(new ArticlePage(a)));
         yield return new Item("組", "Собери слово", "Игра", () => Shell.Open(new WordBuilderGame()));
         yield return new Item("聞", "Ловец звуков", "Игра", () => Shell.Open(new ListenCatchGame()));
         foreach (var u in Db.Course) yield return new Item("道", $"Юнит {u.Id}. {u.Title}", "Путь · " + u.Level, () => Shell.Open(new UnitPage(u)));

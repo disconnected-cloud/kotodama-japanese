@@ -179,8 +179,8 @@
       <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Margin" Value="12,1"/>
-      <Setter Property="FontSize" Value="14"/>
-      <Setter Property="Height" Value="36"/>
+      <Setter Property="FontSize" Value="13.5"/>
+      <Setter Property="Height" Value="34"/>
       <Setter Property="HorizontalAlignment" Value="Stretch"/>
       <Setter Property="Template">
         <ControlTemplate>

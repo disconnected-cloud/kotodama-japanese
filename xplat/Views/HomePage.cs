@@ -112,6 +112,9 @@ public sealed class HomePage : UserControl, IPage
         sections.Children.Add(Section("dialogs", "Диалоги", $"{Db.Dialogs.Length} сценок", "dialogs"));
         sections.Children.Add(Section("dict", "Словарь", "69 000+ слов", "dict"));
         sections.Children.Add(Section("books", "Книги", "книги и рассказы", "reader"));
+        sections.Children.Add(Section("torii", "Япония", $"{JapanPage.All.Length} статей о культуре", "japan"));
+        sections.Children.Add(Section("trainers", "Игры", "6 игр на слова и кану", "trainers"));
+        sections.Children.Add(Section("chat", "Разговор с ИИ", "свободный диалог", "chat").DesktopOnly());
         root.Children.Add(sections);
         Anim.Stagger(sections, 30, 120);
 

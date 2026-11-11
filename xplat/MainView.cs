@@ -232,7 +232,7 @@ public class MainView : UserControl
         dock.Children.Add(summary);
 
         // Меню со скользящей подложкой выбранного пункта
-        _navIndicator.VerticalAlignment = VerticalAlignment.Top; _navIndicator.Height = 36; _navIndicator.Margin = new Thickness(12, 0);
+        _navIndicator.VerticalAlignment = VerticalAlignment.Top; _navIndicator.Height = 34; _navIndicator.Margin = new Thickness(12, 0);
         _navIndicator.CornerRadius = new CornerRadius(10); _navIndicator.Background = U.B("SelectedTint"); _navIndicator.Opacity = 0; _navIndicator.IsHitTestVisible = false;
         _navIndicator.RenderTransform = _navShift;
         _navIndicator.Child = new Border { Width = 3, Height = 16, CornerRadius = new CornerRadius(2), Background = U.B("Accent"), HorizontalAlignment = HorizontalAlignment.Left };
@@ -244,7 +244,7 @@ public class MainView : UserControl
             _navItems[key] = rb;
             _nav.Children.Add(rb);
         }
-        void Header(string t) => _nav.Children.Add(U.T(t, "Overline").M(28, 9, 0, 3));
+        void Header(string t) => _nav.Children.Add(U.T(t, "Overline").M(28, 7, 0, 2));
         _dueText.FontSize = 11; _dueText.FontWeight = FontWeight.SemiBold; _dueText.Foreground = U.B("OnAccent");
         _dueBadge.HorizontalAlignment = HorizontalAlignment.Right; _dueBadge.Background = U.B("Accent"); _dueBadge.CornerRadius = new CornerRadius(8);
         _dueBadge.Padding = new Thickness(6, 0); _dueBadge.IsVisible = false; _dueBadge.Child = _dueText;
@@ -264,6 +264,7 @@ public class MainView : UserControl
 #endif
         Header("ЧИТАТЬ И ИГРАТЬ");
         Item("reader", "books", "Книги и тексты");
+        Item("japan", "torii", "Япония");
         Item("dict", "dict", "Словарь");
         Item("trainers", "trainers", "Тренажёры и игры");
         Item("settings", "settings", "Настройки");
@@ -362,6 +363,7 @@ public class MainView : UserControl
         ["settings"] = () => new SettingsPage(),
         ["trainers"] = () => new TrainersPage(),
         ["reader"] = () => new ReaderPage(),
+        ["japan"] = () => new JapanPage(),
         ["more"] = () => new MorePage(),
 #if !MOBILE
         ["chat"] = () => new ChatPage(),
@@ -733,6 +735,7 @@ public class MainView : UserControl
             case "mic": Push(new MicCheckPage()); break;
             case "pairs": Push(new PairsPage()); break;
             case "art": Push(new ArtDemo()); break;
+            case "article": Push(new ArticlePage(JapanPage.All[0])); break;
             case "match": Push(new MatchRushGame()); break;
             case "build": Push(new WordBuilderGame()); break;
             case "listen": Push(new ListenCatchGame()); break;
