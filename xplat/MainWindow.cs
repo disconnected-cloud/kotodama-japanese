@@ -36,7 +36,12 @@ public class MainWindow : Window
             WindowStartupLocation = WindowStartupLocation.Manual; Position = new PixelPoint(-20000, 0);
         }
         // проверка телефонной раскладки на компьютере: размер экрана телефона
-        if (Shell.Compact) { MinWidth = 320; MinHeight = 560; Width = 392; Height = 852; }
+        if (Shell.Compact)
+        {
+            MinWidth = 320; MinHeight = 560; Width = 392; Height = 852;
+            // другой размер экрана для проверки: KOTODAMA_PHONE=320x640
+            if (Environment.GetEnvironmentVariable("KOTODAMA_PHONE")?.Split('x') is [var pw, var ph] && double.TryParse(pw, out var w) && double.TryParse(ph, out var h)) { Width = w; Height = h; }
+        }
 #endif
         View = new MainView();
         Content = View;

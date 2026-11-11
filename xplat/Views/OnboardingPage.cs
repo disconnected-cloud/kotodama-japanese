@@ -38,10 +38,17 @@ public sealed class OnboardingPage : UserControl, IPage
 
     void Next() { _step++; Render(); }
 
+    /// <summary>Высота картинки под экран: на низких телефонах меньше, чтобы кнопки помещались без прокрутки.</summary>
+    static double ArtHeight(double max)
+    {
+        double h = Shell.Main?.Bounds.Height ?? 0;
+        return h <= 0 ? max : Math.Clamp(h * 0.27, 110, max);
+    }
+
     Control Welcome() => U.Stack(
-        Controls.Art.Anime("hello", 230).Center(),
+        Controls.Art.Anime("hello", ArtHeight(230)).Center(),
         U.Jp("言霊", 30, U.B("Accent"), true).Center().M(0, 10, 0, 0),
-        U.T("Добро пожаловать в Kotodama", "H1").Center().M(0, 6, 0, 6),
+        U.T("Добро пожаловать в Kotodama", "H1", Shell.Compact ? 24 : null).Center().M(0, 6, 0, 6).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.TextAlignment = TextAlignment.Center; }),
         U.T("Привет! Я Википе-тан, буду учиться вместе с тобой. Сначала я покажу каждый знак и слово, потом мы потренируемся, а говорить можно смело: засчитывается всё, что понятно.", "Body", 15).Center().M(0, 0, 0, 24).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.TextAlignment = TextAlignment.Center; t.MaxWidth = 620; }),
         U.Btn("Начать", Next, "Primary", "").Center(),
         U.Btn("Пропустить настройку", Finish, "Ghost").Center().M(0, 8, 0, 0));
