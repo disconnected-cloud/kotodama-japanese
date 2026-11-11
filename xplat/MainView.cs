@@ -232,40 +232,41 @@ public class MainView : UserControl
         dock.Children.Add(summary);
 
         // Меню со скользящей подложкой выбранного пункта
-        _navIndicator.VerticalAlignment = VerticalAlignment.Top; _navIndicator.Height = 37; _navIndicator.Margin = new Thickness(12, 0);
+        _navIndicator.VerticalAlignment = VerticalAlignment.Top; _navIndicator.Height = 40; _navIndicator.Margin = new Thickness(12, 0);
         _navIndicator.CornerRadius = new CornerRadius(10); _navIndicator.Background = U.B("SelectedTint"); _navIndicator.Opacity = 0; _navIndicator.IsHitTestVisible = false;
         _navIndicator.RenderTransform = _navShift;
         _navIndicator.Child = new Border { Width = 3, Height = 16, CornerRadius = new CornerRadius(2), Background = U.B("Accent"), HorizontalAlignment = HorizontalAlignment.Left };
-        void Item(string key, string glyph, object content)
+        void Item(string key, string icon, object content)
         {
-            var rb = new RadioButton { Tag = glyph, Content = content, GroupName = "nav" };
+            var rb = new RadioButton { Tag = Controls.Art.Icon(icon, 26), Content = content, GroupName = "nav" };
             rb.Classes.Add("NavItem");
             rb.Checked += (_, _) => { MoveNavIndicator(rb); ShowRoot(key); };
             _navItems[key] = rb;
             _nav.Children.Add(rb);
         }
         void Header(string t) => _nav.Children.Add(U.T(t, "Overline").M(28, 12, 0, 5));
-        Item("home", "家", "Главная");
-        Item("path", "道", "Путь обучения");
-        Header("РАЗДЕЛЫ");
-        Item("kana", "あ", "Кана");
-        Item("words", "語", "Слова");
-        Item("kanji", "漢", "Кандзи");
-        Item("grammar", "文", "Грамматика");
-        Item("speech", "話", "Говорение");
-        Item("dialogs", "対", "Диалоги");
-#if !MOBILE
-        Item("chat", "会", "Разговор с ИИ");
-#endif
-        Item("reader", "読", "Чтение");
-        Item("dict", "辞", "Словарь");
-        Header("ПРАКТИКА");
         _dueText.FontSize = 11; _dueText.FontWeight = FontWeight.SemiBold; _dueText.Foreground = U.B("OnAccent");
         _dueBadge.HorizontalAlignment = HorizontalAlignment.Right; _dueBadge.Background = U.B("Accent"); _dueBadge.CornerRadius = new CornerRadius(8);
         _dueBadge.Padding = new Thickness(6, 0); _dueBadge.IsVisible = false; _dueBadge.Child = _dueText;
-        Item("review", "復", new Grid { Width = 132, Children = { new TextBlock { Text = "Повторение" }, _dueBadge } });
-        Item("trainers", "練", "Тренажёры");
-        Item("settings", "設", "Настройки");
+        Item("home", "home", "Главная");
+        Item("path", "path", "Путь обучения");
+        Item("review", "review", new Grid { Width = 128, Children = { new TextBlock { Text = "Повторение" }, _dueBadge } });
+        Header("УЧИТЬ");
+        Item("kana", "kana", "Азбука кана");
+        Item("words", "words", "Слова");
+        Item("kanji", "kanji", "Кандзи");
+        Item("grammar", "grammar", "Грамматика");
+        Header("ГОВОРИТЬ");
+        Item("speech", "speech", "Говорение");
+        Item("dialogs", "dialogs", "Диалоги");
+#if !MOBILE
+        Item("chat", "chat", "Разговор с ИИ");
+#endif
+        Header("ЧИТАТЬ И ИГРАТЬ");
+        Item("reader", "books", "Книги и тексты");
+        Item("dict", "dict", "Словарь");
+        Item("trainers", "trainers", "Тренажёры и игры");
+        Item("settings", "settings", "Настройки");
 
         var navGrid = new Grid { Children = { _navIndicator, _nav } };
         dock.Children.Add(new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Hidden, Content = navGrid });
@@ -730,6 +731,11 @@ public class MainView : UserControl
             case "writing": Push(new WritingPage()); break;
             case "mic": Push(new MicCheckPage()); break;
             case "pairs": Push(new PairsPage()); break;
+            case "art": Push(new ArtDemo()); break;
+            case "learn": Push(Controls.LearnSession.Kanji(Db.Kanji.Take(5))); break;
+            case "learnw": Push(Controls.LearnSession.Words("Демо", Db.Words.Take(5)).Skip(1)); break;
+            case "learn1": Push(Controls.LearnSession.Kanji(Db.Kanji.Skip(20).Take(5)).Skip(2)); break;
+            case "learnq": Push(Controls.LearnSession.Words("Демо", Db.Words.Take(5)).Skip(7)); break;
 #if !MOBILE
             case "chat": if (Environment.GetEnvironmentVariable("KOTODAMA_LLM") is { } lp) Llm.OverridePath = lp; NavigateRoot("chat"); break;
 #endif
@@ -742,3 +748,27 @@ public class MainView : UserControl
     }
 #endif
 }
+
+#if DEBUG
+/// <summary>Витрина собственной графики (только отладка).</summary>
+public sealed class ArtDemo : UserControl, IPage
+{
+    public string Title => "Графика";
+    public void OnShown()
+    {
+        var root = new StackPanel();
+        var row = new WrapPanel();
+        foreach (Controls.Mood m in Enum.GetValues<Controls.Mood>()) row.Children.Add(Controls.Art.Kotoha(220, m).M(0, 0, 16, 16));
+        root.Children.Add(row);
+        var row2 = new WrapPanel();
+        foreach (Controls.Mood m in Enum.GetValues<Controls.Mood>()) row2.Children.Add(Controls.Art.Tama(110, m).M(0, 0, 16, 16));
+        root.Children.Add(row2);
+        var icons = new WrapPanel();
+        foreach (var n in new[] { "home","path","kana","words","kanji","grammar","speech","dialogs","chat","reader","books","dict","review","trainers","settings","more","phrases","voice","mic","palette","bell","target","shield","download","trophy","info","flame","games","write","storage","sparkle" })
+            icons.Children.Add(Controls.Art.Icon(n, 48).M(0, 0, 12, 12));
+        root.Children.Add(icons);
+        root.Children.Add(Controls.Art.Say("Привет! Я Котоха. Давай учить японский вместе!", Controls.Mood.Joy));
+        Content = U.Page(root);
+    }
+}
+#endif

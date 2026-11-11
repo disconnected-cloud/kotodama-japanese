@@ -61,6 +61,20 @@ public static class Course
         "kana" => "あ", "speech" => "話", "dialog" => "対", "grammar" => "文", "words" => "語", "kanji" => "漢", _ => "・",
     };
 
+    /// <summary>После порции: если шаг ещё не закрыт — подсказываем, сколько осталось.</summary>
+    static Action AfterStep(CourseUnit u, int i) => () =>
+    {
+        if (StepDone(u, i)) Shell.Toast("Шаг пройден!", "合格");
+        else
+        {
+            var s = u.Steps[i];
+            int left = s.T == "kanji"
+                ? s.Count - Db.KanjiOf(s.Level ?? "N5").Count(k => ProgressStore.Card(k.Id) != null)
+                : Math.Min(10, Db.Words.Count(w => w.Topic == s.Topic)) - WordsStarted(s.Topic!);
+            Shell.Toast($"Порция выучена! До конца шага осталось {left} — нажми «Продолжить»", "良");
+        }
+    };
+
     public static void Launch(CourseUnit u, int i)
     {
         var s = u.Steps[i];
@@ -85,15 +99,16 @@ public static class Course
             case "grammar": Shell.Open(new GrammarLessonPage(Db.Grammar[s.Id - 1])); break;
             case "words":
             {
-                var fresh = Db.Words.Where(w => w.Topic == s.Topic && ProgressStore.Card(w.Id) == null).Take(10).ToList();
-                if (fresh.Count > 0) Shell.Open(new FlashSession("Слова: " + s.Topic, fresh.Select(FlashSession.FromWord)));
+                // Порциями по 6: сначала знакомство со всеми, потом проверка только по ним
+                var fresh = Db.Words.Where(w => w.Topic == s.Topic && ProgressStore.Card(w.Id) == null).Take(6).ToList();
+                if (fresh.Count > 0) Shell.Open(LearnSession.Words("Слова: " + s.Topic, fresh, AfterStep(u, i)));
                 else Shell.Open(WordsPage.QuizFor(Db.Words.Where(w => w.Topic == s.Topic).ToList(), 0));
                 break;
             }
             case "kanji":
             {
                 var fresh = Db.KanjiOf(s.Level ?? "N5").Where(k => ProgressStore.Card(k.Id) == null).Take(5).ToList();
-                if (fresh.Count > 0) Shell.Open(new FlashSession("Новые кандзи", fresh.Select(FlashSession.FromKanji)));
+                if (fresh.Count > 0) Shell.Open(LearnSession.Kanji(fresh, AfterStep(u, i)));
                 else Shell.Go("kanji");
                 break;
             }
@@ -269,8 +284,8 @@ public sealed class UnitPage : UserControl, IPage
         "speech" => "Повтори все фразы урока вслух",
         "dialog" => "Сыграй свою роль в сценке",
         "grammar" => "Объяснение + упражнения · нужно 70%",
-        "words" => "Выучи слова темы на карточках",
-        "kanji" => "Карточки с чтениями и порядком черт",
+        "words" => "Знакомство со словами → проверка по ним",
+        "kanji" => "Сначала все иероглифы с чертами и примерами, потом проверка",
         _ => "",
     };
 }

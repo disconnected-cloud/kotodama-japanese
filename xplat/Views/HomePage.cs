@@ -35,35 +35,54 @@ public sealed class HomePage : UserControl, IPage
             < 18 => ("こんにちは", "Добрый день"),
             _ => ("こんばんは", "Добрый вечер"),
         };
-        root.Children.Add(U.Jp(jpGreet, 15, U.B("Accent")));
-        root.Children.Add(U.T(ruGreet, "H1", 30).M(0, 2, 0, 22));
-
-        // ─────────── Продолжить путь + повторение ───────────
-        var row = U.Cols("*", "16", "300");
+        // ─────────── Баннер: Котоха + продолжить путь ───────────
         var u = Course.Current;
         int d = Course.DoneCount(u), t = Course.Total(u);
-        var cont = new StackPanel();
-        cont.Children.Add(U.T("ПРОДОЛЖИТЬ ПУТЬ", "Overline"));
-        cont.Children.Add(U.T($"Юнит {u.Id}. {u.Title}", "H2", 19).M(0, 6, 0, 4));
-        cont.Children.Add(U.T(d == 0 ? "Начни с теории — потом практика." : $"Пройдено {d} из {t} шагов", "Muted"));
-        var pr = U.Cols("*", "auto");
-        pr.Margin = new Thickness(0, 16, 0, 0);
-        pr.Children.Add(new ProgressBar { Maximum = t, Value = d, Height = 4, VerticalAlignment = VerticalAlignment.Center });
-        pr.Children.Add(U.Btn(d == 0 ? "Начать" : "Продолжить", () => { Shell.Go("path"); Shell.Open(new UnitPage(u)); }, "Primary", "").M(18, 0, 0, 0).Col(1));
-        cont.Children.Add(pr);
-        row.Children.Add(U.Card(cont, new Thickness(22)));
-
         int due = p.Cards.Count(kv => kv.Value.Due <= DateTime.Now);
-        var rev = new StackPanel();
-        rev.Children.Add(U.T("ПОВТОРЕНИЕ", "Overline"));
-        var dueNum = U.T("0", "H1", 34);
-        Anim.CountUp(dueNum, due);
-        rev.Children.Add(U.Row(8, dueNum, U.T(MainView.Plural(due, "карточка", "карточки", "карточек"), "Muted").CenterV().M(0, 10, 0, 0)).M(0, 4, 0, 0));
-        var rb = U.Btn(due > 0 ? "Повторить" : "Всё повторено", () => Shell.Go("review"), "", "");
-        rb.IsEnabled = due > 0; rb.HorizontalAlignment = HorizontalAlignment.Left; rb.Margin = new Thickness(0, 10, 0, 0);
-        rev.Children.Add(rb);
-        row.Children.Add(U.Card(rev, new Thickness(22)).Col(2));
-        root.Children.Add(U.Stackify(row));
+        var (say, mood) = due >= 10 ? ($"На повторение {due} {MainView.Plural(due, "карточка", "карточки", "карточек")} — пара минут, и память снова свежая!", Mood.Think)
+            : p.Streak >= 3 ? ($"Уже {p.Streak} {MainView.Plural(p.Streak, "день", "дня", "дней")} подряд! すごい！ Продолжаем?", Mood.Joy)
+            : d == 0 ? ("Новый юнит! Сначала коротко объясню, потом потренируемся.", Mood.Happy)
+            : ("Продолжим с того места, где остановились?", Mood.Wink);
+
+        var left = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        left.Children.Add(U.Jp(jpGreet, 15, U.B("Accent")));
+        left.Children.Add(U.T(ruGreet, "H1", 30).M(0, 2, 0, 10));
+        left.Children.Add(new Border
+        {
+            Background = U.B("Surface"), CornerRadius = new CornerRadius(14, 14, 14, 4), Padding = new Thickness(14, 9), HorizontalAlignment = HorizontalAlignment.Left,
+            BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(1), Child = U.T(say, "Body", 13.5).Also(x => x.TextWrapping = TextWrapping.Wrap),
+        });
+        left.Children.Add(U.T("ПРОДОЛЖИТЬ ПУТЬ", "Overline").M(0, 20, 0, 0));
+        left.Children.Add(U.T($"Юнит {u.Id}. {u.Title}", "H2", 19).M(0, 4, 0, 8));
+        var bar = U.Cols("*", "auto");
+        bar.Children.Add(new ProgressBar { Maximum = t, Value = d, Height = 6, VerticalAlignment = VerticalAlignment.Center });
+        bar.Children.Add(U.T($"{d}/{t}", "Muted", 12).CenterV().M(10, 0, 0, 0).Col(1));
+        left.Children.Add(bar.Also(x => x.MaxWidth = 420).Also(x => x.HorizontalAlignment = HorizontalAlignment.Left));
+        var acts = new WrapPanel { Margin = new Thickness(0, 16, 0, 0) };
+        acts.Children.Add(U.Btn(d == 0 ? "Начать урок" : "Продолжить", () => { Shell.Go("path"); Shell.Open(new UnitPage(u)); }, "Primary", "").M(0, 0, 10, 6));
+        var rb = U.Btn(due > 0 ? $"Повторить ({due})" : "Всё повторено ✓", () => Shell.Go("review"), "", "");
+        rb.IsEnabled = due > 0;
+        acts.Children.Add(rb.M(0, 0, 10, 6));
+        left.Children.Add(acts);
+
+        var hero = U.Cols("*", "auto");
+        hero.Children.Add(left.M(28, 22, 12, 22));
+        var kotoha = Art.Kotoha(230, mood);
+        kotoha.VerticalAlignment = VerticalAlignment.Bottom;
+        kotoha.Margin = new Thickness(0, 12, 26, -2);
+        hero.Children.Add(kotoha.DesktopOnly().Col(1));
+        var heroCard = new Border
+        {
+            CornerRadius = new CornerRadius(22), ClipToBounds = true, BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(1),
+            Background = new LinearGradientBrush
+            {
+                StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative), EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
+                GradientStops = { new GradientStop(((ISolidColorBrush)U.B("Surface")).Color, 0), new GradientStop(((ISolidColorBrush)U.B("AccentSoft")).Color, 1) },
+            },
+            Child = hero,
+        };
+        var row = heroCard;
+        root.Children.Add(heroCard);
 
         // ─────────── Статистика ───────────
         int wordsKnown = Db.Words.Count(w => ProgressStore.Card(w.Id)?.Reps > 0);
@@ -84,14 +103,14 @@ public sealed class HomePage : UserControl, IPage
         root.Children.Add(U.T("Разделы", "H2").M(0, 28, 0, 12));
         int kanaKnown = Kana.All.Count(k => ProgressStore.KanaScore("h:" + k.Hira) >= 3) + Kana.All.Count(k => ProgressStore.KanaScore("k:" + k.Kata) >= 3);
         var sections = new UniformGrid { Columns = U.Columns(4, 2), Margin = new Thickness(-6, 0, -6, 0) };
-        sections.Children.Add(Section("あ", "Кана", $"{kanaKnown * 100 / (Kana.All.Count * 2)}% освоено", "kana"));
-        sections.Children.Add(Section("語", "Слова", $"{Db.Words.Length} слов", "words"));
-        sections.Children.Add(Section("漢", "Кандзи", $"{Db.Kanji.Length} знаков", "kanji"));
-        sections.Children.Add(Section("文", "Грамматика", $"{p.GrammarDone.Count}/{Db.Grammar.Length} уроков", "grammar"));
-        sections.Children.Add(Section("話", "Говорение", $"{Db.SpeechLessons.Length} уроков", "speech"));
-        sections.Children.Add(Section("対", "Диалоги", $"{Db.Dialogs.Length} сценок", "dialogs"));
-        sections.Children.Add(Section("辞", "Словарь", "69 000+ слов", "dict"));
-        sections.Children.Add(Section("読", "Чтение", "тексты с фуриганой", "reader"));
+        sections.Children.Add(Section("kana", "Кана", $"{kanaKnown * 100 / (Kana.All.Count * 2)}% освоено", "kana"));
+        sections.Children.Add(Section("words", "Слова", $"{Db.Words.Length} слов", "words"));
+        sections.Children.Add(Section("kanji", "Кандзи", $"{Db.Kanji.Length} знаков", "kanji"));
+        sections.Children.Add(Section("grammar", "Грамматика", $"{p.GrammarDone.Count}/{Db.Grammar.Length} уроков", "grammar"));
+        sections.Children.Add(Section("speech", "Говорение", $"{Db.SpeechLessons.Length} уроков", "speech"));
+        sections.Children.Add(Section("dialogs", "Диалоги", $"{Db.Dialogs.Length} сценок", "dialogs"));
+        sections.Children.Add(Section("dict", "Словарь", "69 000+ слов", "dict"));
+        sections.Children.Add(Section("books", "Книги", "книги и рассказы", "reader"));
         root.Children.Add(sections);
         Anim.Stagger(sections, 30, 120);
 
@@ -115,10 +134,10 @@ public sealed class HomePage : UserControl, IPage
         return new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Padding = new Thickness(16, 12, 16, 12) };
     }
 
-    static Border Section(string jp, string title, string sub, string key)
+    static Border Section(string icon, string title, string sub, string key)
     {
         var g = U.Cols("auto", "*");
-        g.Children.Add(U.Jp(jp, 20, U.B("Accent"), true).CenterV());
+        g.Children.Add(Art.Icon(icon, 40).CenterV());
         g.Children.Add(U.Stack(U.T(title, "H3", 14), U.T(sub, "Muted", 12)).CenterV().M(12, 0, 0, 0).Col(1));
         var card = new Border { Classes = { "Card" }, Child = g, Margin = new Thickness(6), Padding = new Thickness(16, 12, 16, 12), Cursor = Cursors.Hand };
         Hover(card);

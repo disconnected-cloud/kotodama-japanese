@@ -199,13 +199,15 @@ public sealed class WordsPage : UserControl, IPage
     {
         var fresh = Filtered().Where(w => ProgressStore.Card(w.Id) == null).Take(ProgressStore.P.NewPerSession).ToList();
         if (fresh.Count == 0) { Shell.Toast("В этой теме все слова уже начаты!", "完了"); return; }
-        Shell.Open(new FlashSession("Новые слова", fresh.Select(FlashSession.FromWord)));
+        Shell.Open(LearnSession.Words("Новые слова", fresh, OnShown));
     }
 
     void Quiz(int mode)
     {
-        var pool = Filtered().ToList();
-        if (pool.Count < 4) pool = Db.Words.Where(w => w.Level == "N5").ToList();
+        // Квиз — только по уже изученным словам; новые сначала проходят знакомство
+        var pool = Filtered().Where(w => ProgressStore.Card(w.Id) != null).ToList();
+        if (pool.Count < 4) pool = Db.Words.Where(w => ProgressStore.Card(w.Id) != null).ToList();
+        if (pool.Count < 4) { Shell.Toast("Сначала выучи хотя бы 4 слова — кнопка «Учить новые»", "学"); return; }
         Shell.Open(QuizFor(pool, mode));
     }
 

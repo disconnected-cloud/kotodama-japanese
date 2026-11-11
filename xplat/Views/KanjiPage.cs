@@ -164,15 +164,17 @@ public sealed class KanjiPage : UserControl, IPage
     void LearnNew()
     {
         var fresh = Db.KanjiOf(_level).Where(k => ProgressStore.Card(k.Id) == null).Take(5).ToList();
-        if (fresh.Count == 0) { Shell.Toast("Все кандзи N5 уже в изучении!", "完了"); return; }
-        Shell.Open(new FlashSession("Новые кандзи", fresh.Select(FlashSession.FromKanji)));
+        if (fresh.Count == 0) { Shell.Toast($"Все кандзи {_level} уже в изучении!", "完了"); return; }
+        Shell.Open(LearnSession.Kanji(fresh, OnShown));
     }
 
     void Quiz(bool reading)
     {
         var all = Db.KanjiOf(_level).ToArray();
         var started = all.Where(k => ProgressStore.Card(k.Id) != null).ToList();
-        var pool = started.Count >= 8 ? started : all.Take(Math.Max(12, started.Count)).ToList();
+        // Проверяем только то, что уже изучено: незнакомые знаки в квизе только сбивают
+        if (started.Count < 4) { Shell.Toast("Сначала выучи хотя бы 4 иероглифа — нажми «Учить новые»", "学"); return; }
+        var pool = started;
         var ruPool = all.Select(k => k.Ru).ToArray();
         IEnumerable<QuizQ> qs;
         if (!reading)

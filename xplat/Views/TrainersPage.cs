@@ -314,7 +314,7 @@ public sealed class TrainersPage : UserControl, IPage
             ("Новые слова", "5 слов уровня " + p.Level, () =>
             {
                 var fresh = Db.Words.Where(w => w.Level == p.Level && ProgressStore.Card(w.Id) == null).Take(5).ToList();
-                if (fresh.Count > 0) Shell.Open(new FlashSession("Новые слова", fresh.Select(FlashSession.FromWord)));
+                if (fresh.Count > 0) Shell.Open(LearnSession.Words("Новые слова", fresh));
             }),
             ("Шаг пути", $"Юнит {unit.Id}: {unit.Title}", () => Shell.Open(new UnitPage(unit))),
             ("Говорение", "Одна фраза вслух с проверкой", () => Shell.Open(new SpeechLessonPage(Db.SpeechLessons[DateTime.Today.DayOfYear % Db.SpeechLessons.Length]))),

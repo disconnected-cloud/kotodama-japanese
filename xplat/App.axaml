@@ -180,7 +180,7 @@
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Margin" Value="12,1"/>
       <Setter Property="FontSize" Value="14"/>
-      <Setter Property="Height" Value="37"/>
+      <Setter Property="Height" Value="40"/>
       <Setter Property="HorizontalAlignment" Value="Stretch"/>
       <Setter Property="Template">
         <ControlTemplate>
@@ -189,8 +189,7 @@
               <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.15"/></Transitions></Border.Transitions>
             </Border>
             <StackPanel Orientation="Horizontal" Margin="14,0" VerticalAlignment="Center">
-              <TextBlock Name="ico" Text="{TemplateBinding Tag}" FontFamily="{DynamicResource JpSerif}" FontSize="16" Width="22"
-                         VerticalAlignment="Center" Foreground="{TemplateBinding Foreground}"/>
+              <ContentPresenter Name="ico" Content="{TemplateBinding Tag}" Width="26" Height="26" VerticalAlignment="Center" Opacity="0.82"/>
               <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center" Margin="10,0,0,0"/>
             </StackPanel>
           </Grid>
@@ -200,7 +199,8 @@
     <Style Selector="RadioButton.NavItem:pointerover"><Setter Property="Foreground" Value="{DynamicResource Text}"/></Style>
     <Style Selector="RadioButton.NavItem:pointerover /template/ Border#hover"><Setter Property="Opacity" Value="0.035"/></Style>
     <Style Selector="RadioButton.NavItem:checked"><Setter Property="Foreground" Value="{DynamicResource Text}"/></Style>
-    <Style Selector="RadioButton.NavItem:checked /template/ TextBlock#ico"><Setter Property="Foreground" Value="{DynamicResource Accent}"/></Style>
+    <Style Selector="RadioButton.NavItem:checked /template/ ContentPresenter#ico"><Setter Property="Opacity" Value="1"/></Style>
+    <Style Selector="RadioButton.NavItem:pointerover /template/ ContentPresenter#ico"><Setter Property="Opacity" Value="1"/></Style>
 
     <!-- Кнопки окна -->
     <Style Selector="Button.CaptionBtn">
