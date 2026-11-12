@@ -268,6 +268,7 @@ public class MainView : UserControl
         Item("home", "home", "Главная");
         Item("path", "path", "Путь обучения");
         Item("review", "review", new Grid { Width = 128, Children = { new TextBlock { Text = "Повторение" }, _dueBadge } });
+        Item("stats", "trophy", "Прогресс");
         Header("УЧИТЬ");
         Item("kana", "kana", "Азбука кана");
         Item("words", "words", "Слова");
@@ -380,6 +381,7 @@ public class MainView : UserControl
     static readonly Dictionary<string, Func<Control>> Factories = new()
     {
         ["home"] = () => new HomePage(),
+        ["stats"] = () => new StatsPage(),
         ["path"] = () => new PathPage(),
         ["dialogs"] = () => new DialogsPage(),
         ["dict"] = () => new DictPage(),
@@ -440,7 +442,7 @@ public class MainView : UserControl
         _host.Content = page;
         // Режим фокуса: во время упражнений боковое меню скрывается
         bool focus = page is Controls.QuizSession or Controls.FlashSession { IsEmpty: false } or BuilderSession or SpeechLessonPage or DialogPage or WritingPage or KanaRainGame or MemoryGame or SprintGame or OnboardingPage
-            or Controls.LearnSession or MatchRushGame or WordBuilderGame or ListenCatchGame;
+            or Controls.LearnSession or StudyPage or MatchRushGame or WordBuilderGame or ListenCatchGame;
         _sideCol.Width = new GridLength(focus || Shell.Compact ? 0 : 232);
         _sidebar.IsVisible = !focus && !Shell.Compact;
         _tabs.IsVisible = Shell.Compact && !focus;
@@ -731,6 +733,7 @@ public class MainView : UserControl
             case "writing": Push(new WritingPage()); break;
             case "mic": Push(new MicCheckPage()); break;
             case "pairs": Push(new PairsPage()); break;
+            case "study": StudyPage.Start(); break;
             case "art": Push(new ArtDemo()); break;
             case "report": Push(new UserControl { Content = U.Page(Report.Build()) }); break;
             case "radicals": Push(new RadicalsPage()); break;

@@ -63,6 +63,7 @@ public sealed class Progress
     public bool MaleVoice { get; set; }
     public string AsrModel { get; set; } = "small-q5_1";
     public string Level { get; set; } = "N5";
+    public int StudyMode { get; set; } = 1;            // длина сессии «Учиться»: 0 — 5 мин, 1 — 15, 2 — 30
 }
 
 [JsonSerializable(typeof(Progress))]

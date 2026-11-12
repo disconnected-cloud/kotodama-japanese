@@ -52,15 +52,26 @@ public sealed class HomePage : UserControl, IPage
             Background = U.B("Surface"), CornerRadius = new CornerRadius(14, 14, 14, 4), Padding = new Thickness(14, 9), HorizontalAlignment = HorizontalAlignment.Left,
             BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(1), Child = U.T(say, "Body", 13.5).Also(x => x.TextWrapping = TextWrapping.Wrap),
         });
-        left.Children.Add(U.T("ПРОДОЛЖИТЬ ПУТЬ", "Overline").M(0, 20, 0, 0));
-        left.Children.Add(U.T($"Юнит {u.Id}. {u.Title}", "H2", 19).M(0, 4, 0, 8));
-        var bar = U.Cols("*", "auto");
-        bar.Children.Add(new ProgressBar { Maximum = t, Value = d, Height = 6, VerticalAlignment = VerticalAlignment.Center });
-        bar.Children.Add(U.T($"{d}/{t}", "Muted", 12).CenterV().M(10, 0, 0, 0).Col(1));
-        left.Children.Add(bar.Also(x => x.MaxWidth = 420).Also(x => x.HorizontalAlignment = HorizontalAlignment.Left));
-        var acts = new WrapPanel { Margin = new Thickness(0, 16, 0, 0) };
-        acts.Children.Add(U.Btn(d == 0 ? "Начать урок" : "Продолжить", () => { Shell.Go("path"); Shell.Open(new UnitPage(u)); }, "Primary", "").M(0, 0, 10, 6));
-        if (!TrainersPage.PlanDone) acts.Children.Add(U.Btn("Урок дня", () => TrainersPage.NextPlanStep(), "", "").M(0, 0, 10, 6).Tip("Пройди план на сегодня по шагам: повторение, новые слова, речь, игра"));
+        // Главное действие 2.0 — «Учиться»: сессия собирается сама, видно из чего она состоит
+        bool studied = p.Flags.Contains("study:" + DateTime.Today.ToString("yyyy-MM-dd"));
+        bool resume = StudyPage.Active is { } act && !studied && act.IsResumable;
+        var plan = StudyPage.Plan(Math.Clamp(p.StudyMode, 0, 2));
+        left.Children.Add(U.T(studied ? "СЕССИЯ НА СЕГОДНЯ ВЫПОЛНЕНА ✓" : resume ? "СЕССИЯ НА ПАУЗЕ" : "СЕССИЯ НА СЕГОДНЯ", "Overline").M(0, 20, 0, 0));
+        left.Children.Add(U.T(studied ? "Отлично! Можно закрепить ещё раз или выбрать раздел" : $"{plan.Count} {MainView.Plural(plan.Count, "шаг", "шага", "шагов")} · около {plan.Sum(x => x.Minutes)} минут", "H2", 19).M(0, 4, 0, 10));
+        var chips = new WrapPanel();
+        foreach (var st in plan)
+            chips.Children.Add(new Border
+            {
+                Background = U.B("Surface"), BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12),
+                Padding = new Thickness(6, 4, 12, 4), Margin = new Thickness(0, 0, 6, 6),
+                Child = U.Row(7, Art.Icon(st.Icon, 22), U.T(st.Title, "Body", 12.5).CenterV()),
+            }.Tip(st.Why));
+        left.Children.Add(chips);
+        var acts = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
+        var go = U.Btn(studied ? "Ещё сессия" : resume ? "Продолжить сессию" : "Учиться", StudyPage.Start, "Primary", "");
+        go.MinWidth = 190; go.Height = 44; go.FontSize = 15;
+        acts.Children.Add(go.M(0, 0, 10, 6));
+        acts.Children.Add(U.Btn($"Путь: юнит {u.Id}", () => { Shell.Go("path"); Shell.Open(new UnitPage(u)); }, "", "").M(0, 0, 10, 6).Tip($"{u.Title} · {d}/{t}"));
         var rb = U.Btn(due > 0 ? $"Повторить ({due})" : "Всё повторено ✓", () => Shell.Go("review"), "", "");
         rb.IsEnabled = due > 0;
         acts.Children.Add(rb.M(0, 0, 10, 6));
@@ -94,8 +105,8 @@ public sealed class HomePage : UserControl, IPage
         stats.Children.Add(Stat("Сегодня", ProgressStore.TodayXp, $"из {p.DailyGoal} XP", "Accent"));
         stats.Children.Add(Stat("Слова", wordsKnown, "в изучении", "Info"));
         stats.Children.Add(Stat("Кандзи", kanjiKnown, $"из {Db.Kanji.Length}", "Good"));
+        foreach (var c in stats.Children.OfType<Border>()) { c.Cursor = Cursors.Hand; Hover(c); c.PointerReleased += (_, _) => Shell.Go("stats"); }
         root.Children.Add(stats);
-        root.Children.Add(TrainersPage.PlanCard().M(0, 16, 0, 0));
         // Факт о Японии — каждый день новый, ведёт в раздел «Япония»
         var facts = JapanPage.All.SelectMany(a => a.Facts.Select(f => (a, f))).ToArray();
         if (facts.Length > 0)
@@ -107,7 +118,6 @@ public sealed class HomePage : UserControl, IPage
             jf.Children.Add(U.Btn(fa.Title, () => Shell.Open(new ArticlePage(fa)), "", "").CenterV().Col(2));
             root.Children.Add(U.Card(jf, new Thickness(20, 14, 20, 14)).M(0, 16, 0, 0));
         }
-        root.Children.Add(Report.Build().M(0, 16, 0, 0));
         var hint = U.T("Совет: Ctrl+K — быстрый поиск по всему приложению", "Muted", 12).DesktopOnly();
         hint.Margin = new Thickness(2, 10, 0, 0);
         root.Children.Add(hint);
@@ -174,7 +184,10 @@ public sealed class HomePage : UserControl, IPage
     static Border Activity()
     {
         var sp = new StackPanel();
-        sp.Children.Add(U.T("Активность", "H3"));
+        var h = U.Cols("*", "auto");
+        h.Children.Add(U.T("Активность", "H3"));
+        h.Children.Add(U.Btn("Весь прогресс", () => Shell.Go("stats"), "Ghost", "").Col(1));
+        sp.Children.Add(h);
         sp.Children.Add(U.T("Последние 18 недель", "Muted", 12).M(0, 2, 0, 14));
         const int weeks = 18;
         var grid = new UniformGrid { Rows = 7, Columns = weeks, HorizontalAlignment = HorizontalAlignment.Left };

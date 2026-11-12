@@ -19,7 +19,7 @@ namespace Matsubakira.Controls;
 /// <summary>Итоговый экран сессии: кольцо точности, XP, статистика, конфетти.</summary>
 public static class Results
 {
-    public static Control Build(int pct, int xp, (string label, string value)[] stats, Action? again, Action done, Panel confettiHost)
+    public static Control Build(int pct, int xp, (string label, string value)[] stats, Action? again, Action done, Panel confettiHost, string ringLabel = "точность")
     {
         var root = new Grid();
         var card = new Border { Classes = { "Card" }, MaxWidth = 520, Padding = new Thickness(36, 32, 36, 28), VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
@@ -38,7 +38,7 @@ public static class Results
         ring.Children.Add(new StackPanel
         {
             VerticalAlignment = VerticalAlignment.Center,
-            Children = { pctText, new TextBlock { Text = "точность", FontSize = 12, Foreground = U.B("Muted"), HorizontalAlignment = HorizontalAlignment.Center } },
+            Children = { pctText, new TextBlock { Text = ringLabel, FontSize = 12, Foreground = U.B("Muted"), HorizontalAlignment = HorizontalAlignment.Center } },
         });
         sp.Children.Add(ring);
         Anim.CountUp(pctText, pct, "%");
@@ -74,7 +74,7 @@ public static class Results
             var b1 = U.Btn("Ещё раз", again, "", "");
             buttons.Children.Add(b1);
         }
-        var b2 = U.Btn("Готово", done, "Primary", "");
+        var b2 = U.Btn(Views.StudyPage.InFlow ? "Дальше" : "Готово", done, "Primary", "");
         Grid.SetColumn(b2, again != null ? 2 : 0);
         if (again == null) Grid.SetColumnSpan(b2, 3);
         buttons.Children.Add(b2);

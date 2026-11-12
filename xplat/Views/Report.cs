@@ -58,7 +58,7 @@ public static class Report
     }
 
     /// <summary>Цель уровня JLPT: сколько слов, кандзи и грамматики осталось и когда при текущем темпе уровень будет пройден.</summary>
-    static Control Goal()
+    public static Control Goal()
     {
         var p = ProgressStore.P;
         string lvl = p.Level is "N4" or "N3" ? p.Level : "N5";
@@ -88,7 +88,7 @@ public static class Report
         return U.Stack(head, new ProgressBar { Maximum = Math.Max(1, total), Value = done, Height = 6, Foreground = U.B(brush), Margin = new Thickness(0, 6, 0, 0) });
     }
 
-    static Control Bars(string title, string total, int[] values, string[] labels, string brush, bool highlightLast)
+    public static Control Bars(string title, string total, int[] values, string[] labels, string brush, bool highlightLast, double barW = 14, string[]? tips = null)
     {
         var sp = new StackPanel();
         sp.Children.Add(U.T(title, "Overline"));
@@ -103,15 +103,15 @@ public static class Report
             double h = values[i] == 0 ? 3 : 8 + 60.0 * values[i] / max;
             var bar = new Border
             {
-                Height = h, Width = 14, CornerRadius = new CornerRadius(4), VerticalAlignment = VerticalAlignment.Bottom,
+                Height = h, Width = barW, CornerRadius = new CornerRadius(Math.Min(4, barW / 2)), VerticalAlignment = VerticalAlignment.Bottom,
                 Background = values[i] == 0 ? U.B("Surface3") : U.B(brush), Opacity = highlightLast && i < values.Length - 1 ? 0.6 : 1,
                 RenderTransformOrigin = new RelativePoint(0.5, 1, RelativeUnit.Relative),
             };
-            bar.Tip(values[i].ToString());
+            bar.Tip(tips?[i] ?? values[i].ToString());
             var st = new ScaleTransform(1, 0); bar.RenderTransform = st;
-            Anim.Run((st, "sy"), 0, 1, 500, v => st.ScaleY = v, null, 60 * i);
+            Anim.Run((st, "sy"), 0, 1, 500, v => st.ScaleY = v, null, 420 * i / values.Length);
             col.Children.Add(bar);
-            col.Children.Add(U.T(labels[i], "Muted", 10.5).Center().M(0, 4, 0, 0).RowAt(1));
+            col.Children.Add(U.T(labels[i], "Muted", 10.5).Also(t => { t.TextWrapping = TextWrapping.NoWrap; t.Margin = new Thickness(-20, 4, -20, 0); t.TextAlignment = TextAlignment.Center; }).RowAt(1));
             bars.Children.Add(col);
         }
         sp.Children.Add(bars);

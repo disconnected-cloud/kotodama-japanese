@@ -34,6 +34,7 @@ public sealed class MorePage : UserControl, IPage
         {
             new("trainers", "Тренажёры", "Спряжение, тест JLPT", () => Shell.Go("trainers")),
             new("write", "Прописи", "Пиши пальцем", () => Shell.Open(new WritingPage())),
+            new("trophy", "Прогресс", "Активность и навыки", () => Shell.Go("stats")),
         }),
     };
 
