@@ -116,3 +116,10 @@ public class MistakeExplainTests
     [Fact]
     public void RightAnswerNeedsNoExplanation() => Assert.Null(Matsubakira.Services.MistakeExplain.For("に", "に"));
 }
+
+public class ThemeDeckTests
+{
+    [Fact]
+    public void EveryThemeHasEnoughWords() =>
+        Assert.All(Matsubakira.Services.Themes.All, t => Assert.True(Matsubakira.Services.Themes.Words(t.name).Count() >= 15, $"{t.name}: {Matsubakira.Services.Themes.Words(t.name).Count()}"));
+}

@@ -95,23 +95,24 @@ public sealed class WordsPage : UserControl, IPage
 
     public void OnShown()
     {
-        var g = new Grid { Margin = new Thickness(40, 12, 40, 16), MaxWidth = 1240 };
+        var g = new Grid { Margin = Shell.Compact ? new Thickness(12, 8, 12, 12) : new Thickness(40, 12, 40, 16), MaxWidth = 1240 };
         for (int i = 0; i < 3; i++) g.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         g.RowDefinitions.Add(new RowDefinition());
 
-        var words = Db.Words.Where(w => w.Level == _level).ToArray();
+        bool themes = _level == "Темы";
+        var words = themes ? Themes.Words(null).ToArray() : Db.Words.Where(w => w.Level == _level).ToArray();
         int learning = words.Count(w => ProgressStore.Card(w.Id)?.Reps > 0);
         int mastered = words.Count(w => ProgressStore.Card(w.Id)?.Mastered == true);
         var lv = new WrapPanel { Orientation = Orientation.Horizontal };
-        foreach (var l in new[] { "N5", "N4", "N3", "N2", "1000", "Мои" })
+        foreach (var l in new[] { "N5", "N4", "N3", "N2", "1000", "Темы", "Мои" })
         {
             var rb = new RadioButton { Classes = { "ChipRadio" }, Content = l == "Мои" ? "Мои слова" : l == "1000" ? "1000+ частых" : l, GroupName = "wlevel", IsChecked = _level == l };
             var ll = l;
-            rb.Checked += (_, _) => { _level = ll; _topic = null; if (ll != "Мои") { ProgressStore.P.Level = ll; ProgressStore.Notify(); } OnShown(); };
+            rb.Checked += (_, _) => { _level = ll; _topic = null; if (ll is not ("Мои" or "Темы" or "1000")) { ProgressStore.P.Level = ll; ProgressStore.Notify(); } OnShown(); };
             lv.Children.Add(rb);
         }
         if (_topic != null) { var art = Emoji.Img(Emoji.ForTopic(_topic), 64); art.HorizontalAlignment = HorizontalAlignment.Right; art.VerticalAlignment = VerticalAlignment.Top; art.Margin = new Thickness(0, 0, 330, 0); g.Children.Add(art); }
-        g.Children.Add(U.Header("語", "Слова", _level == "Мои" ? $"{words.Length} слов, добавленных из словаря" : _level == "1000" ? $"{words.Length} частых слов из живой речи — у каждого пример фразы" : _level == "N3" ? $"{words.Length} слов уровня N3 (частотные 1001–1600) с примерами фраз" : _level == "N2" ? $"{words.Length} слов начала N2 (частотные 1601–2200) с примерами фраз" : $"{words.Length} учебных слов уровня {_level} с озвучкой и карточками  ·  {learning} в изучении  ·  {mastered} выучено", lv));
+        g.Children.Add(U.Header("語", "Слова", _level == "Мои" ? $"{words.Length} слов, добавленных из словаря" : themes ? $"Сквозные темы для всех уровней — {words.Length} слов: выбери тему ниже" : _level == "1000" ? $"{words.Length} частых слов из живой речи — у каждого пример фразы" : _level == "N3" ? $"{words.Length} слов уровня N3 (частотные 1001–1600) с примерами фраз" : _level == "N2" ? $"{words.Length} слов начала N2 (частотные 1601–2200) с примерами фраз" : $"{words.Length} учебных слов уровня {_level} с озвучкой и карточками  ·  {learning} в изучении  ·  {mastered} выучено", lv));
 
         // Действия
         int due = words.Count(w => ProgressStore.IsDue(w.Id));
@@ -131,7 +132,7 @@ public sealed class WordsPage : UserControl, IPage
         var filter = Shell.Compact ? new Grid { RowDefinitions = new RowDefinitions("auto,auto") } : U.Cols("*", "auto");
         filter.Margin = new Thickness(0, 18, 0, 12);
         var chips = new WrapPanel();
-        foreach (var t in new string?[] { null }.Concat(words.Select(w => w.Topic).Distinct()))
+        foreach (var t in new string?[] { null }.Concat(themes ? Themes.All.Select(x => x.name) : words.Select(w => w.Topic).Distinct()))
         {
             var rb = new RadioButton { Classes = { "ChipRadio" }, Content = t ?? "Все темы", GroupName = "topic", IsChecked = _topic == t, Margin = new Thickness(0, 0, 8, 8), Padding = new Thickness(14, 6, 14, 6) };
             var topic = t;
@@ -174,8 +175,8 @@ public sealed class WordsPage : UserControl, IPage
 
     IEnumerable<Word> Filtered()
     {
-        IEnumerable<Word> q = Db.Words.Where(w => w.Level == _level);
-        if (_topic != null) q = q.Where(w => w.Topic == _topic);
+        IEnumerable<Word> q = _level == "Темы" ? Themes.Words(_topic) : Db.Words.Where(w => w.Level == _level);
+        if (_topic != null && _level != "Темы") q = q.Where(w => w.Topic == _topic);
         if (_search.Length > 0)
         {
             var s = _search.ToLowerInvariant();
