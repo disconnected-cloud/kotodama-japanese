@@ -76,6 +76,8 @@ public partial class MainView : UserControl
         _sidebar.BorderBrush = U.B("Stroke");
         _sidebar.BorderThickness = new Thickness(0, 0, 1, 0);
         layout.Children.Add(_sidebar);
+        // телефон: с самого первого кадра без бокового меню (иначе до первой страницы мелькала раскладка компьютера)
+        if (Shell.Compact) { _sideCol.Width = new GridLength(0); _sidebar.IsVisible = false; }
 
         // ── Основная область: строка заголовка + страница
         var main = new Grid { RowDefinitions = new RowDefinitions(Shell.Compact ? "56,*,auto" : "44,*") };

@@ -474,15 +474,25 @@ public sealed class TrainersPage : UserControl, IPage
         var words = Db.WordsOf(level).ToList();
         var ruPool = words.Select(w => w.Ru).ToArray();
         var qs = new List<QuizQ>();
-        qs.AddRange(words.Shuffled().Take(10).Select(w => new QuizQ { Prompt = w.Jp, PromptSize = 56, Sub = "Лексика: выбери значение", Answer = w.Ru, Options = QuizSession.MakeOptions(w.Ru, ruPool), Speak = w.Kana, Key = w.Id }));
+        // разбор по разделам, как в настоящем JLPT
+        var score = new Dictionary<string, (int ok, int all)>();
+        Action<bool> Tally(string sec) => ok => { var (o, a) = score.GetValueOrDefault(sec); score[sec] = (o + (ok ? 1 : 0), a + 1); };
+        qs.AddRange(words.Shuffled().Take(10).Select(w => new QuizQ { OnResult = Tally("Лексика"), Prompt = w.Jp, PromptSize = 56, Sub = "Лексика: выбери значение", Answer = w.Ru, Options = QuizSession.MakeOptions(w.Ru, ruPool), Speak = w.Kana, Key = w.Id }));
         var exs = Db.KanjiOf(level).SelectMany(k => k.Examples).ToList();
         var kanaPool = exs.Select(e => e.Kana).ToArray();
-        qs.AddRange(exs.Shuffled().Take(6).Select(e => new QuizQ { Prompt = e.Jp, PromptSize = 60, Sub = "Кандзи: выбери чтение", Answer = e.Kana, OptionsJp = true, Options = QuizSession.MakeOptions(e.Kana, kanaPool), Speak = e.Kana }));
+        qs.AddRange(exs.Shuffled().Take(6).Select(e => new QuizQ { OnResult = Tally("Кандзи"), Prompt = e.Jp, PromptSize = 60, Sub = "Кандзи: выбери чтение", Answer = e.Kana, OptionsJp = true, Options = QuizSession.MakeOptions(e.Kana, kanaPool), Speak = e.Kana }));
         var gq = Db.Grammar.Where(g => g.Level == level).SelectMany(g => g.Quiz.Select((q, i) => (g, q, i))).Shuffled().Take(8);
-        qs.AddRange(gq.Select(x => new QuizQ { Prompt = x.q.Question, PromptSize = 30, Sub = "Грамматика: " + x.q.Ru, Answer = x.q.Answer, OptionsJp = true, Options = x.q.Options.Shuffled().ToArray(), Key = $"g:{x.g.Id}:{x.i}", Speak = x.q.Question.Replace("＿", x.q.Answer) }));
-        qs.AddRange(words.Shuffled().Take(6).Select(w => new QuizQ { Prompt = "聞いて", PromptSize = 52, Sub = "Аудирование: что прозвучало? · 🔊 повторить", SpeakOnShow = true, Answer = w.Ru, Options = QuizSession.MakeOptions(w.Ru, ruPool), Speak = w.Kana, Key = w.Id }));
+        qs.AddRange(gq.Select(x => new QuizQ { OnResult = Tally("Грамматика"), Prompt = x.q.Question, PromptSize = 30, Sub = "Грамматика: " + x.q.Ru, Answer = x.q.Answer, OptionsJp = true, Options = x.q.Options.Shuffled().ToArray(), Key = $"g:{x.g.Id}:{x.i}", Speak = x.q.Question.Replace("＿", x.q.Answer) }));
+        if (!ProgressStore.P.QuietMode)
+            qs.AddRange(words.Shuffled().Take(6).Select(w => new QuizQ { OnResult = Tally("Аудирование"), Prompt = "聞いて", PromptSize = 52, Sub = "Аудирование: что прозвучало? · 🔊 повторить", SpeakOnShow = true, Answer = w.Ru, Options = QuizSession.MakeOptions(w.Ru, ruPool), Speak = w.Kana, Key = w.Id }));
+        // как на экзамене: ~40 секунд на вопрос, ошибки в конце не повторяются, итог — по разделам
         return new QuizSession($"Пробный тест {level}", qs, (ok, total) =>
-            Shell.Toast(total > 0 && ok * 100 / total >= 60 ? $"Тест сдан: {ok * 100 / total}%! 合格" : "Пока не сдан — порог 60%. Повтори ошибки!", "試"));
+            Shell.Toast(total > 0 && ok * 100 / total >= 60 ? $"Тест сдан: {ok * 100 / total}%! 合格" : "Пока не сдан — порог 60%. Повтори ошибки!", "試"))
+        {
+            ExamMode = true, TimeLimitSeconds = qs.Count * 40,
+            OnRestart = score.Clear,
+            ExtraStats = () => score.Select(kv => ($"{kv.Key}", $"{kv.Value.ok} / {kv.Value.all}  ·  {(kv.Value.all == 0 ? 0 : kv.Value.ok * 100 / kv.Value.all)}%")),
+        };
     }
 }
 

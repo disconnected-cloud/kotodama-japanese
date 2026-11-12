@@ -72,7 +72,10 @@ public partial class App : Application
     /// </summary>
     public static AppBuilder WithFonts(AppBuilder b) => b.With(new FontManagerOptions
     {
-        FontFallbacks = new[] { new FontFallback { FontFamily = new FontFamily("avares://Kotodama/Assets/fonts#Kotodama Icons") } },
+        FontFallbacks = OperatingSystem.IsAndroid()
+            // Android: у системного японского шрифта нет жирного начертания — жирный японский текст брал шрифт без иероглифов
+            ? new[] { new FontFallback { FontFamily = new FontFamily("avares://Kotodama/Assets/fonts#Kotodama Icons") }, new FontFallback { FontFamily = new FontFamily("Noto Sans CJK JP") } }
+            : new[] { new FontFallback { FontFamily = new FontFamily("avares://Kotodama/Assets/fonts#Kotodama Icons") } },
     });
 
     /// <summary>Палитра «тихий минимализм, один акцент (сакура)». Кисти кладутся в ресурсы до создания окна.</summary>

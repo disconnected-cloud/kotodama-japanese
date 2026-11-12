@@ -167,7 +167,8 @@ public static class Art
         {
             tile.Child = new TextBlock
             {
-                Text = d.Glyph, FontFamily = U.R<FontFamily>("JpFont"), FontWeight = FontWeight.Bold, FontSize = size * 0.52, Foreground = Brushes.White,
+                // на Android у японского шрифта нет жирного начертания — жирный знак рисовался «квадратиком»
+                Text = d.Glyph, FontFamily = U.R<FontFamily>("JpFont"), FontWeight = OperatingSystem.IsAndroid() ? FontWeight.Normal : FontWeight.Bold, FontSize = size * 0.52, Foreground = Brushes.White,
                 HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 0, size * 0.04),
             };
             return tile;
@@ -185,7 +186,7 @@ public static class Art
     public static Control Glyph(string name, double size, IBrush brush)
     {
         if (!Icons.TryGetValue(name, out var d)) d = Icons["sparkle"];
-        if (d.Glyph != null) return new TextBlock { Text = d.Glyph, FontFamily = U.R<FontFamily>("JpFont"), FontWeight = FontWeight.Bold, FontSize = size * 0.85, Foreground = brush, VerticalAlignment = VerticalAlignment.Center };
+        if (d.Glyph != null) return new TextBlock { Text = d.Glyph, FontFamily = U.R<FontFamily>("JpFont"), FontWeight = OperatingSystem.IsAndroid() ? FontWeight.Normal : FontWeight.Bold, FontSize = size * 0.85, Foreground = brush, VerticalAlignment = VerticalAlignment.Center };
         var c = new Canvas { Width = 24, Height = 24 };
         if (d.Fill != null) c.Children.Add(P(d.Fill, brush));
         if (d.Path != null) c.Children.Add(P(d.Path, null, brush, 2));

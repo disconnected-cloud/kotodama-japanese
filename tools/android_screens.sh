@@ -17,7 +17,7 @@ for s in "--page home" "--page path" "--page kana" "--page kanji" "--page words"
          "--open quiz" "--open learnq" "--open dialog" "--open wod" "--open week" "--open setvoice"; do
   name=$(echo "$s" | tr -d '-' | tr ' ' '_')
   adb shell am start -S -n "$ACT" --es args "'$s'" > /dev/null
-  sleep 9
+  sleep 14
   adb exec-out screencap -p > "android-$name.png"
   echo "снимок: $s"
 done

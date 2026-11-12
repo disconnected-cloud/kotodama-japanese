@@ -127,8 +127,10 @@ public partial class MainView : UserControl
     /// <summary>Черты 言霊 прорисовываются кистью, затем появляется название, и экран растворяется (~3 с, пропуск — клик/клавиша).</summary>
     void PlayIntro()
     {
-        var cl = Environment.GetCommandLineArgs();
+        var cl = Platform.Hooks.Args ?? Environment.GetCommandLineArgs();
         if (!cl.Contains("--intro") && (!ProgressStore.P.Intro || cl.Any(a => a.StartsWith("--")))) return;
+        // телефон: заставка только при самом первом запуске — дальше сразу к делу (каждый раз это ~4 с ожидания)
+        if (Shell.Compact && !cl.Contains("--intro") && !ProgressStore.P.Flags.Add("intro-seen")) return;
         _intro.IsVisible = true;
         _intro.Opacity = 1;
         var stack = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };

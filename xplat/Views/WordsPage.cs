@@ -157,7 +157,7 @@ public sealed class WordsPage : UserControl, IPage
     Control SearchBox()
     {
         var box = new TextBox { Width = Shell.Compact ? double.NaN : 240, FontSize = 14, Padding = new Thickness(36, 8, 12, 8), Text = _search, VerticalAlignment = VerticalAlignment.Top };
-        var ph = U.T("Поиск: русский, кана, romaji", "Muted", 13);
+        var ph = U.T("Поиск: русский, кана, romaji", "Muted", 13).Also(t => { t.TextWrapping = TextWrapping.NoWrap; t.TextTrimming = TextTrimming.CharacterEllipsis; });
         ph.IsHitTestVisible = false; ph.Margin = new Thickness(38, 9, 0, 0); ph.VerticalAlignment = VerticalAlignment.Top;
         ph.IsVisible = _search.Length == 0 ? true : false;
         box.TextChanged += (_, _) =>

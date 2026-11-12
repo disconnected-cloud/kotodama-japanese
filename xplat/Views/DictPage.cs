@@ -77,7 +77,7 @@ public sealed class DictPage : UserControl, IPage
 
         var search = new Grid();
         search.Children.Add(_box);
-        var ph = U.T("Например: кошка · neko · ねこ · 猫", "Muted", 16);
+        var ph = U.T("Например: кошка · neko · ねこ · 猫", "Muted", 16).Also(t => { t.TextWrapping = TextWrapping.NoWrap; t.TextTrimming = TextTrimming.CharacterEllipsis; });
         ph.IsHitTestVisible = false; ph.Margin = new Thickness(46, 0, 0, 0); ph.VerticalAlignment = VerticalAlignment.Center;
         _box.TextChanged += (_, _) => ph.IsVisible = string.IsNullOrEmpty(_box.Text);
         search.Children.Add(ph);

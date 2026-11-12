@@ -65,6 +65,19 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
     readonly Grid _main = new();
     readonly DispatcherTimer _auto;
 
+    // ─────────── Режим экзамена (пробный JLPT) ───────────
+    /// <summary>Ограничение времени в секундах (0 — без таймера). Когда время вышло — сразу итоги.</summary>
+    public int TimeLimitSeconds;
+    /// <summary>Экзамен: ошибки не повторяются в конце, как на настоящем тесте.</summary>
+    public bool ExamMode;
+    /// <summary>Перед каждым началом (и пересдачей) — например, обнулить счёт по разделам.</summary>
+    public Action? OnRestart;
+    /// <summary>Дополнительные строки итогов (разбор по разделам).</summary>
+    public Func<IEnumerable<(string label, string value)>>? ExtraStats;
+    readonly TextBlock _timeText = new() { FontSize = 13, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
+    DispatcherTimer? _clock;
+    DateTime _deadline;
+
     public QuizSession(string title, IEnumerable<QuizQ> questions, Action<int, int>? finished = null)
     {
         Title = title;
@@ -73,7 +86,7 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
         _auto = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(750) };
         _auto.Tick += (_, _) => { _auto.Stop(); if (TopLevel.GetTopLevel(this) != null) Next(); };
 
-        Margin = new Thickness(40, 8, 40, 28);
+        Margin = Shell.Compact ? new Thickness(12, 8, 12, 16) : new Thickness(40, 8, 40, 28);
         _main.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         _main.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         _main.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -91,6 +104,8 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
         SetColumn(_count, 1); top.Children.Add(_count);
         _comboPill = new Border { Classes = { "Pill" }, Background = U.B("GoldGradient"), Margin = new Thickness(12, 0, 0, 0), Child = _comboText, Opacity = 0 };
         SetColumn(_comboPill, 2); top.Children.Add(_comboPill);
+        top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        SetColumn(_timeText, 3); top.Children.Add(_timeText);
         _main.Children.Add(top);
 
         // Карточка вопроса
@@ -134,7 +149,27 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
         _queue = _all.Shuffled();
         _retried.Clear();
         _idx = _correct = _answered = _combo = _bestCombo = _xp = 0;
+        OnRestart?.Invoke();
+        _clock?.Stop();
+        _timeText.IsVisible = TimeLimitSeconds > 0;
+        if (TimeLimitSeconds > 0)
+        {
+            _deadline = DateTime.Now.AddSeconds(TimeLimitSeconds);
+            _clock = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _clock.Tick += (_, _) => TickClock();
+            _clock.Start();
+            TickClock();
+        }
         Render();
+    }
+
+    void TickClock()
+    {
+        if (TopLevel.GetTopLevel(this) == null) { _clock?.Stop(); return; }
+        var left = _deadline - DateTime.Now;
+        if (left <= TimeSpan.Zero) { _clock?.Stop(); _timeText.Text = "⏱ 0:00"; Shell.Toast("Время вышло — смотрим результаты", "時"); Finish(); return; }
+        _timeText.Text = $"⏱ {(int)left.TotalMinutes}:{left.Seconds:00}";
+        _timeText.Foreground = U.B(left.TotalSeconds <= 60 ? "Bad" : "Muted");
     }
 
     void Render()
@@ -250,7 +285,7 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
         else
         {
             _combo = 0;
-            if (_retried.Add(q)) _queue.Add(q); // ошибку повторим в конце
+            if (!ExamMode && _retried.Add(q)) _queue.Add(q); // ошибку повторим в конце (на экзамене — нет)
         }
         _comboText.Text = $"連 ×{_combo}";
         Anim.Opacity(_comboPill, _comboPill.Opacity, _combo >= 3 ? 1 : 0, 200);
@@ -294,6 +329,7 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
 
     void Finish()
     {
+        _clock?.Stop();
         _locked = true;
         int firstTry = _all.Count;
         int pct = _answered == 0 ? 0 : (int)Math.Round(100.0 * _correct / _answered);
@@ -301,12 +337,14 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
         Sfx.Done();
         _finished?.Invoke(_correct, _answered);
         Children.Clear();
-        Children.Add(Results.Build(pct, _xp, new[]
+        var rows = new List<(string, string)>
         {
             ("Вопросов", firstTry.ToString()),
             ("Верных ответов", $"{_correct} / {_answered}"),
             ("Лучшее комбо", $"×{_bestCombo}"),
-        }, Start, Shell.Back, this));
+        };
+        if (ExtraStats != null) rows.AddRange(ExtraStats());
+        Children.Add(Results.Build(pct, _xp, rows.ToArray(), Start, Shell.Back, this));
     }
 
     public bool HandleKey(Key key)
