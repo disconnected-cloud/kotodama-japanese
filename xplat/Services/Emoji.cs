@@ -44,7 +44,7 @@ public static class Emoji
     public static string ForTopic(string topic) =>
         Topics.TryGetValue(topic, out var k) ? k
         : topic.StartsWith("Сущ.") ? "open_book" : topic.StartsWith("Глаголы") ? "rocket" : topic.StartsWith("Прилаг.") ? "artist_palette"
-        : topic.StartsWith("Наречия") ? "sparkles" : topic.StartsWith("N3") ? "graduation_cap" : "memo";
+        : topic.StartsWith("Наречия") ? "sparkles" : topic.StartsWith("N3") || topic.StartsWith("N2") ? "graduation_cap" : "memo";
 
     static readonly Dictionary<string, string> Titles = new()
     {

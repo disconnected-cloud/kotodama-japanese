@@ -73,7 +73,7 @@ for f in ("grammar.json", "grammar_n4.json", "grammar_n3.json", "grammar_n3b.jso
             add(q[0].replace("＿＿", q[1]).replace("＿", q[1]))
 for u in load("course.json"):
     for ex in u["examples"]: add(ex[0], ex[1])
-for vf in ("vocab_plus.json", "vocab_n3.json"):
+for vf in ("vocab_plus.json", "vocab_n3.json", "vocab_n2.json"):
   if os.path.exists(D(vf)):
     for topic in load(vf).values():
         for w in topic:

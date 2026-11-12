@@ -15,7 +15,7 @@ public static class WordOfDay
     public static Word? For(DateTime day)
     {
         var p = ProgressStore.P;
-        var pool = Db.WordsOf(p.Level is "N5" or "N4" or "N3" or "1000" ? p.Level : "N5").Where(w => w.ExJp.Length > 0).ToList();
+        var pool = Db.WordsOf(p.Level is "N5" or "N4" or "N3" or "N2" or "1000" ? p.Level : "N5").Where(w => w.ExJp.Length > 0).ToList();
         if (pool.Count == 0) pool = Db.Words.Where(w => w.ExJp.Length > 0).ToList();
         if (pool.Count == 0) return null;
         var fresh = pool.Where(w => ProgressStore.Card(w.Id) == null).ToList();

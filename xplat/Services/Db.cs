@@ -120,7 +120,7 @@ public static class Db
     {
         var list = new List<Word>(1024);
         var seen = new HashSet<string>();
-        foreach (var (file, level) in new[] { ("vocab.json", "N5"), ("vocab_n4.json", "N4"), ("vocab_plus.json", "1000"), ("vocab_n3.json", "N3") })
+        foreach (var (file, level) in new[] { ("vocab.json", "N5"), ("vocab_n4.json", "N4"), ("vocab_plus.json", "1000"), ("vocab_n3.json", "N3"), ("vocab_n2.json", "N2") })
         {
             using var doc = Open(file);
             foreach (var topic in doc.RootElement.EnumerateObject())
@@ -139,7 +139,7 @@ public static class Db
     static KanjiInfo[] LoadKanji()
     {
         var list = new List<KanjiInfo>();
-        foreach (var (file, level) in new[] { ("kanji.json", "N5"), ("kanji_n4.json", "N4"), ("kanji_n3.json", "N3") })
+        foreach (var (file, level) in new[] { ("kanji.json", "N5"), ("kanji_n4.json", "N4"), ("kanji_n3.json", "N3"), ("kanji_n2.json", "N2") })
         {
             using var doc = Open(file);
             list.AddRange(doc.RootElement.EnumerateArray().Select(k =>

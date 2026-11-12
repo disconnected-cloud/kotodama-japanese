@@ -4,12 +4,13 @@
 import json, os, sys, collections, re
 proj, kd = sys.argv[1], sys.argv[2]
 LIMIT = int(sys.argv[3]) if len(sys.argv) > 3 else 150
+LV = sys.argv[4] if len(sys.argv) > 4 else "n3"   # n2: знаки из слов N2, которых нет в N5–N3
 D = lambda f: os.path.join(proj, "Data", f)
 load = lambda f: json.load(open(D(f), encoding="utf8"))
 is_kanji = lambda c: 0x4e00 <= ord(c) <= 0x9fff
-known = {k[0] for f in ("kanji.json", "kanji_n4.json") for k in load(f)}
+known = {k[0] for f in ("kanji.json", "kanji_n4.json") + (("kanji_n3.json",) if LV == "n2" else ()) for k in load(f)}
 words = []
-for f in ("vocab_plus.json", "vocab_n3.json"):
+for f in (("vocab_n2.json",) if LV == "n2" else ("vocab_plus.json", "vocab_n3.json")):
     for topic in load(f).values():
         for w in topic: words.append((w[0], w[1] or w[0], w[2]))
 count = collections.Counter(); ex = collections.defaultdict(list)
@@ -42,8 +43,9 @@ for c, _ in count.most_common():
     on = "、".join(readings(e, "ja_on")[:3]); kun = "、".join(r for r in readings(e, "ja_kun")[:3] if not r.startswith("-"))
     strokes = e["misc"]["strokeCounts"][0] if e["misc"].get("strokeCounts") else 0
     # значение: перевод самостоятельного слова из одного знака, иначе — первого слова-примера
-    manual = json.load(open(os.path.join(proj, "tools", "kanji_n3_meanings.json"), encoding="utf8")) if os.path.exists(os.path.join(proj, "tools", "kanji_n3_meanings.json")) else {}
+    manual = json.load(open(os.path.join(proj, "tools", f"kanji_{LV}_meanings.json"), encoding="utf8")) if os.path.exists(os.path.join(proj, "tools", f"kanji_{LV}_meanings.json")) else {}
     meaning = manual.get(c) or next((w[2] for w in ex[c] if w[0] == c), None) or f"в слове {ex[c][0][0]}: {ex[c][0][2]}"
     res.append([c, on, kun, meaning, strokes, ex[c][:2]])
-json.dump(res, open(D("kanji_n3.json"), "w", encoding="utf8"), ensure_ascii=False, indent=0)
-print("kanji N3:", len(res), "e.g.", res[:3])
+json.dump(res, open(D(f"kanji_{LV}.json"), "w", encoding="utf8"), ensure_ascii=False, indent=0)
+print("kanji", LV, len(res))
+for r in res: print(r[0], "|", r[3], "|", r[5][0][0])

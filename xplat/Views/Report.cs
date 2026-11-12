@@ -61,7 +61,7 @@ public static class Report
     public static Control Goal()
     {
         var p = ProgressStore.P;
-        string lvl = p.Level is "N4" or "N3" ? p.Level : "N5";
+        string lvl = p.Level is "N4" or "N3" or "N2" ? p.Level : "N5";
         var words = Db.WordsOf(lvl).ToList();
         var kanji = Db.KanjiOf(lvl).ToList();
         var gram = Db.Grammar.Where(x => x.Level == lvl).ToList();
