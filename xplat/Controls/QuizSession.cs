@@ -52,7 +52,8 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
     readonly Border _promptCard;
     readonly TextBlock _prompt = new() { HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap };
     readonly TextBlock _sub = new() { FontSize = 15, Foreground = U.B("Muted"), HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0) };
-    readonly UniformGrid _options = new() { Columns = 2, MaxWidth = 760 };
+    // на телефоне варианты — в один столбец: в двух колонках длинный перевод не помещался рядом с номером
+    readonly UniformGrid _options = new() { Columns = Shell.Compact ? 1 : 2, MaxWidth = 760 };
     readonly TextBox _input = new() { MaxWidth = 520, TextAlignment = TextAlignment.Center };
     readonly Grid _typePanel = new() { MaxWidth = 520 };
     readonly Border _feedback;
@@ -193,7 +194,7 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
         {
             Text = text, FontSize = jp ? 26 : 18, FontFamily = U.R<FontFamily>(jp ? "JpFont" : "UiFont"),
             HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
-            TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, Margin = new Thickness(48, 8, 48, 8),
+            TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, Margin = Shell.Compact ? new Thickness(46, 6, 14, 6) : new Thickness(48, 8, 48, 8),
         });
         var b = new Button { Classes = { "Option" }, Content = g, Margin = new Thickness(6), Tag = text };
         b.Click += (_, _) => Choose(b);

@@ -61,7 +61,7 @@ public static class Art
         }
         if (bmp == null) return new Border { Height = height };
         var img = new Image { Source = bmp, Height = height, Stretch = Stretch.Uniform };
-        RenderOptions.SetBitmapInterpolationMode(img, Avalonia.Media.Imaging.BitmapInterpolationMode.HighQuality);
+        RenderOptions.SetBitmapInterpolationMode(img, Shell.Compact ? Avalonia.Media.Imaging.BitmapInterpolationMode.MediumQuality : Avalonia.Media.Imaging.BitmapInterpolationMode.HighQuality);
         return img;
     }
 
@@ -160,7 +160,8 @@ public static class Art
         var tile = new Border
         {
             Width = size, Height = size, CornerRadius = new CornerRadius(size * 0.3), Background = Grad(d.A, d.B, 45),
-            BoxShadow = size >= 40 ? BoxShadows.Parse($"0 {size * 0.1:0} {size * 0.3:0} 0 #40000000") : default,
+            // размытая тень дорога для телефонного GPU, а плиток в списках десятки — на телефоне без неё (плавная прокрутка)
+            BoxShadow = size >= 40 && !Shell.Compact ? BoxShadows.Parse($"0 {size * 0.1:0} {size * 0.3:0} 0 #40000000") : default,
         };
         if (d.Glyph != null)
         {

@@ -18,8 +18,14 @@ namespace Matsubakira.Views;
 
 public sealed class SettingsPage : UserControl, IPage
 {
-    public string Title => "Настройки";
+    public string Title => _only != null ? Tabs.First(x => x.key == _only).title : "Настройки";
     bool _confirmReset;
+
+    // Телефон: список разделов — отдельный экран, каждый раздел открывается своей страницей
+    // (иначе содержимое оказывалось под длинным списком и его не было видно)
+    readonly string? _only;
+    public SettingsPage() { }
+    public SettingsPage(string only) { _only = only; _tab = only; }
 
     internal static string _tab = "learn";
 
@@ -37,13 +43,21 @@ public sealed class SettingsPage : UserControl, IPage
 
     public void OnShown()
     {
+        if (_only != null)
+        {
+            var one = new StackPanel();
+            foreach (var c in Build(_only)) one.Children.Add(c);
+            Content = U.Page(one);
+            Anim.Stagger(one, 40);
+            return;
+        }
         var root = new StackPanel { MaxWidth = 1080, HorizontalAlignment = HorizontalAlignment.Left };
         root.Children.Add(U.Header("設", "Настройки", "Всё, что можно настроить под себя — по разделам"));
 
         var tabs = new StackPanel();
         foreach (var (key, icon, title, sub) in Tabs)
         {
-            bool on = key == _tab;
+            bool on = key == _tab && !Shell.Compact;
             var g = U.Cols("auto", "*");
             g.Children.Add(Art.Icon(icon, 34).CenterV());
             g.Children.Add(U.Stack(U.T(title, "H3", 14, U.B(on ? "Text" : "Muted")), U.T(sub, "Muted", 11.5)).CenterV().M(12, 0, 0, 0).Col(1));
@@ -55,10 +69,11 @@ public sealed class SettingsPage : UserControl, IPage
             var k = key;
             item.PointerEntered += (_, _) => { if (k != _tab) item.Background = U.B("SelectedTint"); };
             item.PointerExited += (_, _) => { if (k != _tab) item.Background = Brushes.Transparent; };
-            item.PointerReleased += (_, _) => { _tab = k; OnShown(); };
+            item.PointerReleased += (_, _) => { if (Shell.Compact) Shell.Open(new SettingsPage(k)); else { _tab = k; OnShown(); } };
             tabs.Children.Add(item);
         }
 
+        if (Shell.Compact) { Content = U.Page(root.Also(r => r.Children.Add(tabs))); return; }
         var body = new StackPanel();
         foreach (var c in Build(_tab)) body.Children.Add(c);
         var layout = U.Cols("250", "28", "*");
@@ -131,7 +146,7 @@ public sealed class SettingsPage : UserControl, IPage
                 yield return Section("Напоминания", null, U.Stack(
                     Toggle("Системные напоминания (повторение, серия)", p.Reminders, v => p.Reminders = v),
                     Toggle("Мягкий звук уведомлений", p.NotifySound, v => { p.NotifySound = v; if (v) Sfx.Reminder(); }),
-                    Toggle("Закрытие окна сворачивает в трей (напоминания продолжают приходить)", p.MinimizeToTray, v => p.MinimizeToTray = v)));
+                    Toggle("Закрытие окна сворачивает в трей (напоминания продолжают приходить)", p.MinimizeToTray, v => p.MinimizeToTray = v).DesktopOnly()));
                 yield return Section("Звук уведомлений", "Нажми, чтобы выбрать и послушать. Все звуки тихие и короткие.",
                     Choice(Enumerable.Range(0, Sfx.NotifyTones.Length).ToArray(), Math.Max(0, Array.FindIndex(Sfx.NotifyTones, t => t.id == p.NotifyTone)),
                         v => { p.NotifyTone = Sfx.NotifyTones[v].id; p.NotifySound = true; ProgressStore.Notify(); Sfx.Reminder(); }, v => Sfx.NotifyTones[v].title));

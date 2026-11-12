@@ -261,7 +261,7 @@ public sealed class TextPage : UserControl, IPage
             int n = Array.IndexOf(_t.Sentences, s) + 1;
             var hidden = U.Cols("auto", "*", "auto");
             hidden.Children.Add(U.T(n.ToString(), "H3", 14, U.B("Muted")).CenterV());
-            hidden.Children.Add(new Border { Height = 10, CornerRadius = new CornerRadius(5), Background = U.B("Surface3"), Margin = new Thickness(14, 0, 14, 0), Width = Math.Min(560, 40 + s.Jp.Length * 14), HorizontalAlignment = HorizontalAlignment.Left }.CenterV().Col(1));
+            hidden.Children.Add(new Border { Height = 10, CornerRadius = new CornerRadius(5), Background = U.B("Surface3"), Margin = new Thickness(14, 0, 14, 0), MaxWidth = Math.Min(560, 40 + s.Jp.Length * 14), HorizontalAlignment = HorizontalAlignment.Stretch }.CenterV().Col(1));
             hidden.Children.Add(U.Row(2, U.SpeakBtn(() => s.Jp, true), U.SpeakBtn(() => s.Jp)).Col(2));
             var hc = U.Card(hidden, new Thickness(18, 10, 12, 10)).M(0, 0, 0, 8);
             hc.Cursor = Cursors.Hand;

@@ -120,7 +120,7 @@ public partial class MainView
         await Task.Delay(1500);
         var screens = Factories.Keys.Where(k => k != "more" || Shell.Compact).Select(k => ("root:" + k, (Action)(() => NavigateRoot(k)))).ToList();
         foreach (var t in new[] { "learn", "voice", "mic", "look", "notify", "data", "awards", "about" })
-            screens.Add(("settings:" + t, () => { SettingsPage._tab = t; NavigateRoot("settings"); }));
+            screens.Add(("settings:" + t, () => { SettingsPage._tab = t; NavigateRoot("settings"); if (Shell.Compact) Push(new SettingsPage(t)); }));
         foreach (var o in new[] { "flash", "kanjiflash", "grammar", "grammar1", "onboard", "speech", "dialog", "dialogr", "unit", "reader", "writing", "mic", "pairs", "study", "report",
                                   "radicals", "textl", "word", "article", "match", "build", "listen", "gon", "book", "learn", "learnw", "learn1", "learnk", "learnq", "quiz" })
             screens.Add(("open:" + o, () => { NavigateRoot("home"); DebugOpen(o); }));
@@ -150,7 +150,7 @@ public partial class MainView
             }
             log.Add($"{name}: {(issues.Count == 0 ? "ok" : issues.Count + " проблем")}");
             // снимок экрана с проблемами (KOTODAMA_CLIPSNAP=папка) — чтобы глазами отличить настоящую обрезку
-            if (issues.Count > 0 && Environment.GetEnvironmentVariable("KOTODAMA_CLIPSNAP") is { Length: > 0 } dir)
+            if ((issues.Count > 0 || Environment.GetEnvironmentVariable("KOTODAMA_CLIPSNAP_ALL") == "1") && Environment.GetEnvironmentVariable("KOTODAMA_CLIPSNAP") is { Length: > 0 } dir)
             {
                 using var rtb = new RenderTargetBitmap(new PixelSize((int)Bounds.Width, (int)Bounds.Height));
                 rtb.Render(this);
@@ -286,7 +286,7 @@ public partial class MainView
             case "listen": Push(new ListenCatchGame()); break;
             case "gon": Push(new TextPage(ReaderPage.Texts.First(t => t.Book == "Лисёнок Гон"))); break;
             case "book": Push(new BookPage("Японские сказки", ReaderPage.Texts.Where(t => t.Book == "Японские сказки").ToArray())); break;
-            case "setvoice": SettingsPage._tab = "voice"; NavigateRoot("settings"); break;
+            case "setvoice": SettingsPage._tab = "voice"; NavigateRoot("settings"); if (Shell.Compact) Push(new SettingsPage("voice")); break;
             case "learn": Push(Controls.LearnSession.Kanji(Db.Kanji.Take(5))); break;
             case "learnw": Push(Controls.LearnSession.Words("Демо", Db.Words.Take(5)).Skip(1)); break;
             case "learn1": Push(Controls.LearnSession.Kanji(Db.Kanji.Skip(20).Take(5)).Skip(2)); break;

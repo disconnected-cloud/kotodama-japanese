@@ -135,6 +135,7 @@ public static class Anim
     /// <summary>Каскадное появление детей панели.</summary>
     public static void Stagger(Panel p, int step = 40, int start = 0, int max = 24)
     {
+        if (Shell.Compact) max = Math.Min(max, 6); // телефон: анимируем только то, что на первом экране
         int i = 0;
         foreach (var c in p.Children)
         {
@@ -448,7 +449,9 @@ public static class U
         Panel sp = Shell.Compact ? new WrapPanel { Orientation = Orientation.Horizontal } : new StackPanel { Orientation = Orientation.Horizontal };
         for (int i = 0; i < kids.Length; i++)
         {
-            if (i > 0) kids[i].Margin = new Thickness(gap, kids[i].Margin.Top, kids[i].Margin.Right, kids[i].Margin.Bottom);
+            // на телефоне отступ справа и снизу: перенесённый на новую строку элемент не съезжает вправо
+            if (Shell.Compact) { if (i < kids.Length - 1) kids[i].Margin = new Thickness(kids[i].Margin.Left, kids[i].Margin.Top, kids[i].Margin.Right + gap, kids[i].Margin.Bottom); }
+            else if (i > 0) kids[i].Margin = new Thickness(gap, kids[i].Margin.Top, kids[i].Margin.Right, kids[i].Margin.Bottom);
             sp.Children.Add(kids[i]);
         }
         return sp;
@@ -530,20 +533,18 @@ public sealed class AdaptiveGrid : Grid
         if (!Stacked && !double.IsInfinity(available.Width) && ColumnDefinitions.Count >= 2 && RowDefinitions.Count <= 1
             && ColumnDefinitions.Any(c => c.Width.IsStar) && Children.All(c => GetRow(c) == 0 && GetColumnSpan(c) == 1))
         {
-            double side = 0;
+            double side = 0, star = 0;
             for (int i = 0; i < ColumnDefinitions.Count; i++)
             {
                 var w = ColumnDefinitions[i].Width;
-                if (w.IsAbsolute) side += w.Value;
-                else if (w.IsAuto)
-                {
-                    double m = 0;
-                    foreach (var c in Children)
-                        if (GetColumn(c) == i && c.IsVisible) { c.Measure(Size.Infinity); m = Math.Max(m, c.DesiredSize.Width); }
-                    side += m;
-                }
+                if (w.IsAbsolute) { side += w.Value; continue; }
+                double m = 0;
+                foreach (var c in Children)
+                    if (GetColumn(c) == i && c.IsVisible) { c.Measure(Size.Infinity); m = Math.Max(m, c.DesiredSize.Width); }
+                if (w.IsAuto) side += m; else star += m;
             }
-            if (side > available.Width * 0.5) U.Stackify(this);
+            // всё помещается в строку — оставляем как есть; иначе в столбик, если основной колонке остаётся меньше 45% ширины
+            if (side + star > available.Width && available.Width - side < available.Width * 0.45) U.Stackify(this);
             Stacked = true; // решение принимается один раз: на телефоне ширина не меняется
         }
         return base.MeasureOverride(available);

@@ -72,9 +72,7 @@ public sealed class HomePage : UserControl, IPage
         go.MinWidth = 190; go.Height = 44; go.FontSize = 15;
         acts.Children.Add(go.M(0, 0, 10, 6));
         acts.Children.Add(U.Btn($"Путь: юнит {u.Id}", () => { Shell.Go("path"); Shell.Open(new UnitPage(u)); }, "", "").M(0, 0, 10, 6).Tip($"{u.Title} · {d}/{t}"));
-        var rb = U.Btn(due > 0 ? $"Повторить ({due})" : "Всё повторено ✓", () => Shell.Go("review"), "", "");
-        rb.IsEnabled = due > 0;
-        acts.Children.Add(rb.M(0, 0, 10, 6));
+        if (due > 0) acts.Children.Add(U.Btn($"Повторить ({due})", () => Shell.Go("review"), "", "").M(0, 0, 10, 6));
         left.Children.Add(acts);
 
         var hero = U.Cols("*", "auto");
@@ -109,6 +107,54 @@ public sealed class HomePage : UserControl, IPage
         foreach (var c in stats.Children.OfType<Border>()) { c.Cursor = Cursors.Hand; Hover(c); c.PointerReleased += (_, _) => Shell.Go("stats"); }
         root.Children.Add(stats);
         root.Children.Add(ChallengesCard.Build().M(0, 16, 0, 0));
+        // ─────────── Разделы: теми же группами, что в боковом меню ───────────
+        // на телефоне то же самое — во вкладке «Ещё», поэтому на главной не дублируем
+        if (!Shell.Compact)
+        {
+            int kanaKnown = Kana.All.Count(k => ProgressStore.KanaScore("h:" + k.Hira) >= 3) + Kana.All.Count(k => ProgressStore.KanaScore("k:" + k.Kata) >= 3);
+            var groups = new (string title, Border[] items)[]
+            {
+                ("УЧИТЬ", new[]
+                {
+                    Section("kana", "Кана", $"{kanaKnown * 100 / (Kana.All.Count * 2)}% освоено", "kana"),
+                    Section("words", "Слова", $"{Db.Words.Length} для изучения · N5–N2", "words"),
+                    Section("kanji", "Кандзи", $"{Db.Kanji.Length} знаков", "kanji"),
+                    Section("grammar", "Грамматика", $"{p.GrammarDone.Count}/{Db.Grammar.Length} уроков", "grammar"),
+                }),
+                ("ГОВОРИТЬ", new[]
+                {
+                    Section("speech", "Говорение", $"{Db.SpeechLessons.Length} уроков", "speech"),
+                    Section("dialogs", "Диалоги", $"{Db.Dialogs.Length} сценок", "dialogs"),
+                }),
+                ("ЧИТАТЬ И ИГРАТЬ", new[]
+                {
+                    Section("books", "Книги", "книги и рассказы", "reader"),
+                    Section("torii", "Япония", $"{JapanPage.All.Length} статей о культуре", "japan"),
+                    Section("dict", "Словарь", $"справочник · {JDict.CountLabel} статей", "dict"),
+                    Section("trainers", "Игры", "игры и тренажёры", "trainers"),
+                }),
+            };
+            root.Children.Add(U.T("Разделы", "H2").M(0, 28, 0, 6));
+            var cols = U.Cols("*", "*", "*");
+            cols.Margin = new Thickness(-6, 0, -6, 0);
+            for (int gi = 0; gi < groups.Length; gi++)
+            {
+                var col = new StackPanel();
+                col.Children.Add(U.T(groups[gi].title, "Overline").M(8, 8, 0, 2));
+                foreach (var s in groups[gi].items) col.Children.Add(s);
+                cols.Children.Add(col.Col(gi));
+            }
+            root.Children.Add(cols);
+            Anim.Stagger(cols, 40, 120);
+        }
+
+        // ─────────── Активность + слово дня ───────────
+        var bottom = U.Cols("*", "16", "340");
+        bottom.Margin = new Thickness(0, 28, 0, 0);
+        bottom.Children.Add(Activity());
+        bottom.Children.Add(WordOfDay().Col(2));
+        root.Children.Add(U.Stackify(bottom));
+
         // Факт о Японии — каждый день новый, ведёт в раздел «Япония»
         var facts = JapanPage.All.SelectMany(a => a.Facts.Select(f => (a, f))).ToArray();
         if (facts.Length > 0)
@@ -124,30 +170,6 @@ public sealed class HomePage : UserControl, IPage
         hint.Margin = new Thickness(2, 10, 0, 0);
         root.Children.Add(hint);
 
-        // ─────────── Разделы ───────────
-        root.Children.Add(U.T("Разделы", "H2").M(0, 28, 0, 12));
-        int kanaKnown = Kana.All.Count(k => ProgressStore.KanaScore("h:" + k.Hira) >= 3) + Kana.All.Count(k => ProgressStore.KanaScore("k:" + k.Kata) >= 3);
-        var sections = new UniformGrid { Columns = U.Columns(4, 2), Margin = new Thickness(-6, 0, -6, 0) };
-        sections.Children.Add(Section("kana", "Кана", $"{kanaKnown * 100 / (Kana.All.Count * 2)}% освоено", "kana"));
-        sections.Children.Add(Section("words", "Слова", $"{Db.Words.Length} для изучения · N5–N3", "words"));
-        sections.Children.Add(Section("kanji", "Кандзи", $"{Db.Kanji.Length} знаков", "kanji"));
-        sections.Children.Add(Section("grammar", "Грамматика", $"{p.GrammarDone.Count}/{Db.Grammar.Length} уроков", "grammar"));
-        sections.Children.Add(Section("speech", "Говорение", $"{Db.SpeechLessons.Length} уроков", "speech"));
-        sections.Children.Add(Section("dialogs", "Диалоги", $"{Db.Dialogs.Length} сценок", "dialogs"));
-        sections.Children.Add(Section("dict", "Словарь", $"справочник · {JDict.CountLabel} статей", "dict"));
-        sections.Children.Add(Section("books", "Книги", "книги и рассказы", "reader"));
-        sections.Children.Add(Section("torii", "Япония", $"{JapanPage.All.Length} статей о культуре", "japan"));
-        sections.Children.Add(Section("trainers", "Игры", "6 игр на слова и кану", "trainers"));
-        sections.Children.Add(Section("kanji", "Ключи кандзи", "из чего состоят знаки", "radicals"));
-        root.Children.Add(sections);
-        Anim.Stagger(sections, 30, 120);
-
-        // ─────────── Активность + слово дня ───────────
-        var bottom = U.Cols("*", "16", "340");
-        bottom.Margin = new Thickness(0, 28, 0, 0);
-        bottom.Children.Add(Activity());
-        bottom.Children.Add(WordOfDay().Col(2));
-        root.Children.Add(U.Stackify(bottom));
 
         Anim.FadeUp(row, 40, 12, 380);
         Anim.FadeUp(stats, 90, 12, 380);
@@ -176,6 +198,7 @@ public sealed class HomePage : UserControl, IPage
     /// <summary>Лёгкий подъём карточки и подсветка рамки при наведении (только трансформация, без перерасчёта layout).</summary>
     public static void Hover(Border card)
     {
+        if (Shell.Compact) return; // сенсорный экран: «наведение» срабатывает при касании во время прокрутки и дёргает кадры
         var t = new TranslateTransform();
         card.RenderTransform = t;
         var normal = card.BorderBrush;
@@ -190,8 +213,8 @@ public sealed class HomePage : UserControl, IPage
         h.Children.Add(U.T("Активность", "H3"));
         h.Children.Add(U.Btn("Весь прогресс", () => Shell.Go("stats"), "Ghost", "").Col(1));
         sp.Children.Add(h);
-        sp.Children.Add(U.T("Последние 18 недель", "Muted", 12).M(0, 2, 0, 14));
-        const int weeks = 18;
+        int weeks = Shell.Compact ? 12 : 18; // на телефоне сетка 18 недель шире экрана
+        sp.Children.Add(U.T($"Последние {weeks} недель", "Muted", 12).M(0, 2, 0, 14));
         var grid = new UniformGrid { Rows = 7, Columns = weeks, HorizontalAlignment = HorizontalAlignment.Left };
         var start = DateTime.Today.AddDays(-(weeks * 7 - 1) - ((int)DateTime.Today.DayOfWeek + 6) % 7 + 6);
         var cells = new Border[7, weeks];
@@ -225,7 +248,7 @@ public sealed class HomePage : UserControl, IPage
         sp.Children.Add(U.Jp(w.Jp, 40, null, true).M(0, 8, 0, 0));
         sp.Children.Add(U.Jp(w.Kana, 14, U.B("Accent")).M(0, 4, 0, 0));
         sp.Children.Add(U.T(w.Romaji, "Muted", 13));
-        sp.Children.Add(U.T(w.Ru, "H3", 16).M(0, 10, 0, 0));
+        sp.Children.Add(U.T(w.Ru, "H3", 16).Also(x => x.TextWrapping = TextWrapping.Wrap).M(0, 10, 0, 0));
         sp.Children.Add(U.T("Нажми — пример фразы", "Muted", 11.5).M(0, 8, 0, 0));
         var card = new Border { Classes = { "Card" }, Child = sp, Cursor = Cursors.Hand };
         card.PointerReleased += (_, e) => { if (e.Source is not Button && e.Source is not TextBlock { Parent: Button }) Services.WordOfDay.Show(force: true); };
