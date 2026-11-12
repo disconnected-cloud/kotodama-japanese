@@ -123,3 +123,14 @@ public class ThemeDeckTests
     public void EveryThemeHasEnoughWords() =>
         Assert.All(Matsubakira.Services.Themes.All, t => Assert.True(Matsubakira.Services.Themes.Words(t.name).Count() >= 15, $"{t.name}: {Matsubakira.Services.Themes.Words(t.name).Count()}"));
 }
+
+public class ArticleImportTests
+{
+    [Fact]
+    public void ExtractsJapaneseWithoutFuriganaAndMenus()
+    {
+        var html = "<html><nav>メニュー ホーム ニュース</nav><script>var x='日本語';</script><p><ruby>今日<rt>きょう</rt></ruby>は<ruby>雨<rt>あめ</rt></ruby>が<ruby>降<rt>ふ</rt></ruby>りました。</p><p>Share on Twitter</p></html>";
+        var text = Matsubakira.Views.ReaderPage.ExtractJapanese(html);
+        Assert.Equal("今日は雨が降りました。", text);
+    }
+}

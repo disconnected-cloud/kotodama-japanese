@@ -211,15 +211,50 @@ public sealed class ReaderPage : UserControl, IPage
 
         // Свой текст
         var box = new TextBox { FontSize = 16, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 90, FontFamily = U.R<FontFamily>("JpFont") };
-        var own = U.Stack(U.T("Свой текст", "H3", 15), U.T("Вставь любой японский текст — он будет разобран по словарю.", "Muted").M(0, 4, 0, 10), box,
+        var own = U.Stack(U.T("Свой текст", "H3", 15), U.T("Вставь японский текст или ссылку на статью (например, NHK News Web Easy) — он будет разобран по словарю.", "Muted").M(0, 4, 0, 10), box,
             U.Btn("Читать", async () =>
             {
-                if (string.IsNullOrWhiteSpace(box.Text)) return;
+                var text = box.Text?.Trim() ?? "";
+                if (text.Length == 0) return;
+                if (Uri.TryCreate(text, UriKind.Absolute, out var url) && url.Scheme is "http" or "https")
+                {
+                    Shell.Toast("Загружаю страницу…", "読");
+                    try { text = await FetchJapanese(url); }
+                    catch (Exception ex) { CrashReport.Warn("Загрузка статьи", ex); Shell.Toast("Не удалось открыть ссылку — проверь интернет или вставь текст", "!"); return; }
+                    if (text.Length == 0) { Shell.Toast("На странице не нашлось японского текста", "!"); return; }
+                }
                 await JDict.LoadAsync();
-                Shell.Open(new TextPage(ParseOwn(box.Text)));
+                Shell.Open(new TextPage(ParseOwn(text)));
             }, "Primary", "").Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 10, 0, 0); }));
         root.Children.Add(U.Card(own).M(0, 18, 0, 0));
         Content = U.Page(root);
+    }
+
+    static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(20) };
+
+    /// <summary>Японский текст со страницы по ссылке.</summary>
+    public static async Task<string> FetchJapanese(Uri url)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.UserAgent.ParseAdd("Mozilla/5.0 Kotodama");
+        using var resp = await Http.SendAsync(req);
+        resp.EnsureSuccessStatusCode();
+        return ExtractJapanese(await resp.Content.ReadAsStringAsync());
+    }
+
+    /// <summary>
+    /// Из HTML: без скриптов, стилей, меню и встроенной фуриганы (rt), только строки, где японских знаков больше половины.
+    /// </summary>
+    public static string ExtractJapanese(string html)
+    {
+        const System.Text.RegularExpressions.RegexOptions rx = System.Text.RegularExpressions.RegexOptions.Singleline | System.Text.RegularExpressions.RegexOptions.IgnoreCase;
+        var s = System.Text.RegularExpressions.Regex.Replace(html, @"<(script|style|rt|rp|noscript|header|footer|nav)\b.*?</\1>", "", rx);
+        s = System.Text.RegularExpressions.Regex.Replace(s, @"<br\s*/?>|</p>|</div>|</h\d>|</li>", "\n", rx);
+        s = System.Text.RegularExpressions.Regex.Replace(s, "<[^>]+>", "");
+        s = System.Net.WebUtility.HtmlDecode(s);
+        static bool Jp(char c) => c is >= '぀' and <= 'ヿ' or >= '一' and <= '鿿' or '。' or '、';
+        var lines = s.Split('\n').Select(l => l.Trim()).Where(l => l.Length >= 6 && l.Count(Jp) * 2 > l.Length);
+        return string.Join("\n", lines.Distinct());
     }
 
     /// <summary>Разбор произвольного текста: предложения по 。！？, слова — самым длинным совпадением со словарём.</summary>
@@ -268,6 +303,7 @@ public sealed class TextPage : UserControl, IPage, IResumable
         root.Children.Add(U.T(_t.Title, "H1").M(0, 4, 0, 14));
         var bar = new WrapPanel();
         bar.Children.Add(Toggle("Фуригана", _furi, v => { _furi = v; Build(); }));
+        if (_furi) bar.Children.Add(Toggle("…только незнакомые", ProgressStore.P.FuriUnknownOnly, v => { ProgressStore.P.FuriUnknownOnly = v; ProgressStore.Notify(); Build(); }));
         bar.Children.Add(Toggle("Перевод", _ru, v => { _ru = v; Build(); }));
         bar.Children.Add(Toggle("Латиница", _romaji, v => { _romaji = v; Build(); }));
         bar.Children.Add(Toggle("На слух", _listen, v => { _listen = v; _revealed.Clear(); Build(); }));
@@ -281,6 +317,16 @@ public sealed class TextPage : UserControl, IPage, IResumable
         root.Children.Add(_popup.Detach().M(0, 6, 0, 0)); // при перестройке (переключатели) старая страница ещё держит подсказку
         if (_t.Questions.Length > 0) root.Children.Add(Questions());
         Content = U.Page(new Grid { Children = { root } });
+    }
+
+    // кандзи, которые уже в изучении (карточка повторялась хотя бы раз)
+    static (int ver, HashSet<char> set) _knownKanji = (-1, new());
+    static bool AllKanjiKnown(string surface)
+    {
+        if (_knownKanji.ver != ProgressStore.Version)
+            _knownKanji = (ProgressStore.Version, Db.Kanji.Where(k => ProgressStore.Card(k.Id)?.Reps > 0).Select(k => k.Char[0]).ToHashSet());
+        var ks = surface.Where(Reading.IsKanji).ToList();
+        return ks.Count > 0 && ks.All(_knownKanji.set.Contains);
     }
 
     static ToggleButton Toggle(string text, bool on, Action<bool> set)
@@ -311,7 +357,7 @@ public sealed class TextPage : UserControl, IPage, IResumable
         {
             var tok = t;
             var stack = new StackPanel { Margin = new Thickness(0, 0, 1, 4), Cursor = Cursors.Hand, Background = Brushes.Transparent };
-            stack.Children.Add(new TextBlock { Text = _furi && t.Reading.Length > 0 ? t.Reading : " ", FontSize = 11, Foreground = U.B("Accent"), HorizontalAlignment = HorizontalAlignment.Center, FontFamily = U.R<FontFamily>("JpFont") });
+            stack.Children.Add(new TextBlock { Text = _furi && t.Reading.Length > 0 && !(ProgressStore.P.FuriUnknownOnly && AllKanjiKnown(t.Surface)) ? t.Reading : " ", FontSize = 11, Foreground = U.B("Accent"), HorizontalAlignment = HorizontalAlignment.Center, FontFamily = U.R<FontFamily>("JpFont") });
             var surf = new TextBlock { Text = t.Surface, FontSize = 24, FontFamily = U.R<FontFamily>("JpFont"), Foreground = U.B("Text"), HorizontalAlignment = HorizontalAlignment.Center };
             stack.Children.Add(surf);
             if (t.Pos != "補助記号" && t.Pos != "記号")
