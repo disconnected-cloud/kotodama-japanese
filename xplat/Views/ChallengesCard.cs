@@ -21,6 +21,7 @@ public static class ChallengesCard
         var head = U.Cols("*", "auto");
         head.Children.Add(U.Stack(U.T("ИСПЫТАНИЯ ДНЯ", "Overline"),
             U.T(done == list.Count ? "Все выполнены! 完璧" : $"Выполнено {done} из {list.Count} · +10 XP за каждое", "H3", 16).M(0, 4, 0, 0)));
+        if (done == list.Count) head.Children.Add(Art.Anime("gift", 92).Also(g => g.Margin = new Thickness(0, -14, 0, -10)).DesktopOnly().Col(1));
         left.Children.Add(head);
         foreach (var c in list)
         {

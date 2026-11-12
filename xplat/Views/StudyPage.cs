@@ -212,7 +212,9 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
 
         // Шапка: маскот + что происходит
         var head = U.Cols("auto", "*");
-        head.Children.Add(Art.Mascot(Shell.Compact ? 90 : 130, started ? Mood.Joy : Mood.Happy).DesktopOnly());
+        // следующий шаг — работа над ошибками: Википе-тан со шваброй «наводит порядок»
+        bool sweepNext = nextIdx >= 0 && _stages[nextIdx].Icon == "target" && started;
+        head.Children.Add((sweepNext ? Art.Anime("sweep", 130) : Art.Mascot(Shell.Compact ? 90 : 130, started ? Mood.Joy : Mood.Happy)).DesktopOnly());
         var say = U.Stack(
             U.Jp(started ? "その調子！" : "勉強しよう！", 15, U.B("Accent")),
             U.T(started ? $"Шаг {done} из {_stages.Count} готов" : "Сессия собрана под тебя", "H1", Shell.Compact ? 22 : 28).M(0, 2, 0, 6),

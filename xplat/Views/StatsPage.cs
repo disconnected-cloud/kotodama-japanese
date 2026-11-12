@@ -19,7 +19,7 @@ public sealed class StatsPage : UserControl, IPage
     {
         var p = ProgressStore.P;
         var root = new StackPanel();
-        root.Children.Add(U.Header("進歩", "Прогресс", "Как растут знания: активность, память, навыки и прогноз до цели"));
+        root.Children.Add(U.Header("進歩", "Прогресс", "Как растут знания: активность, память, навыки и прогноз до цели", art: "trophy"));
 
         // ─────────── Главные числа ───────────
         var cards = p.Cards.Values.ToList();
@@ -30,7 +30,7 @@ public sealed class StatsPage : UserControl, IPage
             .Select(c => Fsrs.Retrievability(Math.Max(0, (DateTime.Now - c.LastReview).TotalDays), c.Stability)).DefaultIfEmpty(0).Average();
         var kpi = new UniformGrid { Columns = U.Columns(4, 2), Margin = new Thickness(-6, 0, -6, 0) };
         kpi.Children.Add(Kpi("flame", "Серия", p.Streak, MainView.Plural(p.Streak, "день", "дня", "дней"), $"Дней с занятиями всего: {days}"));
-        kpi.Children.Add(Kpi("trophy", "Уровень", ProgressStore.Level, $"{p.Xp} XP", "Опыт за всё время"));
+        kpi.Children.Add(Kpi("crown", "Уровень", ProgressStore.Level, $"{p.Xp} XP", "Опыт за всё время"));
         kpi.Children.Add(Kpi("words", "Карточек", learned, $"{mastered} прочно", "Прочно — интервал повторения от 3 недель"));
         kpi.Children.Add(Kpi("target", "Память", (int)Math.Round(recall * 100), "%", "Средняя вероятность вспомнить карточку прямо сейчас (модель FSRS)"));
         root.Children.Add(kpi);
@@ -61,6 +61,15 @@ public sealed class StatsPage : UserControl, IPage
         root.Children.Add(U.Stackify(mem).M(0, 16, 0, 0));
 
         root.Children.Add(U.Card(Report.Goal(), new Thickness(22)).M(0, 16, 0, 0));
+
+        // ─────────── Награды ───────────
+        var rw = new UniformGrid { Columns = U.Columns(4, 2), Margin = new Thickness(-6, 16, -6, 0) };
+        rw.Children.Add(Kpi("shield", "Щиты серии", p.Shields, $"из {Challenges.MaxShields}", "Щит спасает серию, если пропустить день. Даётся за недельную цель"));
+        rw.Children.Add(Kpi("medal", "Значки недель", p.Badges.Count, MainView.Plural(p.Badges.Count, "неделя", "недели", "недель"), "Недели, когда взята недельная цель по опыту"));
+        rw.Children.Add(Kpi("star", "Идеальные дни", p.PerfectDays, "все испытания", "Дни, когда выполнены все три испытания"));
+        rw.Children.Add(Kpi("trophy", "Достижения", p.Achievements.Count, $"из {Achievements.All.Length}", "Открытые достижения"));
+        root.Children.Add(rw);
+        root.Children.Add(U.Card(U.Stack(U.T("ДОСТИЖЕНИЯ", "Overline").M(0, 0, 0, 12), SettingsPage.AchievementsGrid()), new Thickness(22, 18, 22, 10)).M(0, 16, 0, 0));
         return root;
     }
 

@@ -38,7 +38,7 @@ public sealed class JapanPage : UserControl, IPage
     {
         var root = new StackPanel();
         int read = All.Count(Read);
-        root.Children.Add(U.Header("日本", "Япония", $"Культура, обычаи и жизнь японцев · прочитано {read} из {All.Length} статей"));
+        root.Children.Add(U.Header("日本", "Япония", $"Культура, обычаи и жизнь японцев · прочитано {read} из {All.Length} статей", art: "miko"));
 
         // Факт дня — каждый день новый
         var facts = All.SelectMany(a => a.Facts.Select(f => (a, f))).ToArray();

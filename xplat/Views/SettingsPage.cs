@@ -453,7 +453,7 @@ public sealed class SettingsPage : UserControl, IPage
         Shell.Go("home");
     }
 
-    static Control AchievementsGrid()
+    public static Control AchievementsGrid()
     {
         var p = ProgressStore.P;
         var wrap = new WrapPanel();

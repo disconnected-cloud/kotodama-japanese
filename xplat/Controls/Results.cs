@@ -82,7 +82,7 @@ public static class Results
 
         // Википе-тан радуется вместе с учеником (или подбадривает)
         var line = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-        var mascot = Art.Mascot(250, pct >= 90 ? Mood.Joy : pct >= 70 ? Mood.Happy : pct >= 50 ? Mood.Wink : Mood.Think);
+        var mascot = pct >= 95 ? Art.Anime("flower", 230) : Art.Mascot(250, pct >= 90 ? Mood.Joy : pct >= 70 ? Mood.Happy : pct >= 50 ? Mood.Wink : Mood.Think);
         mascot.VerticalAlignment = VerticalAlignment.Bottom; mascot.Margin = new Thickness(0, 0, 18, 30);
         if (!Shell.Compact) line.Children.Add(mascot);
         line.Children.Add(card);

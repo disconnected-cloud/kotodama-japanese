@@ -856,7 +856,7 @@ public sealed class ArtDemo : UserControl, IPage
         foreach (var k in new[] { "student", "cheer", "teacher", "casual", "bunny", "astronaut", "hello", "reading", "head", "classic" }) row2.Children.Add(Controls.Art.Anime(k, 160).M(0, 0, 16, 16));
         root.Children.Add(row2);
         var icons = new WrapPanel();
-        foreach (var n in new[] { "home","path","kana","words","kanji","grammar","speech","dialogs","reader","books","dict","review","trainers","settings","more","phrases","voice","mic","palette","bell","target","shield","download","trophy","info","flame","games","write","storage","sparkle" })
+        foreach (var n in new[] { "home","path","kana","words","kanji","grammar","speech","dialogs","reader","books","dict","review","trainers","settings","more","phrases","voice","mic","palette","bell","target","shield","download","trophy","info","flame","games","write","storage","sparkle","medal","crown","gift","scroll","fox","brush","haiku","moon","flag","star","chart","leaf" })
             icons.Children.Add(Controls.Art.Icon(n, 48).M(0, 0, 12, 12));
         root.Children.Add(icons);
         root.Children.Add(Controls.Art.Say("Привет! Я Википе-тан. Давай учить японский вместе!", Controls.Mood.Joy));

@@ -80,9 +80,10 @@ public sealed class HomePage : UserControl, IPage
         var hero = U.Cols("*", "auto");
         hero.Children.Add(left.M(28, 22, 12, 22));
         // крупно и по пояс: баннер обрезает низ картинки
-        var kotoha = Art.Mascot(mood == Mood.Joy ? 330 : 480, mood);
+        bool studiedToday = p.Flags.Contains("study:" + DateTime.Today.ToString("yyyy-MM-dd"));
+        var kotoha = studiedToday ? Art.Anime("zen", 300) : Art.Mascot(mood == Mood.Joy ? 330 : 480, mood);
         kotoha.VerticalAlignment = VerticalAlignment.Top;
-        kotoha.Margin = new Thickness(0, 14, 30, mood == Mood.Joy ? 0 : -400);
+        kotoha.Margin = new Thickness(0, 14, 30, studiedToday || mood == Mood.Joy ? 0 : -400);
         hero.Children.Add(kotoha.DesktopOnly().Col(1));
         var heroCard = new Border
         {

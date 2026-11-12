@@ -266,7 +266,7 @@ public sealed class TrainersPage : UserControl, IPage
     public void OnShown()
     {
         var root = new StackPanel();
-        root.Children.Add(U.Header("練", "Тренажёры и игры", "Игры, план на день, работа над ошибками и упражнения на грамматику, счёт и слух."));
+        root.Children.Add(U.Header("練", "Тренажёры и игры", "Игры, план на день, работа над ошибками и упражнения на грамматику, счёт и слух.", art: "coach"));
 
         var grid = new UniformGrid { Columns = U.Columns(3), Margin = new Thickness(-6, 18, -6, 0) };
         grid.Children.Add(Tile("誤", "Тетрадь ошибок", Mistakes.Count > 0 ? $"{Mistakes.Count} ошибок ждут исправления" : "Ошибок нет — отлично!", () => { var q = MistakesQuiz(); if (q != null) Shell.Open(q); else Shell.Toast("Ошибок пока нет", "完璧"); }));

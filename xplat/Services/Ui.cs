@@ -323,7 +323,7 @@ public static class U
     /// Шапка страницы: у каждого раздела свой цветной баннер — иконка, название, подзаголовок
     /// и крупный иероглиф-водяной знак в цвет раздела.
     /// </summary>
-    public static Control Header(string jp, string title, string subtitle, Control? right = null)
+    public static Control Header(string jp, string title, string subtitle, Control? right = null, string? art = null)
     {
         string icon = HeaderIcons.TryGetValue(title, out var i1) ? i1 : HeaderIcons.TryGetValue(jp, out var i2) ? i2 : "sparkle";
         var (ca, cb) = Controls.Art.IconColors(icon);
@@ -351,8 +351,17 @@ public static class U
         {
             Text = jp, FontFamily = R<FontFamily>("JpSerif"), FontSize = 150, FontWeight = FontWeight.Bold, Opacity = 0.07,
             Foreground = new SolidColorBrush(cb), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(0, -40, right != null ? 260 : 30, -40), IsHitTestVisible = false,
+            Margin = new Thickness(0, -40, right != null ? 260 : art != null ? 190 : 30, -40), IsHitTestVisible = false,
         });
+        // Википе-тан выглядывает из баннера раздела (обрезается по нижнему краю)
+        if (art != null && right == null)
+        {
+            var pic = Controls.Art.Anime(art, 190);
+            pic.HorizontalAlignment = HorizontalAlignment.Right; pic.VerticalAlignment = VerticalAlignment.Top;
+            pic.Margin = new Thickness(0, 10, 34, -90); pic.IsHitTestVisible = false;
+            layers.Children.Add(pic);
+            Anim.FadeUp(pic, 120, 18, 520);
+        }
         layers.Children.Add(g.M(22, 18, 22, 18));
         return new Border
         {
