@@ -134,3 +134,19 @@ public class ArticleImportTests
         Assert.Equal("今日は雨が降りました。", text);
     }
 }
+
+public class FreeAnswerTests
+{
+    public FreeAnswerTests() => Matsubakira.Services.JDict.LoadAsync().Wait();
+
+    [Fact]
+    public void ParaphraseWithKeyWordPasses()
+    {
+        var (score, said, _) = Matsubakira.Services.FreeAnswer.Check("コーヒーをください。", "こーひーおねがいします");
+        Assert.True(score >= 60, $"{score}");
+        Assert.Contains("こーひー", said);
+    }
+
+    [Fact]
+    public void UnrelatedAnswerFails() => Assert.True(Matsubakira.Services.FreeAnswer.Check("コーヒーをください。", "おみずをください").score < 60);
+}

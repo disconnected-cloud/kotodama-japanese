@@ -63,6 +63,7 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget, IResumable
     readonly List<Border> _bubbles = new();
     readonly List<Control> _full = new();   // полное содержимое реплики (для режима «по памяти»)
     bool _recall;
+    bool _free;        // свободный ответ: своими словами, засчитывается по ключевым словам
     internal bool RecallPreview { set { _recall = value; } }
     readonly TextBlock _status = U.T("", "Muted", 13);
     readonly SpeechUi.LevelMeter _meter = new();
@@ -130,9 +131,9 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget, IResumable
             sp.Children.Add(U.T(line.Ru, "Body", 13, U.B("Muted")).M(0, 2, 0, 0));
             _full.Add(sp);
             Control child = sp;
-            if (mine && _recall)
+            if (mine && (_recall || _free))
                 child = U.Stack(U.T(_d.Roles[line.Speaker], "Overline").M(0, 0, 0, 4),
-                    U.T("Скажи по-японски:", "Muted", 12),
+                    U.T(_free ? "Ответь своими словами — по смыслу:" : "Скажи по-японски:", "Muted", 12),
                     U.T("«" + line.Ru + "»", "H3", 16).Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 2, 0, 0));
             var bubble = new Border
             {
@@ -152,8 +153,9 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget, IResumable
     {
         _controls.Children.Clear();
         _controls.Children.Add(U.Btn("Прослушать всё", () => Run(listenOnly: true), "", "").M(0, 0, 8, 0));
-        _controls.Children.Add(U.Btn("По памяти", () => { _recall = true; BuildChat(); Run(listenOnly: false); }, "", "").M(0, 0, 8, 0).Tip("Твои реплики скрыты — вспомни фразу по переводу"));
-        _controls.Children.Add(U.Btn("Играть роль", () => { if (_recall) { _recall = false; BuildChat(); } Run(listenOnly: false); }, "Primary", ""));
+        _controls.Children.Add(U.Btn("Свободно", () => { _free = true; _recall = false; BuildChat(); Run(listenOnly: false); }, "", "").M(0, 0, 8, 0).Tip("Ответь своими словами — засчитывается, если сказаны главные слова реплики"));
+        _controls.Children.Add(U.Btn("По памяти", () => { _recall = true; _free = false; BuildChat(); Run(listenOnly: false); }, "", "").M(0, 0, 8, 0).Tip("Твои реплики скрыты — вспомни фразу по переводу"));
+        _controls.Children.Add(U.Btn("Играть роль", () => { if (_recall || _free) { _recall = _free = false; BuildChat(); } Run(listenOnly: false); }, "Primary", ""));
         _status.Text = Asr.Ready ? $"Ты — «{_d.Roles[_role]}». Нажми «Играть роль»: собеседник говорит, ты отвечаешь вслух."
                                  : "Можно прослушать диалог. Для проверки своих реплик скачай модель Whisper.";
         foreach (var b in _bubbles) b.Opacity = 1;
@@ -207,7 +209,19 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget, IResumable
                     var (check, _) = await SpeechUi.RecordAndScore(line.Jp, line.KanaPlain, rec, ct, s => _status.Text = s);
                     _meter.Attach(null);
                     if (check.Error != null) { _status.Text = check.Error; if (await AskNext(true)) break; continue; }
-                    if (_recall && _bubbles[i].Child != _full[i]) { _bubbles[i].Child = _full[i]; Anim.Pop(_bubbles[i], 0.95); }
+                    if (_free && check.Heard.Length > 0)
+                    {
+                        // своими словами: важен смысл — ключевые слова реплики, а не дословный текст
+                        var (fs, said, missed) = FreeAnswer.Check(line.Jp, check.HeardKana.Length > 0 ? check.HeardKana : check.Heard);
+                        bool fok = fs >= 60;
+                        check = check with
+                        {
+                            Ok = fok || check.Ok, Score = Math.Max(fs, check.Score),
+                            Verdict = fok || check.Ok ? (said.Count > 0 ? "понятно! Узнал: " + string.Join(", ", said) : "понятно!")
+                                : missed.Count > 0 ? "не хватает главного: " + string.Join(", ", missed) : check.Verdict,
+                        };
+                    }
+                    if ((_recall || _free) && _bubbles[i].Child != _full[i]) { _bubbles[i].Child = _full[i]; Anim.Pop(_bubbles[i], 0.95); }
                     MarkScore(i, check.Score);
                     if (check.Heard.Length > 0) ProgressStore.SpeechResult(line.Id, check.Score);
                     _status.Text = $"{check.Score} — {check.Verdict}";
