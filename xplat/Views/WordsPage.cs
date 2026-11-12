@@ -111,7 +111,7 @@ public sealed class WordsPage : UserControl, IPage
             lv.Children.Add(rb);
         }
         if (_topic != null) { var art = Emoji.Img(Emoji.ForTopic(_topic), 64); art.HorizontalAlignment = HorizontalAlignment.Right; art.VerticalAlignment = VerticalAlignment.Top; art.Margin = new Thickness(0, 0, 330, 0); g.Children.Add(art); }
-        g.Children.Add(U.Header("語", "Слова", _level == "Мои" ? $"{words.Length} слов, добавленных из словаря" : _level == "1000" ? $"{words.Length} частых слов из живой речи — у каждого пример фразы" : _level == "N3" ? $"{words.Length} слов уровня N3 (частотные 1001–1600) с примерами фраз" : $"{words.Length} слов уровня {_level}  ·  {learning} в изучении  ·  {mastered} выучено", lv));
+        g.Children.Add(U.Header("語", "Слова", _level == "Мои" ? $"{words.Length} слов, добавленных из словаря" : _level == "1000" ? $"{words.Length} частых слов из живой речи — у каждого пример фразы" : _level == "N3" ? $"{words.Length} слов уровня N3 (частотные 1001–1600) с примерами фраз" : $"{words.Length} учебных слов уровня {_level} с озвучкой и карточками  ·  {learning} в изучении  ·  {mastered} выучено", lv));
 
         // Действия
         int due = words.Count(w => ProgressStore.IsDue(w.Id));

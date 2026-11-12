@@ -107,6 +107,7 @@ public static class Tray
         _clickTarget = clickTarget;
         if (!OperatingSystem.IsWindows())
         {
+            Sfx.Reminder();
             try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("notify-send", new[] { "-a", "Kotodama", "-i", "kotodama", title, text }) { UseShellExecute = false }); } catch { }
             return;
         }
@@ -114,7 +115,8 @@ public static class Tray
         _d.uFlags = NIF_INFO | NIF_ICON | NIF_TIP | NIF_MESSAGE;
         _d.szInfoTitle = title.Length > 63 ? title[..63] : title;
         _d.szInfo = text.Length > 255 ? text[..255] : text;
-        _d.dwInfoFlags = NIIF_USER;
+        _d.dwInfoFlags = NIIF_USER | 0x10; // NIIF_NOSOUND: вместо системного «дзынь» — свой мягкий колокольчик
+        Sfx.Reminder();
         Shell_NotifyIcon(NIM_MODIFY, ref _d);
     }
 

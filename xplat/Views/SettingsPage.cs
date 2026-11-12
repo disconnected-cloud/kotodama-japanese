@@ -130,7 +130,11 @@ public sealed class SettingsPage : UserControl, IPage
             case "notify":
                 yield return Section("Напоминания", null, U.Stack(
                     Toggle("Системные напоминания (повторение, серия)", p.Reminders, v => p.Reminders = v),
+                    Toggle("Мягкий звук уведомлений", p.NotifySound, v => { p.NotifySound = v; if (v) Sfx.Reminder(); }),
                     Toggle("Закрытие окна сворачивает в трей (напоминания продолжают приходить)", p.MinimizeToTray, v => p.MinimizeToTray = v)));
+                yield return Section("Звук уведомлений", "Нажми, чтобы выбрать и послушать. Все звуки тихие и короткие.",
+                    Choice(Enumerable.Range(0, Sfx.NotifyTones.Length).ToArray(), Math.Max(0, Array.FindIndex(Sfx.NotifyTones, t => t.id == p.NotifyTone)),
+                        v => { p.NotifyTone = Sfx.NotifyTones[v].id; p.NotifySound = true; ProgressStore.Notify(); Sfx.Reminder(); }, v => Sfx.NotifyTones[v].title));
                 var wod = new WrapPanel();
                 foreach (var (t, label) in new[] { ("", "Выключено"), ("08:00", "08:00"), ("09:00", "09:00"), ("12:00", "12:00"), ("19:00", "19:00"), ("21:00", "21:00") })
                 {

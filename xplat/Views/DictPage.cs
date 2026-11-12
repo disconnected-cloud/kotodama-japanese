@@ -73,7 +73,7 @@ public sealed class DictPage : UserControl, IPage
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition());
-        root.Children.Add(U.Header("辞", "Словарь", "JMdict: десятки тысяч слов с русским переводом. Ищи по-русски, латиницей (taberu), каной или кандзи."));
+        root.Children.Add(U.Header("辞", "Словарь", $"Справочник JMdict — {JDict.CountLabel} статей, чтобы найти любое слово. Учебные слова с карточками — в разделе «Слова». Ищи по-русски, латиницей (taberu), каной или кандзи."));
 
         var search = new Grid();
         search.Children.Add(_box);

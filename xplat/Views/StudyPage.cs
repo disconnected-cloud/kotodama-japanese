@@ -318,6 +318,7 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
         int done = _state.Count(s => s == 1);
         int min = Math.Max(1, (int)Math.Round(_clock.Elapsed.TotalMinutes));
         ProgressStore.P.Flags.Add("study:" + DateTime.Today.ToString("yyyy-MM-dd"));
+        Challenges.Bump("study");
         ProgressStore.Notify();
         Sfx.Done();
         var grid = new Grid();

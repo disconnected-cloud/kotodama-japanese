@@ -103,7 +103,7 @@ public sealed class Palette : Grid
                 var word = w;
                 items.Add(new Item("語", $"{w.Jp}  {w.Kana}", $"{w.Ru} · {w.Romaji}", () => { Speech.Say(word.Kana); Shell.Open(new FlashSession(word.Jp, new[] { FlashSession.FromWord(word) })); }));
             }
-            items.Add(new Item("辞", $"Искать «{q}» в словаре", "69 000 статей JMdict", () => { Shell.Go("dict"); DictPage.PendingQuery = q; }));
+            items.Add(new Item("辞", $"Искать «{q}» в словаре", $"Справочник JMdict · {JDict.CountLabel} статей", () => { Shell.Go("dict"); DictPage.PendingQuery = q; }));
         }
         _items = items;
         _sel = 0;

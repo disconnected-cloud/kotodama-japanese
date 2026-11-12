@@ -58,6 +58,7 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
     readonly Border _feedback;
     readonly TextBlock _fbIcon = new() { FontFamily = U.R<FontFamily>("Icons"), FontSize = 22, VerticalAlignment = VerticalAlignment.Center };
     readonly TextBlock _fbTitle = new() { FontSize = 16, FontWeight = FontWeights.Bold };
+    readonly ContentControl _smart = new();
     readonly TextBlock _fbText = new() { FontSize = 14, TextWrapping = TextWrapping.Wrap, Foreground = U.B("Text") };
     readonly Button _next;
     readonly Grid _main = new();
@@ -75,7 +76,7 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
         _main.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         _main.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         _main.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        _main.RowDefinitions.Add(new RowDefinition { Height = new GridLength(96) });
+        _main.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto, MinHeight = 96 }); // место под отзыв; умная подсказка может сделать его выше
         Children.Add(_main);
 
         // Верх: прогресс + комбо
@@ -117,7 +118,7 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
         fbGrid.ColumnDefinitions.Add(new ColumnDefinition());
         fbGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         fbGrid.Children.Add(_fbIcon);
-        var fbStack = new StackPanel { Margin = new Thickness(14, 0, 14, 0), VerticalAlignment = VerticalAlignment.Center, Children = { _fbTitle, _fbText } };
+        var fbStack = new StackPanel { Margin = new Thickness(14, 0, 14, 0), VerticalAlignment = VerticalAlignment.Center, Children = { _fbTitle, _fbText, _smart } };
         SetColumn(fbStack, 1); fbGrid.Children.Add(fbStack);
         SetColumn(_next, 2); _next.VerticalAlignment = VerticalAlignment.Center; fbGrid.Children.Add(_next);
         _feedback = new Border { CornerRadius = new CornerRadius(16), Padding = new Thickness(20, 12, 14, 12), Child = fbGrid, MaxWidth = 760, Margin = new Thickness(0, 16, 0, 0), VerticalAlignment = VerticalAlignment.Top, Opacity = 0, BorderThickness = new Thickness(1) };
@@ -199,6 +200,10 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
         return b;
     }
 
+#if DEBUG
+    public void DebugWrong() { if (_options.Children.OfType<Button>().FirstOrDefault(o => o.Tag as string != Q.Answer) is { } b) Choose(b); }
+#endif
+
     void Choose(Button b)
     {
         if (_locked) return;
@@ -231,7 +236,7 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
         _answered++;
         var q = Q;
         q.OnResult?.Invoke(ok);
-        if (ok) { Mistakes.Correct(q.Key); Sfx.Ok(); } else { Mistakes.Add(q.Key); Sfx.Bad(); }
+        if (ok) { Mistakes.Correct(q.Key); Sfx.Ok(); Challenges.Bump(q.SpeakOnShow ? "listen" : "correct"); } else { Mistakes.Add(q.Key); Sfx.Bad(); }
         if (ok)
         {
             _correct++; _combo++; _bestCombo = Math.Max(_bestCombo, _combo);
@@ -259,6 +264,7 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
         _fbText.Text = !ok && q.WrongHint != null ? q.WrongHint + (q.Explain != null ? "\n" + q.Explain : "")
                      : q.Explain ?? (ok ? "" : "Этот вопрос вернётся в конце.");
         _fbText.IsVisible = string.IsNullOrEmpty(_fbText.Text) ? false : true;
+        _smart.Content = ok ? null : SmartHints.For(q); // после ошибки: с чем не путать, кандзи слова, правило
         _feedback.IsHitTestVisible = true;
         Anim.FadeUp(_feedback, 0, 8, 220);
 

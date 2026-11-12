@@ -48,3 +48,21 @@ public class AudioTests
         Assert.Equal(1600, y.Length);
     }
 }
+
+public class NotifyToneTests
+{
+    [Theory]
+    [InlineData("bell")] [InlineData("drop")] [InlineData("koto")] [InlineData("furin")]
+    public void ToneIsQuietShortAndClean(string id)
+    {
+        foreach (var remind in new[] { false, true })
+        {
+            var (x, rate) = Matsubakira.Platform.Pcm.Decode(Matsubakira.Services.Sfx.ToneWav(id, remind), true);
+            double sec = x.Length / (double)rate;
+            Assert.InRange(sec, 0.3, 2.6);                       // короткий
+            Assert.InRange(x.Max(Math.Abs), 0.1f, 0.25f);        // тихий, без клиппинга
+            Assert.True(Math.Abs(x[^1]) < 0.01f, id);            // без щелчка в конце
+            Assert.True(Math.Abs(x[0]) < 0.05f, id);             // мягкое начало
+        }
+    }
+}

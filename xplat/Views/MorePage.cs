@@ -28,7 +28,7 @@ public sealed class MorePage : UserControl, IPage
             new("dialogs", "Диалоги", "Разговоры по ролям", () => Shell.Go("dialogs")),
             new("books", "Книги", "Тексты с фуриганой", () => Shell.Go("reader")),
             new("torii", "Япония", "Культура и обычаи", () => Shell.Go("japan")),
-            new("dict", "Словарь", "69 000 слов", () => Shell.Go("dict")),
+            new("dict", "Словарь", "Справочник для поиска", () => Shell.Go("dict")),
         }),
         ("ПРАКТИКА", new Entry[]
         {

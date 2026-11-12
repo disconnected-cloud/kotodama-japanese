@@ -107,6 +107,7 @@ public sealed class HomePage : UserControl, IPage
         stats.Children.Add(Stat("Кандзи", kanjiKnown, $"из {Db.Kanji.Length}", "Good"));
         foreach (var c in stats.Children.OfType<Border>()) { c.Cursor = Cursors.Hand; Hover(c); c.PointerReleased += (_, _) => Shell.Go("stats"); }
         root.Children.Add(stats);
+        root.Children.Add(ChallengesCard.Build().M(0, 16, 0, 0));
         // Факт о Японии — каждый день новый, ведёт в раздел «Япония»
         var facts = JapanPage.All.SelectMany(a => a.Facts.Select(f => (a, f))).ToArray();
         if (facts.Length > 0)
@@ -127,12 +128,12 @@ public sealed class HomePage : UserControl, IPage
         int kanaKnown = Kana.All.Count(k => ProgressStore.KanaScore("h:" + k.Hira) >= 3) + Kana.All.Count(k => ProgressStore.KanaScore("k:" + k.Kata) >= 3);
         var sections = new UniformGrid { Columns = U.Columns(4, 2), Margin = new Thickness(-6, 0, -6, 0) };
         sections.Children.Add(Section("kana", "Кана", $"{kanaKnown * 100 / (Kana.All.Count * 2)}% освоено", "kana"));
-        sections.Children.Add(Section("words", "Слова", $"{Db.Words.Length} слов", "words"));
+        sections.Children.Add(Section("words", "Слова", $"{Db.Words.Length} для изучения · N5–N3", "words"));
         sections.Children.Add(Section("kanji", "Кандзи", $"{Db.Kanji.Length} знаков", "kanji"));
         sections.Children.Add(Section("grammar", "Грамматика", $"{p.GrammarDone.Count}/{Db.Grammar.Length} уроков", "grammar"));
         sections.Children.Add(Section("speech", "Говорение", $"{Db.SpeechLessons.Length} уроков", "speech"));
         sections.Children.Add(Section("dialogs", "Диалоги", $"{Db.Dialogs.Length} сценок", "dialogs"));
-        sections.Children.Add(Section("dict", "Словарь", "69 000+ слов", "dict"));
+        sections.Children.Add(Section("dict", "Словарь", $"справочник · {JDict.CountLabel} статей", "dict"));
         sections.Children.Add(Section("books", "Книги", "книги и рассказы", "reader"));
         sections.Children.Add(Section("torii", "Япония", $"{JapanPage.All.Length} статей о культуре", "japan"));
         sections.Children.Add(Section("trainers", "Игры", "6 игр на слова и кану", "trainers"));

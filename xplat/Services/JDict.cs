@@ -23,6 +23,8 @@ public static class JDict
     // Lazy: при одновременном первом обращении из разных потоков загрузка запускается ровно один раз
     static readonly Lazy<Task> _load = new(() => Task.Run(Load));
     public static int Count => _kana.Length;
+    /// <summary>Размер словаря для подписей: точное число статей, если словарь уже загружен.</summary>
+    public static string CountLabel => Loaded && Count > 0 ? $"{Count / 1000 * 1000:N0}+".Replace(' ', ' ') : "69 000+";
     public static bool Loaded => _load.IsValueCreated && _load.Value.IsCompletedSuccessfully;
 
     public static Task LoadAsync() => _load.Value;

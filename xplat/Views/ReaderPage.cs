@@ -124,7 +124,7 @@ public sealed class ReaderPage : UserControl, IPage
 
         // Свой текст
         var box = new TextBox { FontSize = 16, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 90, FontFamily = U.R<FontFamily>("JpFont") };
-        var own = U.Stack(U.T("Свой текст", "H3", 15), U.T("Вставь любой японский текст — он будет разобран по словарю (69 000 слов).", "Muted").M(0, 4, 0, 10), box,
+        var own = U.Stack(U.T("Свой текст", "H3", 15), U.T("Вставь любой японский текст — он будет разобран по словарю.", "Muted").M(0, 4, 0, 10), box,
             U.Btn("Читать", async () =>
             {
                 if (string.IsNullOrWhiteSpace(box.Text)) return;

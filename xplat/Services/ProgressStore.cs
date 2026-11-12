@@ -37,6 +37,8 @@ public sealed class Progress
     public string JpFontName { get; set; } = "";       // шрифт японского текста, "" — системный по умолчанию
     public double UiScale { get; set; } = 1.0;
     public bool Sounds { get; set; } = true;
+    public bool NotifySound { get; set; } = true;
+    public string NotifyTone { get; set; } = "bell";    // bell | drop | koto | furin      // мягкий колокольчик у уведомлений и напоминаний
     public string TtsEngine { get; set; } = "auto";   // auto | online | offline
     public uint OfflineStyle { get; set; }            // устарело (0 совпадало с реальным стилем)
     public int OfflineStyleId { get; set; } = -1;      // выбранный стиль VOICEVOX, -1 — лучший чёткий из установленных
@@ -65,6 +67,12 @@ public sealed class Progress
     public bool MaleVoice { get; set; }
     public string AsrModel { get; set; } = "small-q5_1";
     public string Level { get; set; } = "N5";
+    public string DayDate { get; set; } = "";                     // счётчики испытаний дня
+    public Dictionary<string, int> DayCounts { get; set; } = new();
+    public int Shields { get; set; } = 1;                          // щиты серии (первый — в подарок)
+    public int ShieldsUsed { get; set; }
+    public int PerfectDays { get; set; }                           // дни, когда выполнены все испытания
+    public List<string> Badges { get; set; } = new();             // значки недель (понедельник недели)
     public int StudyMode { get; set; } = 1;            // длина сессии «Учиться»: 0 — 5 мин, 1 — 15, 2 — 30
 }
 
@@ -93,6 +101,8 @@ public static class ProgressStore
     static Timer? _saveTimer;
 
     public static bool IsLoaded { get; private set; }
+    /// <summary>Сколько щитов серии потрачено при запуске (пропущенные дни) — для уведомления.</summary>
+    public static int ShieldsUsedOnLoad { get; private set; }
 
     public static void Load()
     {
@@ -114,7 +124,8 @@ public static class ProgressStore
         // Голоса 女声/男声 звучали с придыханием — переключаем на чёткий голос по умолчанию
         if (P.Flags.Add("mig-vv2") && P.OfflineStyleId >= 10000) P.OfflineStyleId = -1;
         if (P.Xp > 0) P.Flags.Add("onboarded"); // у кого уже есть прогресс — помощник первого запуска не нужен
-        // Серия сгорает, если пропущен день
+        // Серия сгорает, если пропущен день — если нет щита
+        ShieldsUsedOnLoad = Challenges.UseShields(P);
         if (P.LastStudy.Date < DateTime.Today.AddDays(-1)) P.Streak = 0;
     }
 
@@ -178,7 +189,8 @@ public static class ProgressStore
 
     public static void Rate(string id, Rating r)
     {
-        if (!P.Cards.TryGetValue(id, out var c)) P.Cards[id] = c = new SrsCard();
+        if (!P.Cards.TryGetValue(id, out var c)) { P.Cards[id] = c = new SrsCard(); Challenges.Bump("new"); }
+        else Challenges.Bump("review");
         Fsrs.Apply(c, r);
         AddXp(r == Rating.Again ? 1 : 3);
     }
@@ -204,6 +216,7 @@ public static class ProgressStore
 
     public static void SpeechResult(string key, int score)
     {
+        if (score >= Speech.PassScore) Challenges.Bump("speak");
         if (!P.SpeechBest.TryGetValue(key, out var best) || score > best) P.SpeechBest[key] = score;
         AddXp(score >= 80 ? 5 : score >= 50 ? 3 : 1);
     }

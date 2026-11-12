@@ -172,6 +172,8 @@ public class MainView : UserControl
                 im.SafeAreaChanged += (_, e) => Padding = e.SafeAreaPadding;
             }
             Dispatcher.UIThread.Post(OnOpened, DispatcherPriority.Loaded);
+            if (ProgressStore.ShieldsUsedOnLoad > 0)
+                DispatcherTimer.RunOnce(() => ShowToast(ProgressStore.ShieldsUsedOnLoad == 1 ? "Щит серии спас серию за пропущенный день!" : $"Щиты серии спасли серию за {ProgressStore.ShieldsUsedOnLoad} пропущенных дня!", "盾"), TimeSpan.FromSeconds(4));
         };
     }
 
@@ -501,6 +503,7 @@ public class MainView : UserControl
     public void UpdateStats()
     {
         Achievements.CheckNew();
+        Challenges.Check();
         var p = ProgressStore.P;
         _streak.Text = $"{p.Streak} {Plural(p.Streak, "день", "дня", "дней")}";
         int lvl = ProgressStore.Level;
@@ -528,6 +531,7 @@ public class MainView : UserControl
     // ─────────── Тост ───────────
     public void ShowToast(string text, string? jp)
     {
+        Dispatcher.UIThread.Post(Sfx.Notify, DispatcherPriority.Background); // после синхронных звуков (достижение, ответ) — колокольчик не накладывается
         _toastText.Text = text;
         _toastJp.Text = jp ?? "";
         _toastJp.IsVisible = !string.IsNullOrEmpty(jp);
@@ -826,8 +830,11 @@ public class MainView : UserControl
 #endif
             case "wod": WordOfDay.Show(); break;
             case "quiz":
-                var w = Db.Words.Take(8).ToArray();
-                Push(new Controls.QuizSession("Демо", w.Select(x => new Controls.QuizQ { Prompt = x.Jp, Sub = x.Kana, Answer = x.Ru, Options = Controls.QuizSession.MakeOptions(x.Ru, w.Select(y => y.Ru)) })));
+            case "quizwrong":
+                var w = Db.Words.Where(x => x.Jp.Any(Reading.IsKanji)).Take(8).ToArray();
+                var qs = new Controls.QuizSession("Демо", w.Select(x => new Controls.QuizQ { Prompt = x.Jp, Sub = x.Kana, Answer = x.Ru, Key = x.Id, Options = Controls.QuizSession.MakeOptions(x.Ru, w.Select(y => y.Ru)) }));
+                Push(qs);
+                if (what == "quizwrong") DispatcherTimer.RunOnce(qs.DebugWrong, TimeSpan.FromSeconds(1));
                 break;
         }
     }
