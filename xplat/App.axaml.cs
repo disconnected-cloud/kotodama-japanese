@@ -25,7 +25,7 @@ public partial class App : Application
         if (!ProgressStore.IsLoaded) ProgressStore.Load(); // на телефоне нет Program.Main
         bool light = ProgressStore.P.LightTheme || Environment.GetCommandLineArgs().Contains("--light");
         RequestedThemeVariant = light ? ThemeVariant.Light : ThemeVariant.Dark;
-        bool night = !light && ProgressStore.P.NightTheme;
+        bool night = !light && (ProgressStore.P.NightTheme || Environment.GetCommandLineArgs().Contains("--night"));
         ApplyPalette(Resources, light, ProgressStore.P.AccentColor, night);
         ApplyJpFont(Resources, ProgressStore.P.JpFontName);
 

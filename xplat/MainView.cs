@@ -144,8 +144,13 @@ public partial class MainView : UserControl
         _intro.Background = U.B("Bg");
         _root.Children.Add(_intro);
         // Масштаб интерфейса (настройка) — через LayoutTransformControl, разметка пересчитывается честно
-        Content = Math.Abs(ProgressStore.P.UiScale - 1) > 0.01
-            ? new LayoutTransformControl { LayoutTransform = new ScaleTransform(ProgressStore.P.UiScale, ProgressStore.P.UiScale), Child = _root }
+        double uiScale = ProgressStore.P.UiScale;
+#if DEBUG
+        // масштаб для снимков в высоком разрешении (видео-обзор): KOTODAMA_UISCALE=1.2
+        if (double.TryParse(Environment.GetEnvironmentVariable("KOTODAMA_UISCALE"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var us)) uiScale = us;
+#endif
+        Content = Math.Abs(uiScale - 1) > 0.01
+            ? new LayoutTransformControl { LayoutTransform = new ScaleTransform(uiScale, uiScale), Child = _root }
             : _root;
 
 

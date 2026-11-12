@@ -42,6 +42,8 @@ public class MainWindow : Window
             // другой размер экрана для проверки: KOTODAMA_PHONE=320x640
             if (Environment.GetEnvironmentVariable("KOTODAMA_PHONE")?.Split('x') is [var pw, var ph] && double.TryParse(pw, out var w) && double.TryParse(ph, out var h)) { Width = w; Height = h; }
         }
+        // размер окна для снимков (видео-обзор, скриншоты): KOTODAMA_SIZE=1600x900
+        else if (Environment.GetEnvironmentVariable("KOTODAMA_SIZE")?.Split('x') is [var sw, var sh] && double.TryParse(sw, out var w2) && double.TryParse(sh, out var h2)) { Width = w2; Height = h2; }
 #endif
         View = new MainView();
         Content = View;

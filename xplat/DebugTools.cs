@@ -53,8 +53,10 @@ public partial class MainView
     {
         DispatcherTimer.RunOnce(() =>
         {
-            var size = new PixelSize((int)Bounds.Width, (int)Bounds.Height);
-            using var rtb = new RenderTargetBitmap(size);
+            // KOTODAMA_SNAP_SCALE=1.2 — снимок в повышенном разрешении (для видео)
+            double k = double.TryParse(Environment.GetEnvironmentVariable("KOTODAMA_SNAP_SCALE"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var kk) ? kk : 1;
+            var size = new PixelSize((int)(Bounds.Width * k), (int)(Bounds.Height * k));
+            using var rtb = new RenderTargetBitmap(size, new Vector(96 * k, 96 * k));
             rtb.Render(this);
             rtb.Save(path);
             if (Win is { } w) w.Close(); else Environment.Exit(0);
@@ -216,6 +218,7 @@ public partial class MainView
             case "match": Push(new MatchRushGame()); break;
             case "build": Push(new WordBuilderGame()); break;
             case "listen": Push(new ListenCatchGame()); break;
+            case "gon": Push(new TextPage(ReaderPage.Texts.First(t => t.Book == "Лисёнок Гон"))); break;
             case "book": Push(new BookPage("Японские сказки", ReaderPage.Texts.Where(t => t.Book == "Японские сказки").ToArray())); break;
             case "setvoice": SettingsPage._tab = "voice"; NavigateRoot("settings"); break;
             case "learn": Push(Controls.LearnSession.Kanji(Db.Kanji.Take(5))); break;
