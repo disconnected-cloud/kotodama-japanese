@@ -161,7 +161,7 @@ public sealed class WordsPage : UserControl, IPage
         ph.IsVisible = _search.Length == 0 ? true : false;
         box.TextChanged += (_, _) =>
         {
-            _search = box.Text.Trim();
+            _search = (box.Text ?? "").Trim();
             ph.IsVisible = _search.Length == 0 ? true : false;
             Refill();
         };

@@ -437,6 +437,20 @@ public static class U
 
     public static T Also<T>(this T el, Action<T> a) { a(el); return el; }
 
+    /// <summary>Отцепить элемент от прежнего родителя — для полей, которые заново вставляются при перестройке страницы
+    /// (иначе Avalonia бросает «already has a visual parent»).</summary>
+    public static T Detach<T>(this T el) where T : Control
+    {
+        switch (el.Parent)
+        {
+            case Panel p: p.Children.Remove(el); break;
+            case ContentControl c when ReferenceEquals(c.Content, el): c.Content = null; break;
+            case Decorator d when ReferenceEquals(d.Child, el): d.Child = null; break;
+            case ContentPresenter cp when ReferenceEquals(cp.Content, el): cp.Content = null; break;
+        }
+        return el;
+    }
+
     /// <summary>Клик левой кнопкой (замена WPF MouseLeftButtonUp).</summary>
     public static T OnClick<T>(this T el, Action a) where T : Control
     {

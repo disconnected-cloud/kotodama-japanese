@@ -100,8 +100,9 @@ public static class Voicevox
             try { await proc.WaitForExitAsync(cts.Token); } catch (OperationCanceledException) { try { proc.Kill(); } catch { } return (false, "проверка зависла"); }
             var output = File.Exists(resultFile) ? await File.ReadAllTextAsync(resultFile) : "";
             bool ok = proc.ExitCode == 0;
-            if (ok) ProgressStore.P.Flags.Add("vv-ok"); else ProgressStore.P.Flags.Remove("vv-ok");
-            ProgressStore.Notify();
+            // прогресс меняется только в потоке интерфейса (проверка идёт в фоне)
+            void Apply() { if (ok) ProgressStore.P.Flags.Add("vv-ok"); else ProgressStore.P.Flags.Remove("vv-ok"); ProgressStore.Notify(); }
+            if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess()) Apply(); else Avalonia.Threading.Dispatcher.UIThread.Post(Apply);
             return (ok, ok ? "VOICEVOX работает" : "VOICEVOX не запустился: " + (output.Trim().Length > 0 ? output.Trim() : $"код {proc.ExitCode}"));
         }
         catch (Exception ex) { return (false, ex.Message); }
@@ -323,10 +324,7 @@ public static class Voicevox
             lock (Gate)
             {
                 EnsureReady(style);
-                Check(voicevox_synthesizer_create_audio_query(_synth, U8(text), style, out var qPtr), "разбор текста");
-                string q = Marshal.PtrToStringUTF8(qPtr)!;
-                voicevox_json_free(qPtr);
-                var node = JsonNode.Parse(q)!;
+                var node = Query(text, style);
                 // Меняем только существующие поля — формат AudioQuery строгий
                 void Set(string key, double v) { if (node[key] != null) node[key] = v; }
                 Set("speedScale", speed);
@@ -344,6 +342,85 @@ public static class Voicevox
         }
         catch (Exception ex) { LastError = ex.Message; return null; }
     }
+
+    static JsonNode RawQuery(string text, uint style)
+    {
+        Check(voicevox_synthesizer_create_audio_query(_synth, U8(text), style, out var qPtr), "разбор текста");
+        string q = Marshal.PtrToStringUTF8(qPtr)!;
+        voicevox_json_free(qPtr);
+        return JsonNode.Parse(q)!;
+    }
+
+    /// <summary>
+    /// AudioQuery с проверкой чтения: словарь OpenJTalk иногда читает кандзи не так (何 → なに вместо なん,
+    /// 今日 → こんにち, 一人 → いちにん). Если фраза есть в материалах и чтение не совпало с правильной каной —
+    /// озвучиваем по кане (частицы は/へ — как わ/え).
+    /// </summary>
+    static JsonNode Query(string text, uint style)
+    {
+        var node = RawQuery(text, style);
+        if (FixedText(text, node) is { } kana) node = RawQuery(kana, style);
+        return node;
+    }
+
+    static string? FixedText(string text, JsonNode query)
+    {
+        if (!text.Any(Reading.IsKanji) || Db.KanaFor(text) is not { } kana) return null;
+        var heard = string.Concat(query["accent_phrases"]!.AsArray().SelectMany(ph => ph!["moras"]!.AsArray()).Select(m => m!["text"]!.GetValue<string>()));
+        if (Reading.Phon(heard) == Reading.Phon(kana.Replace(" ", ""))) return null;
+        return SpeakableKana(kana);
+    }
+
+    /// <summary>Границы мор в синтезированной фразе (секунды) — по ним можно проиграть один слог образца.</summary>
+    public static List<(string kana, double start, double end)>? MoraTimes(string text, bool male, double speed = 1.0)
+    {
+        try
+        {
+            lock (Gate)
+            {
+                uint style = PickStyle(male);
+                EnsureReady(style);
+                var node = Query(text, style);
+                double t = 0.1; // prePhonemeLength, как в Synthesize
+                var res = new List<(string, double, double)>();
+                static double L(JsonNode? n) => n == null || n.GetValueKind() == JsonValueKind.Null ? 0 : n.GetValue<double>();
+                foreach (var ph in node["accent_phrases"]!.AsArray())
+                {
+                    foreach (var m in ph!["moras"]!.AsArray())
+                    {
+                        double d = L(m!["consonant_length"]) + L(m["vowel_length"]);
+                        res.Add((m["text"]!.GetValue<string>(), t / speed, (t + d) / speed));
+                        t += d;
+                    }
+                    if (ph["pause_mora"] is JsonNode pm && pm.GetValueKind() != JsonValueKind.Null) t += L(pm["vowel_length"]);
+                }
+                return res;
+            }
+        }
+        catch (Exception ex) { LastError = ex.Message; return null; }
+    }
+
+    /// <summary>Отладка: фразы, где словарь VOICEVOX читает кандзи иначе, чем в материалах.</summary>
+    public static List<string> ReadingMismatches(IEnumerable<string> texts)
+    {
+        var res = new List<string>();
+        lock (Gate)
+        {
+            uint style = PickStyle(false);
+            EnsureReady(style);
+            foreach (var t in texts)
+            {
+                var q = RawQuery(t, style);
+                if (FixedText(t, q) is { } k)
+                    res.Add($"{t} | vv: {string.Concat(q["accent_phrases"]!.AsArray().SelectMany(ph => ph!["moras"]!.AsArray()).Select(m => m!["text"]!.GetValue<string>()))} | надо: {k}");
+            }
+        }
+        return res;
+    }
+
+    /// <summary>Кана для озвучки: отдельные частицы は/へ читаются как わ/え, пробелы убираются.</summary>
+    public static string SpeakableKana(string kana) =>
+        string.Concat(kana.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(t => t switch { "は" => "わ", "へ" => "え", _ => t }));
 
     /// <summary>
     /// Чистка звука: убираем постоянную составляющую и низкочастотный гул (фильтр 70 Гц),
@@ -394,6 +471,7 @@ public static class Voicevox
             {
                 uint style = PickStyle(false);
                 EnsureReady(style);
+                if (FixedText(text, RawQuery(text, style)) is { } fixedKana) text = fixedKana;
                 Check(voicevox_synthesizer_create_accent_phrases(_synth, U8(text), style, out var p), "акцент");
                 var json = Marshal.PtrToStringUTF8(p)!;
                 voicevox_json_free(p);

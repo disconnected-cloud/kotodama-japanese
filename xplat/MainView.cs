@@ -150,9 +150,15 @@ public class MainView : UserControl
 
 
         ProgressStore.Changed += () => Dispatcher.UIThread.Post(UpdateStats);
-        AddHandler(KeyDownEvent, OnPreviewKey, RoutingStrategies.Tunnel);
+        // Клавиши ловим на уровне окна: если фокус ни на чём (клик по пустому месту), событие не доходит до MainView
         AttachedToVisualTree += (_, _) =>
         {
+            if (TopLevel.GetTopLevel(this) is { } keyTop && _keysOn != keyTop)
+            {
+                _keysOn?.RemoveHandler(KeyDownEvent, OnPreviewKey);
+                keyTop.AddHandler(KeyDownEvent, OnPreviewKey, RoutingStrategies.Tunnel);
+                _keysOn = keyTop;
+            }
             if (_opened) return;
             _opened = true;
             // системная кнопка «Назад» на телефоне — шаг назад по страницам
@@ -202,6 +208,22 @@ public class MainView : UserControl
         if (oi > 0 && oi + 1 < args.Length) DebugOpen(args[oi + 1]);
         int pt = Array.IndexOf(args, "--playtest");
         if (pt > 0 && pt + 1 < args.Length) DebugPlay(args[pt + 1]);
+        if (args.Contains("--ctrlk")) // проверка Ctrl+K без фокуса: событие приходит прямо в окно
+            DispatcherTimer.RunOnce(() => TopLevel.GetTopLevel(this)?.RaiseEvent(new KeyEventArgs
+            {
+                RoutedEvent = KeyDownEvent, Key = Key.K, PhysicalKey = PhysicalKey.K, KeyModifiers = KeyModifiers.Control, Source = TopLevel.GetTopLevel(this),
+            }), TimeSpan.FromSeconds(1));
+        int vr = Array.IndexOf(args, "--vvreadings");
+        if (vr > 0 && vr + 1 < args.Length)
+            Task.Run(() =>
+            {
+                var texts = Db.SpeechLessons.SelectMany(l => l.Items.Select(i => i.Jp)).Concat(Db.Dialogs.SelectMany(d => d.Lines.Select(l => l.Jp))).Distinct().ToList();
+                var bad = Voicevox.ReadingMismatches(texts);
+                System.IO.File.WriteAllLines(args[vr + 1], bad.Prepend($"{bad.Count} из {texts.Count}"));
+                Environment.Exit(0);
+            });
+        int nb = Array.IndexOf(args, "--noisebench");
+        if (nb > 0 && nb + 1 < args.Length) DebugNoiseBench(args[nb + 1]);
         int bi = Array.IndexOf(args, "--asrbench");
         if (bi > 0 && bi + 2 < args.Length) DebugAsrBench(args[bi + 1], args[bi + 2]);
         int si = Array.IndexOf(args, "--snap");
@@ -457,11 +479,16 @@ public class MainView : UserControl
         UpdateStats();
     }
 
+    TopLevel? _keysOn;
+
     void OnPreviewKey(object? sender, KeyEventArgs e)
     {
+        // Ctrl+K — и в русской раскладке (Ctrl+Л): проверяем и код клавиши, и её физическое место
+        if (Environment.GetEnvironmentVariable("KOTODAMA_KEYLOG") is { } kl) System.IO.File.AppendAllText(kl, $"{e.Key} {e.PhysicalKey} {e.KeyModifiers} intro={_intro.IsVisible}" + Environment.NewLine);
+        bool ctrlK = e.KeyModifiers.HasFlag(KeyModifiers.Control) && !e.KeyModifiers.HasFlag(KeyModifiers.Alt) && (e.Key == Key.K || e.PhysicalKey == PhysicalKey.K);
+        if (ctrlK && !_intro.IsVisible) { if (_palette == null) OpenPalette(); e.Handled = true; return; }
         if (_intro.IsVisible) { CloseIntro(fast: true); e.Handled = true; return; }
         if (_overlay != null && e.Key == Key.Escape) { CloseOverlay(); e.Handled = true; return; }
-        if (e.Key == Key.K && e.KeyModifiers == KeyModifiers.Control) { OpenPalette(); e.Handled = true; return; }
         if (_palette != null) return;
         var focused = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement();
         if (focused is TextBox && e.Key is not (Key.Enter or Key.Escape)) return;
@@ -663,6 +690,51 @@ public class MainView : UserControl
             rtb.Save(path);
             if (Win is { } w) w.Close(); else Environment.Exit(0);
         }, TimeSpan.FromSeconds(double.TryParse(Environment.GetEnvironmentVariable("KOTODAMA_SNAP_DELAY"), out var sd) ? sd : 2.5));
+    }
+
+
+    /// <summary>Шумоподавление: фразы с наложенным шумом (вентилятор + гул + шипение, SNR ≈ 8 дБ) — балл без фильтра и с ним.</summary>
+    async void DebugNoiseBench(string outPath)
+    {
+        var log = new List<string>();
+        void L(string x) { log.Add(x); System.IO.File.WriteAllLines(outPath, log); }
+        System.Diagnostics.Process.GetCurrentProcess().PriorityClass = System.Diagnostics.ProcessPriorityClass.BelowNormal;
+        await JDict.LoadAsync();
+        var rnd = new Random(7);
+        var items = Db.SpeechLessons.SelectMany(l => l.Items.Select(i => (i.Jp, i.KanaPlain))).Distinct().Where((_, k) => k % 4 == 0).Take(22).ToList();
+        int n = 0; long sClean = 0, sOff = 0, sOn = 0; int passOff = 0, passOn = 0;
+        foreach (var (jp, kana) in items)
+        {
+            var (x, rate) = Platform.Pcm.Decode((await Tts.GetAsync(jp))!);
+            var clean = Platform.Pcm.Resample(x, rate, 16000);
+            double rms = Math.Sqrt(clean.Average(v => (double)v * v));
+            double nAmp = rms / Math.Pow(10, (double.TryParse(Environment.GetEnvironmentVariable("KOTODAMA_SNR"), out var snr) ? snr : 8) / 20.0);
+            // запас тишины до и после — как в настоящей записи
+            var y = new float[clean.Length + 16000];
+            Array.Copy(clean, 0, y, 8000, clean.Length);
+            double lp = 0;
+            for (int i = 0; i < y.Length; i++)
+            {
+                double w = rnd.NextDouble() * 2 - 1;
+                lp = lp * 0.97 + w * 0.03;                       // «вентилятор» — низкочастотный шум
+                double v = lp * 6 + w * 0.35 + 0.3 * Math.Sin(2 * Math.PI * 50 * i / 16000.0);
+                y[i] += (float)(v * nAmp);
+            }
+            var wavClean = Recorder.ToWav(Platform.Pcm.ToPcm16(clean));
+            var wav = Recorder.ToWav(Platform.Pcm.ToPcm16(y));
+            Recording R(byte[] w) => new(w, true, Array.Empty<float>(), w.Length / 32000.0, 0.5f, 0.01f);
+            Asr.UseDenoise = false;
+            var c0 = await Views.SpeechUi.ScoreRecording(jp, kana, R(wavClean), CancellationToken.None);
+            var a = await Views.SpeechUi.ScoreRecording(jp, kana, R(wav), CancellationToken.None);
+            Asr.UseDenoise = true;
+            var b = await Views.SpeechUi.ScoreRecording(jp, kana, R(wav), CancellationToken.None);
+            n++; sClean += c0.Score; sOff += a.Score; sOn += b.Score;
+            if (a.Score >= 70) passOff++;
+            if (b.Score >= 70) passOn++;
+            L($"{c0.Score,3} {a.Score,3} -> {b.Score,3}  {jp} | off '{a.Heard}' on '{b.Heard}'");
+        }
+        L($"n={n} clean={sClean / Math.Max(1, n)} noisy-off={sOff / Math.Max(1, n)} noisy-on={sOn / Math.Max(1, n)} pass70 off={passOff} on={passOn}");
+        Environment.Exit(0);
     }
 
     /// <summary>Сравнение моделей распознавания на фразах уроков (озвучка из кэша): время и баллы обоих проходов.</summary>

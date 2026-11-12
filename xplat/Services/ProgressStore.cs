@@ -33,6 +33,8 @@ public sealed class Progress
     public bool Petals { get; set; }
     public bool Intro { get; set; } = true;
     public bool LightTheme { get; set; }
+    public bool NightTheme { get; set; }               // «Ночь»: чёрный фон, приглушённые цвета
+    public string JpFontName { get; set; } = "";       // шрифт японского текста, "" — системный по умолчанию
     public double UiScale { get; set; } = 1.0;
     public bool Sounds { get; set; } = true;
     public string TtsEngine { get; set; } = "auto";   // auto | online | offline
@@ -119,23 +121,31 @@ public static class ProgressStore
     /// <summary>Отладочные снимки экрана не должны менять настоящий прогресс.</summary>
     public static bool ReadOnly;
 
+    static readonly object SaveGate = new();
+
+    /// <summary>Сохранить прогресс. Вызывать из потока интерфейса: данные меняются только там, и сериализация
+    /// из фонового потока могла сорваться («коллекция изменена») — тогда изменения терялись до следующей записи.</summary>
     public static void Save()
     {
         if (ReadOnly) return;
         try
         {
-            var tmp = FilePath + ".tmp";
-            File.WriteAllBytes(tmp, JsonSerializer.SerializeToUtf8Bytes(P, ProgressJson.Default.Progress));
-            File.Move(tmp, FilePath, true);
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(P, ProgressJson.Default.Progress);
+            lock (SaveGate)
+            {
+                var tmp = FilePath + ".tmp";
+                File.WriteAllBytes(tmp, bytes);
+                File.Move(tmp, FilePath, true);
+            }
         }
-        catch { }
+        catch (Exception ex) { CrashReport.Log(ex); }
     }
 
     static void Touch()
     {
         Changed?.Invoke();
         // Сохранение через 2 с после последнего изменения (серия правок — одна запись на диск)
-        _saveTimer ??= new Timer(_ => Save(), null, Timeout.Infinite, Timeout.Infinite);
+        _saveTimer ??= new Timer(_ => Avalonia.Threading.Dispatcher.UIThread.Post(Save), null, Timeout.Infinite, Timeout.Infinite);
         _saveTimer.Change(TimeSpan.FromSeconds(2), Timeout.InfiniteTimeSpan);
     }
 

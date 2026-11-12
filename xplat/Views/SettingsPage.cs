@@ -110,7 +110,15 @@ public sealed class SettingsPage : UserControl, IPage
 
             case "look":
                 yield return Section("Тема", "Применяется после перезапуска.",
-                    Choice(new[] { 0, 1 }, p.LightTheme ? 1 : 0, v => { p.LightTheme = v == 1; AskRestart(); }, v => v == 0 ? "Тёмная" : "Светлая"));
+                    Choice(new[] { 0, 2, 1 }, p.LightTheme ? 1 : p.NightTheme ? 2 : 0, v => { p.LightTheme = v == 1; p.NightTheme = v == 2; AskRestart(); }, v => v switch { 0 => "Тёмная", 1 => "Светлая", _ => "Ночь" }));
+                var fonts = Enumerable.Range(0, App.JpFonts.Length).Where(i => App.FontInstalled(App.JpFonts[i].family)).ToArray();
+                yield return Section("Шрифт японского текста", "«Учебник» — как в японских школьных прописях: формы знаков ближе к рукописным. Применяется после перезапуска.", U.Stack(
+                    Choice(fonts, Math.Max(0, Array.FindIndex(App.JpFonts, f => f.name == p.JpFontName)), v => { p.JpFontName = App.JpFonts[v].name; AskRestart(); }, v => App.JpFonts[v].title),
+                    U.Row(18, fonts.Select(i => (Control)new TextBlock
+                    {
+                        Text = "日本語 あア 字", FontSize = 20, Foreground = U.B("Text"),
+                        FontFamily = App.JpFonts[i].family.Length > 0 ? new FontFamily(App.JpFonts[i].family) : U.R<FontFamily>("JpFont"),
+                    }.Tip(App.JpFonts[i].title)).ToArray()).M(0, 12, 0, 0)));
                 yield return Section("Акцентный цвет", null, Swatches());
                 yield return Section("Масштаб интерфейса", null,
                     Choice(new[] { 90, 100, 115, 130 }, (int)Math.Round(p.UiScale * 100), v => { p.UiScale = v / 100.0; AskRestart(); }, v => v + "%"));

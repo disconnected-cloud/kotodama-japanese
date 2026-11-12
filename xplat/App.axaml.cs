@@ -25,7 +25,9 @@ public partial class App : Application
         if (!ProgressStore.IsLoaded) ProgressStore.Load(); // на телефоне нет Program.Main
         bool light = ProgressStore.P.LightTheme || Environment.GetCommandLineArgs().Contains("--light");
         RequestedThemeVariant = light ? ThemeVariant.Light : ThemeVariant.Dark;
-        ApplyPalette(Resources, light, ProgressStore.P.AccentColor);
+        bool night = !light && ProgressStore.P.NightTheme;
+        ApplyPalette(Resources, light, ProgressStore.P.AccentColor, night);
+        ApplyJpFont(Resources, ProgressStore.P.JpFontName);
 
         Dispatcher.UIThread.UnhandledException += (_, e) =>
         {
@@ -59,7 +61,29 @@ public partial class App : Application
     }
 
     /// <summary>Палитра «тихий минимализм, один акцент (сакура)». Кисти кладутся в ресурсы до создания окна.</summary>
-    public static void ApplyPalette(IResourceDictionary r, bool light, string accent)
+    /// <summary>Шрифты для японского: учебный (как в школьных прописях) удобнее для запоминания формы знаков.</summary>
+    public static readonly (string name, string title, string family)[] JpFonts =
+    {
+        ("", "Обычный", ""),
+        ("kyokasho", "Учебник", "UD Digi Kyokasho N-R"),
+        ("ud", "Чёткий", "BIZ UDGothic"),
+        ("meiryo", "Meiryo", "Meiryo"),
+        ("mincho", "Книжный", "Yu Mincho"),
+    };
+
+    const string JpFallback = "Yu Gothic UI, Meiryo, Noto Sans CJK JP, Noto Sans JP, Source Han Sans JP, IPAGothic, TakaoGothic, VL Gothic, sans-serif";
+
+    public static bool FontInstalled(string family) =>
+        family.Length == 0 || FontManager.Current.SystemFonts.Any(f => string.Equals(f.Name, family, StringComparison.OrdinalIgnoreCase));
+
+    static void ApplyJpFont(IResourceDictionary r, string key)
+    {
+        var f = JpFonts.FirstOrDefault(x => x.name == key).family;
+        if (string.IsNullOrEmpty(f) || !FontInstalled(f)) return;
+        r["JpFont"] = new FontFamily(f + ", " + JpFallback);
+    }
+
+    public static void ApplyPalette(IResourceDictionary r, bool light, string accent, bool night = false)
     {
         var dark = new Dictionary<string, string>
         {
@@ -81,7 +105,17 @@ public partial class App : Application
             ["GreenGradient"] = "#3AA77A", ["GlassStroke"] = "#E6E3DF", ["CardFill"] = "#FFFFFF", ["HoverTint"] = "#000000",
             ["SelectedTint"] = "#0D000000", ["Thumb"] = "#26000000", ["ThumbHover"] = "#4D000000", ["CaptionHover"] = "#12000000", ["OnAccent"] = "#FFFFFF",
         };
-        var pal = light ? lite : dark;
+        // «Ночь»: настоящий чёрный (OLED, темнота), текст и акценты приглушены, чтобы не слепили
+        var nightPal = new Dictionary<string, string>(dark)
+        {
+            ["Bg"] = "#000000", ["Sidebar"] = "#000000", ["Surface"] = "#0B0B0D", ["SurfaceSolid"] = "#0B0B0D", ["Surface2"] = "#121215",
+            ["Surface3"] = "#1A1A1F", ["Stroke"] = "#16161A", ["StrokeStrong"] = "#24242A", ["Text"] = "#C4C2C8", ["Muted"] = "#76747D",
+            ["Faint"] = "#4A4950", ["Accent"] = "#C2678A", ["AccentHover"] = "#CC7896", ["Accent2"] = "#8273CC", ["AccentSoft"] = "#1FC2678A",
+            ["Gold"] = "#B8924D", ["Good"] = "#4A9F7B", ["GoodSoft"] = "#1F4A9F7B", ["Bad"] = "#BF5A5A", ["BadSoft"] = "#1FBF5A5A",
+            ["Info"] = "#5A86BF", ["AccentGradient"] = "#BF6587", ["GoldGradient"] = "#B38C49", ["CoolGradient"] = "#5875B8",
+            ["GreenGradient"] = "#46977A", ["GlassStroke"] = "#16161A", ["CardFill"] = "#0B0B0D", ["SelectedTint"] = "#0AFFFFFF",
+        };
+        var pal = light ? lite : night ? nightPal : dark;
         var (d, l) = accent switch
         {
             "mint" => ("#4FD1B5", "#1E9E85"),
@@ -92,6 +126,7 @@ public partial class App : Application
         if (d.Length > 0)
         {
             var c = Color.Parse(light ? l : d);
+            if (night) c = Color.FromRgb((byte)(c.R * 0.8), (byte)(c.G * 0.8), (byte)(c.B * 0.8));
             pal["Accent"] = pal["AccentGradient"] = pal["AccentHover"] = c.ToString();
             pal["AccentSoft"] = Color.FromArgb(0x1F, c.R, c.G, c.B).ToString();
         }

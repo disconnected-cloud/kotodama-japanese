@@ -86,11 +86,11 @@ public sealed class MicCheckPage : UserControl, IPage
         var row = U.Cols("auto", "*");
         row.Margin = new Thickness(0, 14, 0, 0);
         row.Children.Add(U.Btn("Записать", Record, "Primary", ""));
-        row.Children.Add(_meter.CenterV().M(16, 0, 0, 0).Col(1));
+        row.Children.Add(_meter.Detach().CenterV().M(16, 0, 0, 0).Col(1));
         _meter.HorizontalAlignment = HorizontalAlignment.Left;
         test.Children.Add(row);
-        test.Children.Add(_status.M(0, 12, 0, 0));
-        test.Children.Add(_result.M(0, 8, 0, 0));
+        test.Children.Add(_status.Detach().M(0, 12, 0, 0));
+        test.Children.Add(_result.Detach().M(0, 8, 0, 0));
         root.Children.Add(Section("Пробная запись", test));
 
         if (OperatingSystem.IsWindows())

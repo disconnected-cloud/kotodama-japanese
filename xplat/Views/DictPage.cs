@@ -79,7 +79,7 @@ public sealed class DictPage : UserControl, IPage
         search.Children.Add(_box);
         var ph = U.T("Например: кошка · neko · ねこ · 猫", "Muted", 16);
         ph.IsHitTestVisible = false; ph.Margin = new Thickness(46, 0, 0, 0); ph.VerticalAlignment = VerticalAlignment.Center;
-        _box.TextChanged += (_, _) => ph.IsVisible = _box.Text.Length == 0 ? true : false;
+        _box.TextChanged += (_, _) => ph.IsVisible = string.IsNullOrEmpty(_box.Text);
         search.Children.Add(ph);
         search.Children.Add(new TextBlock { Text = "", FontFamily = U.R<FontFamily>("Icons"), FontSize = 16, Foreground = U.B("Muted"), Margin = new Thickness(16, 0, 0, 0), IsHitTestVisible = false, VerticalAlignment = VerticalAlignment.Center });
         root.Children.Add(search.RowAt(1));

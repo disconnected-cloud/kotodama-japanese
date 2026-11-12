@@ -80,6 +80,20 @@ public static class Db
     public static string[]? Strokes(string ch) => _strokes.Value.TryGetValue(ch, out var s) ? s : null;
 
     /// <summary>Латиница для предложения: заранее размеченные границы слов и частицы (MeCab) → Хэпбёрн.</summary>
+    /// <summary>Правильное чтение фразы или слова из материалов приложения (кана с пробелами между словами) — для проверки озвучки.</summary>
+    public static string? KanaFor(string jp) => _kanaMap.Value.TryGetValue(jp.Trim(), out var k) ? k : null;
+    static readonly Lazy<Dictionary<string, string>> _kanaMap = new(() =>
+    {
+        var m = new Dictionary<string, string>();
+        void Add(string jp, string kana) { if (jp.Length > 0 && kana.Length > 0) m.TryAdd(jp.Trim(), kana); }
+        foreach (var l in SpeechLessons) foreach (var it in l.Items) Add(it.Jp, it.Kana);
+        foreach (var d in Dialogs) foreach (var ln in d.Lines) Add(ln.Jp, ln.Kana);
+        foreach (var w in Words) Add(w.Jp, w.Kana);
+        foreach (var k in Kanji) foreach (var e in k.Examples) Add(e.Jp, e.Kana);
+        foreach (var (jp, seg) in _romaji.Value) Add(jp, seg);
+        return m;
+    });
+
     public static string RomajiFor(string jp, string kana) =>
         _romaji.Value.TryGetValue(jp, out var seg) ? Services.Kana.ToRomaji(seg) : Services.Kana.ToRomaji(kana.Length > 0 ? kana : jp);
 

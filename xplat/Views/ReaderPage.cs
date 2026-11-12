@@ -127,7 +127,7 @@ public sealed class ReaderPage : UserControl, IPage
         var own = U.Stack(U.T("Свой текст", "H3", 15), U.T("Вставь любой японский текст — он будет разобран по словарю (69 000 слов).", "Muted").M(0, 4, 0, 10), box,
             U.Btn("Читать", async () =>
             {
-                if (box.Text.Trim().Length == 0) return;
+                if (string.IsNullOrWhiteSpace(box.Text)) return;
                 await JDict.LoadAsync();
                 Shell.Open(new TextPage(ParseOwn(box.Text)));
             }, "Primary", "").Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 10, 0, 0); }));
@@ -189,7 +189,7 @@ public sealed class TextPage : UserControl, IPage
             root.Children.Add(Art.Say("Режим аудирования: текст спрятан. Слушай главу целиком, потом отвечай на вопросы. Нажми на строку, чтобы подсмотреть.", Mood.Think, 90).M(0, 0, 0, 12));
         _cards.Clear();
         foreach (var s in _t.Sentences) root.Children.Add(SentenceView(s));
-        root.Children.Add(_popup.M(0, 6, 0, 0));
+        root.Children.Add(_popup.Detach().M(0, 6, 0, 0)); // при перестройке (переключатели) старая страница ещё держит подсказку
         if (_t.Questions.Length > 0) root.Children.Add(Questions());
         Content = U.Page(new Grid { Children = { root } });
     }

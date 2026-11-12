@@ -82,6 +82,27 @@ public static class Speech
         return await PlayPcmAsync(x, rate, my);
     }
 
+    /// <summary>Фрагмент файла (start..end, секунды) с замедлением — например, одна мора образца.</summary>
+    public static async Task<bool> PlaySliceAsync(string path, double start, double end, double speed = 0.75)
+    {
+        int my = ++_gen;
+        float[] x; int rate;
+        try
+        {
+            (x, rate) = await Task.Run(() =>
+            {
+                var (d, r) = Pcm.Decode(path);
+                int a = Math.Clamp((int)(start * r), 0, d.Length), b = Math.Clamp((int)(end * r), a, d.Length);
+                var part = d[a..b];
+                int fade = Math.Min(part.Length / 4, r / 100); // 10 мс — без щелчков на срезе
+                for (int i = 0; i < fade; i++) { part[i] *= (float)i / fade; part[^(i + 1)] *= (float)i / fade; }
+                return (Pcm.TimeStretch(part, r, speed), r);
+            });
+        }
+        catch { return false; }
+        return await PlayPcmAsync(x, rate, my);
+    }
+
     static async Task<bool> PlayPcmAsync(float[] x, int rate, int gen)
     {
         if (gen != _gen || x.Length == 0) return false;

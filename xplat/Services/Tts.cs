@@ -39,7 +39,7 @@ public static class Tts
     public static string CachePath(string text, bool slow, bool male)
     {
         bool off = UseOffline;
-        var voice = off ? "vv2-" + Voicevox.PickStyle(male) : male ? "m" : "f"; // vv2 — после чистки звука
+        var voice = off ? "vv3-" + Voicevox.PickStyle(male) : male ? "m" : "f"; // vv3 — после чистки звука и проверки чтения кандзи
         var key = $"{voice}|{(slow ? "s" : "n")}|{text.Trim()}";
         var hash = Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes(key)))[..20];
         return Path.Combine(CacheDir, hash + (off ? ".wav" : ".mp3"));

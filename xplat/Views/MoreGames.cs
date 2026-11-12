@@ -178,6 +178,7 @@ public sealed class WordBuilderGame : Grid, IPage, IKeyTarget
 
     void Next()
     {
+        if (!this.IsAttached()) return; // игру закрыли, пока шла пауза после ответа — не продолжаем и не озвучиваем
         if (_round >= _words.Count) { Children.Clear(); Children.Add(GameUi.Over($"Ошибок: {_mistakes}", _points, Key, Start)); return; }
         _locked = false;
         _bar.Value = _round;
@@ -327,6 +328,7 @@ public sealed class ListenCatchGame : Grid, IPage, IKeyTarget
 
     void Next()
     {
+        if (!this.IsAttached()) return;
         if (_round >= Rounds) { _tick.Stop(); Children.Clear(); Children.Add(GameUi.Over($"Поймано {_hits} из {Rounds}", _points, Key, Start)); return; }
         _mascot.Content = Art.Chibi(64, Mood.Think);
         var opts = _pool.Skip(_round * 3 % Math.Max(1, _pool.Count - 6)).Take(6).ToList();

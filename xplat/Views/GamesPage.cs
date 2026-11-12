@@ -134,7 +134,7 @@ public sealed class KanaRainGame : Grid, IPage
 
     void Check()
     {
-        var t = _input.Text.Trim().ToLowerInvariant();
+        var t = (_input.Text ?? "").Trim().ToLowerInvariant();
         if (t.Length == 0) return;
         int hit = _drops.FindIndex(d => d.cell.Romaji == t || (Alt.TryGetValue(d.cell.Romaji, out var a) && a.Contains(t)));
         if (hit < 0)

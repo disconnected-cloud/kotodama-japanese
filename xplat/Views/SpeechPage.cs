@@ -115,30 +115,23 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
 
     readonly StackPanel _dots = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
     readonly ContentControl _phrase = new();
-    readonly Border _micBtn;
-    readonly TextBlock _micIcon = new() { Text = "", FontSize = 26, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-    readonly Ellipse _ring = new() { Width = 84, Height = 84, StrokeThickness = 2, IsHitTestVisible = false, Opacity = 0 };
+    readonly MicButton _mic = new();
     readonly SpeechUi.LevelMeter _meter = new();
     readonly TextBlock _status = new() { FontSize = 13, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0) };
     readonly ContentControl _result = new();
+    readonly ContentControl _kanaHost = new() { HorizontalAlignment = HorizontalAlignment.Center };
     readonly Grid _wrap = new();
 
     public SpeechLessonPage(SpeechLesson l)
     {
         _l = l;
-        _micIcon.FontFamily = U.R<FontFamily>("Icons");
-        _micIcon.Foreground = new SolidColorBrush(Color.FromRgb(0x1A, 0x0B, 0x11));
         _status.Foreground = U.B("Muted");
-        _ring.Stroke = U.B("Accent");
-        _micBtn = new Border { Width = 84, Height = 84, CornerRadius = new CornerRadius(42), Background = U.B("Accent"), Cursor = Cursors.Hand, Child = _micIcon}.Tip("Говорить (пробел)");
-        _micBtn.PointerReleased += (_, _) => ToggleRecord();
-        var mic = new Grid { Width = 140, Height = 120, HorizontalAlignment = HorizontalAlignment.Center };
-        mic.Children.Add(_ring); mic.Children.Add(_micBtn);
+        _mic.Click += ToggleRecord;
 
         var root = new StackPanel { MaxWidth = 820, HorizontalAlignment = HorizontalAlignment.Center };
         root.Children.Add(_dots);
         root.Children.Add(_phrase.M(0, 16, 0, 0));
-        root.Children.Add(mic.M(0, 10, 0, 0));
+        root.Children.Add(_mic.M(0, 0, 0, -12));
         root.Children.Add(_meter);
         var shadow = U.Btn("Шэдоуинг: говори вместе с носителем", Shadow, "Ghost", "\uE7F5");
         shadow.HorizontalAlignment = HorizontalAlignment.Center; ToolTip.SetTip(shadow, "Лучше в наушниках: запись начнётся одновременно с образцом");
@@ -149,7 +142,7 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
         var nav = U.Cols("auto", "*", "auto");
         nav.Margin = new Thickness(0, 20, 0, 0);
         nav.Children.Add(U.Btn("Назад", () => Go(-1), "Ghost", ""));
-        nav.Children.Add(U.T("Пробел — говорить · L — слушать · S — медленно", "Muted", 12).Also(t => t.TextTrimming = TextTrimming.CharacterEllipsis).DesktopOnly().Center().CenterV().Col(1));
+        nav.Children.Add(U.T("Пробел — говорить · L — слушать · S — медленно", "Muted", 12).Also(t => t.TextTrimming = TextTrimming.CharacterEllipsis).DesktopOnly().Center().CenterV().M(16, 0, 16, 0).Col(1));
         nav.Children.Add(U.Btn("Дальше", () => Go(1), "", "").Col(2));
         root.Children.Add(nav);
 
@@ -170,7 +163,9 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
         top.Children.Add(U.Row(4, U.SpeakBtn(() => p.Jp, true), U.SpeakBtn(() => p.Jp)).Col(1));
         sp.Children.Add(top);
         sp.Children.Add(U.Jp(p.Jp, p.Jp.Length > 12 ? 32 : 40, null, true).Center().M(0, 6, 0, 0));
-        if (p.KanaPlain != p.Jp) sp.Children.Add(U.Jp(p.KanaPlain, 17, U.B("Accent")).Center().M(0, 6, 0, 0));
+        // строка каны; после попытки здесь же подсвечиваются слоги с ошибками (нажатие — послушать только слог)
+        _kanaHost.Content = p.KanaPlain != p.Jp ? U.Jp(p.KanaPlain, 17, U.B("Accent")).Center() : null;
+        sp.Children.Add(_kanaHost.Detach().M(0, 6, 0, 0));
         sp.Children.Add(U.T(p.Romaji, "Body", 15, U.B("Muted")).Center().M(0, 2, 0, 0));
         sp.Children.Add(U.T(p.Ru, "H3", 17).Center().M(0, 12, 0, 0));
         if (p.Tip != null)
@@ -203,6 +198,7 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
         _last = null;
         if (ProgressStore.P.AutoSpeak) Speech.Say(p.Jp);
         _ = Tts.GetAsync(p.Jp, true); // заранее готовим медленный вариант
+        if (_i + 1 < _l.Items.Length) _ = Tts.GetAsync(_l.Items[_i + 1].Jp); // и следующую фразу — «Дальше» звучит без задержки
     }
 
     void RenderDots()
@@ -251,7 +247,7 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
         var p = P;
         try
         {
-            var (check, rec) = await SpeechUi.RecordAndScore(p.Jp, p.KanaPlain, _rec, _cts.Token, s => _status.Text = s);
+            var (check, rec) = await SpeechUi.RecordAndScore(p.Jp, p.KanaPlain, _rec, _cts.Token, s => { _status.Text = s; _mic.Set(MicButton.Mode.Thinking); _meter.Attach(null); });
             _last = rec;
             ProsodyResult? pr = null;
             int textScore = check.Score;
@@ -295,8 +291,8 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
             _rec.Stop();
             var rec = await task;
             _last = rec;
-            _status.Text = "Распознаю…";
-            var check = await SpeechUi.ScoreRecording(p.Jp, p.KanaPlain, rec, _cts.Token, s => _status.Text = s);
+            _status.Text = "Распознаю…"; _mic.Set(MicButton.Mode.Thinking); _meter.Attach(null);
+            var check = await SpeechUi.ScoreRecording(p.Jp, p.KanaPlain, rec, _cts.Token, s => { _status.Text = s; _mic.Set(MicButton.Mode.Thinking); _meter.Attach(null); });
             int textScore = check.Score;
             var pr = rec.Heard ? await SpeechUi.AnalyzeProsody(p.Jp, rec) : null;
             if (pr != null) check = check.WithScore(SpeechUi.Combine(check.Score, pr));
@@ -309,11 +305,8 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
 
     void SetMic(bool on)
     {
-        _micIcon.Text = on ? "" : "";
-        _micBtn.Background = on ? U.B("Gold") : U.B("Accent");
+        _mic.Set(on ? MicButton.Mode.Recording : MicButton.Mode.Idle, _rec);
         _meter.Attach(on ? _rec : null);
-        Anim.Pulse(_ring, on);
-        if (!on) _ring.Opacity = 0;
     }
 
     void ShowResult(Phrase p, SpeechCheck r, Recording? rec, ProsodyResult? pr = null, int textScore = 0)
@@ -327,6 +320,12 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
             return;
         }
         if (r.Heard.Length > 0) ProgressStore.SpeechResult(p.Id, r.Score);
+        if (r.HeardKana.Length > 0)
+        {
+            var moras = SpeechDetail.PhraseMoras(p.Jp, p.KanaPlain, r.HeardKana, r.Tokens, 20);
+            _kanaHost.Content = moras;
+            Anim.FadeUp(moras, 0, 6, 260);
+        }
         _status.Text = "";
         var sp = new StackPanel();
 
@@ -460,7 +459,7 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
         for (int i = n - 1; i >= 0; i--)
             for (int j = m - 1; j >= 0; j--)
                 dp[i, j] = Eq(target[i], hh[j]) ? dp[i + 1, j + 1] + 1 : Math.Max(dp[i + 1, j], dp[i, j + 1]);
-        var tb = new TextBlock { FontFamily = U.R<FontFamily>("JpFont"), FontSize = 20, TextWrapping = TextWrapping.Wrap };
+        var tb = new TextBlock { FontFamily = U.R<FontFamily>("JpFont"), FontSize = 20, TextWrapping = TextWrapping.Wrap, Inlines = new InlineCollection() };
         int x = 0, y = 0;
         while (x < n || y < m)
         {

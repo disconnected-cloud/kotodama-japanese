@@ -68,6 +68,9 @@ public sealed class Palette : Grid
     {
         foreach (var (k, ic, t) in new[] { ("home", "家", "Главная"), ("path", "道", "Путь обучения"), ("kana", "あ", "Кана"), ("words", "語", "Слова"), ("kanji", "漢", "Кандзи"), ("grammar", "文", "Грамматика"), ("speech", "話", "Говорение"), ("dialogs", "対", "Диалоги"), ("dict", "辞", "Словарь"), ("reader", "読", "Чтение"), ("review", "復", "Повторение"), ("trainers", "練", "Тренажёры"), ("settings", "設", "Настройки") })
             yield return new Item(ic, t, "Раздел", () => Shell.Go(k));
+        yield return new Item("学", "Учиться", "Умная сессия на сегодня", Views.StudyPage.Start);
+        yield return new Item("進", "Прогресс", "Раздел · активность, память, навыки", () => Shell.Go("stats"));
+        yield return new Item("日", "Япония", "Раздел", () => Shell.Go("japan"));
         yield return new Item("耳", "Проверка микрофона", "Настройка", () => Shell.Open(new MicCheckPage()));
         yield return new Item("活", "Спряжение глаголов", "Тренажёр", () => Shell.Open(Conj.Quiz()));
         yield return new Item("数", "Счётные суффиксы", "Тренажёр", () => Shell.Open(new CountersPage()));
@@ -88,7 +91,7 @@ public sealed class Palette : Grid
 
     void Refresh()
     {
-        var q = _box.Text.Trim();
+        var q = (_box.Text ?? "").Trim();
         var ql = q.ToLowerInvariant();
         var items = All().Where(i => q.Length == 0 || i.Title.Contains(q, StringComparison.OrdinalIgnoreCase) || i.Sub.Contains(q, StringComparison.OrdinalIgnoreCase)).Take(q.Length == 0 ? 14 : 8).ToList();
         if (q.Length >= 1)

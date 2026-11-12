@@ -85,19 +85,13 @@ public sealed class PairsPage : UserControl, IPage, IKeyTarget
     readonly TextBlock _status = new() { FontSize = 13, TextAlignment = TextAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0) };
     readonly ContentControl _result = new();
     readonly SpeechUi.LevelMeter _meter = new();
-    readonly Border _micBtn;
-    readonly TextBlock _micIcon = new() { Text = "", FontSize = 26, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-    readonly Ellipse _ring = new() { Width = 84, Height = 84, StrokeThickness = 2, IsHitTestVisible = false, Opacity = 0 };
+    readonly MicButton _mic = new();
     readonly TextBlock _scoreText = U.T("", "Muted", 12.5);
 
     public PairsPage()
     {
-        _micIcon.FontFamily = U.R<FontFamily>("Icons");
-        _micIcon.Foreground = new SolidColorBrush(Color.FromRgb(0x1A, 0x0B, 0x11));
         _status.Foreground = U.B("Muted");
-        _ring.Stroke = U.B("Accent");
-        _micBtn = new Border { Width = 84, Height = 84, CornerRadius = new CornerRadius(42), Background = U.B("Accent"), Cursor = Cursors.Hand, Child = _micIcon}.Tip("Говорить (пробел)");
-        _micBtn.PointerReleased += (_, _) => Record();
+        _mic.Click += Record;
         Unloaded += (_, _) => { _cts?.Cancel(); _rec?.Stop(); };
         Asr.Warmup();
         Build();
@@ -133,15 +127,14 @@ public sealed class PairsPage : UserControl, IPage, IKeyTarget
         _root.Children.Add(_card);
 
         var mic = new Grid { Width = 140, Height = 116, HorizontalAlignment = HorizontalAlignment.Center };
-        mic.Children.Add(_ring); mic.Children.Add(_micBtn);
-        _root.Children.Add(mic.M(0, 12, 0, 0));
+        _root.Children.Add(_mic.M(0, 4, 0, -12));
         _root.Children.Add(_meter);
         _root.Children.Add(_status);
         _root.Children.Add(_result.M(0, 12, 0, 0));
 
         var nav = U.Cols("auto", "*", "auto");
         nav.Margin = new Thickness(0, 18, 0, 0);
-        nav.Children.Add(_scoreText.CenterV());
+        nav.Children.Add(_scoreText.Detach().CenterV());
         nav.Children.Add(U.T("Пробел — говорить · L — послушать · → — другая пара", "Muted", 12).DesktopOnly().Center().CenterV().Col(1));
         nav.Children.Add(U.Btn("Другая пара", NextPair, "", "").Col(2));
         _root.Children.Add(nav);
@@ -211,7 +204,7 @@ public sealed class PairsPage : UserControl, IPage, IKeyTarget
             _last = r;
             SetMic(false);
             if (r.Seconds < 0.2 || (!r.Heard && r.PeakLevel < 0.02f)) { _status.Text = "Голос не услышан — говори громче или проверь микрофон в разделе «Говорение»."; return; }
-            _status.Text = "Распознаю…";
+            _status.Text = "Распознаю…"; _mic.Set(MicButton.Mode.Thinking); _meter.Attach(null);
             await JDict.LoadAsync();
             // В подсказке оба слова: модель знает словарь пары, но не знает, какое из них «правильное»
             var (text, _) = await Asr.TranscribeAsync(r.Wav, _cts.Token, $"{pair.A.Shown}、{pair.B.Shown}");
@@ -276,11 +269,8 @@ public sealed class PairsPage : UserControl, IPage, IKeyTarget
 
     void SetMic(bool on)
     {
-        _micIcon.Text = on ? "" : "";
-        _micBtn.Background = on ? U.B("Gold") : U.B("Accent");
+        _mic.Set(on ? MicButton.Mode.Recording : MicButton.Mode.Idle, _rec);
         _meter.Attach(on ? _rec : null);
-        Anim.Pulse(_ring, on);
-        if (!on) _ring.Opacity = 0;
     }
 
     /// <summary>Тренировка слуха: звучит одно слово пары — выбери, какое.</summary>

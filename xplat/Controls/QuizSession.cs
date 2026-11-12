@@ -69,7 +69,7 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
         _all = questions.ToList();
         _finished = finished;
         _auto = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(750) };
-        _auto.Tick += (_, _) => { _auto.Stop(); Next(); };
+        _auto.Tick += (_, _) => { _auto.Stop(); if (TopLevel.GetTopLevel(this) != null) Next(); };
 
         Margin = new Thickness(40, 8, 40, 28);
         _main.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -202,10 +202,10 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
     void Choose(Button b)
     {
         if (_locked) return;
-        bool ok = (string)b.Tag == Q.Answer;
+        bool ok = b.Tag as string == Q.Answer;
         foreach (Button o in _options.Children)
         {
-            if ((string)o.Tag == Q.Answer) { o.Background = U.B("GoodSoft"); o.BorderBrush = U.B("Good"); }
+            if (o.Tag as string == Q.Answer) { o.Background = U.B("GoodSoft"); o.BorderBrush = U.B("Good"); }
             else if (o == b) { o.Background = U.B("BadSoft"); o.BorderBrush = U.B("Bad"); }
             else o.Opacity = 0.45;
         }
@@ -216,7 +216,7 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
     void CheckTyped()
     {
         if (_locked) return;
-        var text = _input.Text.Trim().ToLowerInvariant().Replace(" ", "");
+        var text = (_input.Text ?? "").Trim().ToLowerInvariant().Replace(" ", "");
         if (text.Length == 0) return;
         var alts = Q.Answer.Split('|').Select(a => a.Trim().ToLowerInvariant().Replace(" ", ""));
         bool ok = alts.Contains(text);

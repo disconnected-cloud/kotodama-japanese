@@ -56,7 +56,7 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget
     readonly Dialog _d;
     int _role = 1;
     public string Title => _d.Title;
-    readonly StackPanel _chat = new();
+    readonly StackPanel _chat = new() { Margin = new Thickness(0, 0, 14, 0) }; // место под полосу прокрутки — реплики справа не обрезаются
     readonly ScrollViewer _scroll;
     readonly List<Border> _bubbles = new();
     readonly List<Control> _full = new();   // полное содержимое реплики (для режима «по памяти»)
@@ -271,7 +271,7 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget
         }
         int avg = _scores.Count > 0 ? (int)_scores.Average() : 0;
         _status.Text = listenOnly ? "Диалог прослушан. Теперь попробуй сыграть роль!" : _scores.Count > 0 ? $"Диалог пройден! Средняя оценка: {avg}. +15 XP" : "Диалог пройден! +15 XP";
-        if (!listenOnly && avg >= 80) Results.Confetti((Panel)Content);
+        if (!listenOnly && avg >= 80 && Content is Panel host) Results.Confetti(host);
         _controls.Children.Clear();
         _controls.Children.Add(U.Btn("Ещё раз", () => Run(listenOnly), "", "").M(0, 0, 8, 0));
         _controls.Children.Add(U.Btn("К диалогам", Shell.Back, "Primary", ""));

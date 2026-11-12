@@ -41,30 +41,7 @@ public static class SpeechDetail
     /// </summary>
     public static Control MoraChips(string targetJp, string targetKana, string heardKana, (string text, float p)[]? tokens)
     {
-        var t = Pitch.Moras(Kana.ToHiragana(Speech.Normalize(targetKana)));
-        var h = Pitch.Moras(Kana.ToHiragana(Speech.Normalize(heardKana)));
-        var probs = MoraProbs(h, tokens, Reading.Align(targetJp, targetKana));
-        int n = t.Count, m = h.Count;
-        var dp = new int[n + 1, m + 1];
-        for (int i = n - 1; i >= 0; i--)
-            for (int j = m - 1; j >= 0; j--)
-                dp[i, j] = Same(t[i], h[j]) ? dp[i + 1, j + 1] + 1 : Math.Max(dp[i + 1, j], dp[i, j + 1]);
-        var ops = new List<(char op, string t, string h, float p)>();
-        int x = 0, y = 0;
-        while (x < n || y < m)
-        {
-            if (x < n && y < m && Same(t[x], h[y])) { ops.Add(('=', t[x], h[y], probs?[y] ?? 1)); x++; y++; }
-            else if (y < m && (x >= n || dp[x, y + 1] >= dp[x + 1, y])) { ops.Add(('+', "", h[y], 1)); y++; }
-            else { ops.Add(('-', t[x], "", 1)); x++; }
-        }
-        // пропуск + лишнее рядом = замена одной моры на другую
-        for (int i = 0; i + 1 < ops.Count; i++)
-            if ((ops[i].op, ops[i + 1].op) is ('-', '+') or ('+', '-'))
-            {
-                var (tt, hh) = ops[i].op == '-' ? (ops[i].t, ops[i + 1].h) : (ops[i + 1].t, ops[i].h);
-                ops[i] = ('~', tt, hh, 1); ops.RemoveAt(i + 1);
-            }
-
+        var ops = Ops(targetJp, targetKana, heardKana, tokens);
         var wrap = new WrapPanel();
         foreach (var (op, tm, hm, p) in ops)
         {
@@ -95,6 +72,96 @@ public static class SpeechDetail
             wrap.Children.Add(chip);
         }
         return U.Stack(wrap, U.T("зелёный — верно · красный — ошибка · жёлтый — лишнее · оранжевая рамка — нечётко", "Muted", 11).M(0, 2, 0, 0));
+    }
+
+    /// <summary>
+    /// Фраза с подсветкой прямо в тексте: каждая мора целевой фразы — верно / ошибка / нечётко.
+    /// Нажатие на мору проигрывает только этот слог образца (замедленно), чтобы переслушать трудное место.
+    /// </summary>
+    public static Control PhraseMoras(string targetJp, string targetKana, string heardKana, (string text, float p)[]? tokens, double size = 22)
+    {
+        var ops = Ops(targetJp, targetKana, heardKana, tokens);
+        var target = ops.Where(o => o.op != '+').ToList();
+        var wrap = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Center };
+        int idx = 0, bad = 0;
+        foreach (var (op, tm, hm, p) in target)
+        {
+            int i = idx++;
+            bool unclear = op == '=' && p < 0.45f;
+            bool wrong = op is '-' or '~';
+            if (wrong || unclear) bad++;
+            var tb = new TextBlock
+            {
+                Text = tm, FontFamily = U.R<FontFamily>("JpFont"), FontSize = size, HorizontalAlignment = HorizontalAlignment.Center,
+                Foreground = U.B(wrong ? "Bad" : unclear ? "Gold" : "Good"),
+                FontWeight = wrong ? FontWeights.Bold : FontWeights.Normal,
+            };
+            var cell = new Border
+            {
+                Child = tb, Padding = new Thickness(3, 1), Margin = new Thickness(1, 0), CornerRadius = new CornerRadius(6), Cursor = Cursors.Hand,
+                Background = wrong ? U.B("BadSoft") : Brushes.Transparent,
+                BorderBrush = U.B(wrong ? "Bad" : "Gold"), BorderThickness = new Thickness(0, 0, 0, wrong || unclear ? 2 : 0),
+            };
+            cell.Tip(wrong ? (op == '~' ? $"Нужно «{tm}» ({Kana.ToRomaji(tm)}), прозвучало «{hm}» — нажми, чтобы послушать" : $"Пропущено «{tm}» — нажми, чтобы послушать")
+                : unclear ? "Прозвучало нечётко — нажми, чтобы послушать образец" : "Нажми, чтобы послушать этот слог");
+            cell.PointerReleased += (_, _) => { PlayMora(targetJp, i, tm); Anim.Pop(cell, 0.85); };
+            wrap.Children.Add(cell);
+        }
+        var hint = bad == 0 ? "Все слоги верно · нажми на любой, чтобы послушать отдельно"
+            : $"{bad} {MainView.Plural(bad, "слог", "слога", "слогов")} с ошибкой — нажми на подсвеченный, чтобы переслушать только его";
+        return U.Stack(wrap, U.T(hint, "Muted", 11.5).Center().M(0, 4, 0, 0));
+    }
+
+    /// <summary>Проиграть одну мору образца: с VOICEVOX — точный срез по границам мор, иначе — слог отдельно.</summary>
+    public static async void PlayMora(string jp, int index, string mora)
+    {
+        try
+        {
+            bool male = ProgressStore.P.MaleVoice;
+            if (Tts.UseOffline && await Tts.GetAsync(jp) is { } path && path.EndsWith(".wav"))
+            {
+                var times = await Task.Run(() => Voicevox.MoraTimes(jp, male));
+                var targetCount = Pitch.Moras(Kana.ToHiragana(Speech.Normalize(Db.KanaFor(jp)?.Replace(" ", "") ?? jp))).Count;
+                if (times != null && times.Count == targetCount && index < times.Count)
+                {
+                    var (_, s, e) = times[index];
+                    await Speech.PlaySliceAsync(path, Math.Max(0, s - 0.04), e + 0.06);
+                    return;
+                }
+            }
+            await Speech.SayAsync(mora, slow: true);
+        }
+        catch { }
+    }
+
+    /// <summary>Выравнивание целевых и услышанных мор: '=' верно, '-' пропущено, '+' лишнее, '~' замена.</summary>
+    public static List<(char op, string t, string h, float p)> Ops(string targetJp, string targetKana, string heardKana, (string text, float p)[]? tokens)
+    {
+        var t = Pitch.Moras(Kana.ToHiragana(Speech.Normalize(targetKana)));
+        var h = Pitch.Moras(Kana.ToHiragana(Speech.Normalize(heardKana)));
+        var probs = MoraProbs(h, tokens, Reading.Align(targetJp, targetKana));
+        int n = t.Count, m = h.Count;
+        var dp = new int[n + 1, m + 1];
+        for (int i = n - 1; i >= 0; i--)
+            for (int j = m - 1; j >= 0; j--)
+                dp[i, j] = Same(t[i], h[j]) ? dp[i + 1, j + 1] + 1 : Math.Max(dp[i + 1, j], dp[i, j + 1]);
+        var ops = new List<(char op, string t, string h, float p)>();
+        int x = 0, y = 0;
+        while (x < n || y < m)
+        {
+            if (x < n && y < m && Same(t[x], h[y])) { ops.Add(('=', t[x], h[y], probs?[y] ?? 1)); x++; y++; }
+            else if (y < m && (x >= n || dp[x, y + 1] >= dp[x + 1, y])) { ops.Add(('+', "", h[y], 1)); y++; }
+            else { ops.Add(('-', t[x], "", 1)); x++; }
+        }
+        // пропуск + лишнее рядом = замена одной моры на другую
+        for (int i = 0; i + 1 < ops.Count; i++)
+            if ((ops[i].op, ops[i + 1].op) is ('-', '+') or ('+', '-'))
+            {
+                var (tt, hh) = ops[i].op == '-' ? (ops[i].t, ops[i + 1].h) : (ops[i + 1].t, ops[i].h);
+                ops[i] = ('~', tt, hh, 1); ops.RemoveAt(i + 1);
+            }
+
+        return ops;
     }
 
     /// <summary>Сколько мор подряд прозвучали нечётко — для подсказки «говори яснее».</summary>

@@ -152,26 +152,34 @@ public static class Asr
     }
 
     /// <summary>
-    /// Чистка перед распознаванием: фильтр 80 Гц убирает гул (вентилятор, сеть, удары по столу),
-    /// затем громкость выравнивается до −1 дБ — Whisper стабильнее работает на ровном уровне.
+    /// Чистка перед распознаванием: шумоподавление (только на шумной записи), фильтр 80 Гц против гула
+    /// (вентилятор, сеть, удары по столу), затем громкость по 99,9-му перцентилю до −1 дБ —
+    /// одиночный щелчок больше не «съедает» усиление, тихий голос становится нормальным.
     /// </summary>
+    public static bool UseDenoise = true;
+
     static void Clean(byte[] pcm, int offset, int len)
     {
         int n = len / 2;
         if (n < 32) return;
+        var x = new float[n];
+        for (int i = 0; i < n; i++) x[i] = BitConverter.ToInt16(pcm, offset + i * 2);
+        if (UseDenoise) Denoise.Apply(x);
         const double rc = 1.0 / (2 * Math.PI * 80), dt = 1.0 / 16000, a = rc / (rc + dt);
-        var y = new double[n];
-        double prevX = 0, prevY = 0, peak = 0;
+        double prevX = 0, prevY = 0;
         for (int i = 0; i < n; i++)
         {
-            double x = BitConverter.ToInt16(pcm, offset + i * 2);
-            prevY = a * (prevY + x - prevX); prevX = x;
-            y[i] = prevY; peak = Math.Max(peak, Math.Abs(prevY));
+            double v = x[i];
+            prevY = a * (prevY + v - prevX); prevX = v;
+            x[i] = (float)prevY;
         }
+        var abs = x.Select(Math.Abs).ToArray();
+        Array.Sort(abs);
+        double peak = abs[Math.Min(n - 1, (int)(n * 0.999))];
         double gain = peak > 50 ? Math.Min(12, 0.89 * 32767 / peak) : 1;
         for (int i = 0; i < n; i++)
         {
-            int v = (int)Math.Clamp(y[i] * gain, short.MinValue, short.MaxValue);
+            int v = (int)Math.Clamp(x[i] * gain, short.MinValue, short.MaxValue);
             pcm[offset + i * 2] = (byte)(v & 0xFF); pcm[offset + i * 2 + 1] = (byte)((v >> 8) & 0xFF);
         }
     }

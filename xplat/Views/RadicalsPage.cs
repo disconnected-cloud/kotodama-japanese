@@ -57,7 +57,7 @@ public sealed class RadicalsPage : UserControl, IPage
             grid.Children.Add(tile);
         }
         body.Children.Add(grid);
-        body.Children.Add(_detail.Col(2));
+        body.Children.Add(_detail.Detach().Col(2));
         root.Children.Add(U.Stackify(body));
         Content = U.Page(root);
         ShowDetail(all.First(x => x.part == _sel));
