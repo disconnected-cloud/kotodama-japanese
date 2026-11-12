@@ -139,7 +139,7 @@ public partial class MainView
                 double w = tb.Bounds.Width - tb.Padding.Left - tb.Padding.Right, h = tb.Bounds.Height - tb.Padding.Top - tb.Padding.Bottom;
                 var why = new List<string>();
                 if (lay.TextLines.Any(l => l.HasCollapsed)) why.Add("многоточие");
-                if (lay.WidthIncludingTrailingWhitespace > w + 4) why.Add($"шире на {lay.WidthIncludingTrailingWhitespace - w:0}");
+                if (lay.WidthIncludingTrailingWhitespace > w + 8) why.Add($"шире на {lay.WidthIncludingTrailingWhitespace - w:0}");
                 if (lay.Height > h + 1.5) why.Add($"выше на {lay.Height - h:0}");
                 // сжат соседней колонкой: узкая надпись разбита на много строк («В / каф / е»)
                 if (tb.Bounds.Width < Bounds.Width * 0.3 && lay.TextLines.Count >= 3 && text.Contains(' ')) why.Add($"сжат ({lay.TextLines.Count} строк в {tb.Bounds.Width:0} px)");

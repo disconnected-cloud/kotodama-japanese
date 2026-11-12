@@ -16,7 +16,7 @@ using Matsubakira.Services;
 
 namespace Matsubakira.Views;
 
-public sealed class SettingsPage : UserControl, IPage
+public sealed partial class SettingsPage : UserControl, IPage
 {
     public string Title => _only != null ? Tabs.First(x => x.key == _only).title : "Настройки";
     bool _confirmReset;
@@ -226,87 +226,6 @@ public sealed class SettingsPage : UserControl, IPage
         return row;
     }
 
-    Control UpdateBlock()
-    {
-        var p = ProgressStore.P;
-        var sp = new StackPanel();
-        var status = U.T(Updater.Available != null ? $"Доступна версия {Updater.Available.Tag}" : "", "Body", 14, U.B("Good"));
-        var bar = new ProgressBar { Maximum = 1, IsVisible = false, Margin = new Thickness(0, 8, 0, 0) };
-        var install = U.Btn("Установить обновление", () => { }, "Primary", "\uE896");
-        install.IsVisible = Updater.Available != null ? true : false;
-        install.Click += async (_, _) =>
-        {
-            if (Updater.Available is not { } r) return;
-            install.IsEnabled = false; bar.IsVisible = true;
-            status.Text = $"Скачиваю {r.Tag}… после загрузки приложение перезапустится";
-            try { await Updater.InstallAsync(r, new Progress<double>(v => bar.Value = v)); }
-            catch (Exception ex) { status.Text = "Не удалось обновиться: " + ex.Message; install.IsEnabled = true; }
-        };
-        var check = U.Btn("Проверить обновления", async () => { }, "", "\uE72C");
-        check.Click += async (_, _) =>
-        {
-            check.IsEnabled = false; status.Text = "Проверяю…"; status.Foreground = U.B("Muted");
-            var r = await Updater.CheckAsync();
-            status.Text = r != null ? $"Доступна версия {r.Tag}!" : "У тебя последняя версия.";
-            status.Foreground = U.B(r != null ? "Good" : "Muted");
-            install.IsVisible = r != null ? true : false;
-            check.IsEnabled = true;
-        };
-        sp.Children.Add(U.Row(10, check, install));
-        sp.Children.Add(status.M(0, 10, 0, 0));
-        sp.Children.Add(bar);
-        sp.Children.Add(Toggle("Проверять обновления автоматически (раз в день)", p.AutoUpdate, v => p.AutoUpdate = v).M(0, 10, 0, 0));
-        return sp;
-    }
-
-    Control StorageBlock()
-    {
-        var sp = new StackPanel();
-        foreach (var it in Storage.Items)
-        {
-            long size = Storage.Size(it);
-            if (it.Key == "llm" && size == 0) continue;
-            var row = U.Cols("*", "auto", "auto");
-            row.Margin = new Thickness(0, 0, 0, 10);
-            row.Children.Add(U.Stack(U.T(it.Title, "H3", 14), U.T(it.Desc, "Muted", 12)));
-            row.Children.Add(U.T(Storage.Format(size), "Body", 13.5, U.B("Muted")).CenterV().M(12, 0, 12, 0).Col(1));
-            var item = it;
-            var b = U.Btn("Очистить", async () =>
-            {
-                if (!await Shell.Confirm($"Удалить «{item.Title}» ({Storage.Format(size)})?")) return;
-                bool ok = Storage.Clear(item);
-                Shell.Toast(ok ? "Удалено" : "Часть файлов занята — удалятся при следующем запуске", "削除");
-                OnShown();
-            }, "", "\uE74D");
-            b.IsEnabled = size > 0;
-            row.Children.Add(b.CenterV().Col(2));
-            sp.Children.Add(row);
-        }
-        var all = U.Btn("Удалить всё скачанное и кэш", async () =>
-        {
-            if (!await Shell.Confirm("Удалить кэш озвучки, модели Whisper, VOICEVOX и журналы? Прогресс обучения сохранится.")) return;
-            bool ok = Storage.Items.Select(Storage.Clear).ToList().All(x => x);
-            Shell.Toast(ok ? "Всё скачанное удалено" : "Часть файлов удалится при следующем запуске", "削除");
-            OnShown();
-        }, "", "\uE74D");
-        all.HorizontalAlignment = HorizontalAlignment.Left; all.Margin = new Thickness(0, 6, 0, 0);
-        sp.Children.Add(all);
-        var full = U.Btn("Полный сброс: удалить вообще всё, включая прогресс", async () =>
-        {
-            if (!await Shell.Confirm("Будут удалены ВСЕ данные приложения: прогресс, настройки, скачанные модели и голоса. Продолжить?")) return;
-            foreach (var it in Storage.Items) Storage.Clear(it);
-            ProgressStore.Reset();
-            ProgressStore.P.Flags.Add("mig-v3");
-            foreach (var it in Storage.Items) if (System.IO.Directory.Exists(it.Path) && it.IsDir) ProgressStore.P.Flags.Add("pending-delete:" + it.Key);
-            ProgressStore.Save();
-            Shell.Toast("Всё удалено — начинаем с чистого листа", "新");
-            Shell.Go("home");
-        }, "Ghost", "\uE7BA");
-        full.HorizontalAlignment = HorizontalAlignment.Left; full.Margin = new Thickness(0, 6, 0, 0);
-        sp.Children.Add(full);
-        return sp;
-    }
-
     static async void AskRestart()
     {
         ProgressStore.Save();
@@ -327,118 +246,6 @@ public sealed class SettingsPage : UserControl, IPage
             rb.Checked += (_, _) => { set(v); ProgressStore.Notify(); };
             sp.Children.Add(rb);
         }
-        return sp;
-    }
-
-    Control VoicevoxBlock()
-    {
-        var p = ProgressStore.P;
-        var sp = new StackPanel();
-        var installed = Voicevox.InstalledPacks;
-        if (Voicevox.Downloaded && !Voicevox.Installed)
-        {
-            var chk = U.Btn("Проверить VOICEVOX ещё раз", async () => { }, "", "\uE72C");
-            chk.HorizontalAlignment = HorizontalAlignment.Left;
-            chk.Click += async (_, _) => { var (ok, msg) = await Voicevox.SelfCheckAsync(); Shell.Toast(msg, ok ? "声" : "!"); OnShown(); };
-            sp.Children.Add(U.T("Файлы скачаны, но проверка синтеза не пройдена.", "Body", 13, U.B("Gold")));
-            sp.Children.Add(chk.M(0, 8, 0, 8));
-        }
-        if (Voicevox.Installed)
-        {
-            var styles = Voicevox.InstalledStyles();
-            int clear = styles.Count(x => Voicevox.Clear.Contains(x.Id));
-            sp.Children.Add(U.T($"Установлено пакетов: {installed.Count} · голосов: {styles.Count}, из них чётких: {clear}", "Body", 13.5, U.B("Good")));
-            uint cur = Voicevox.PickStyle(false);
-            Control Group(string caption, IEnumerable<VoiceStyle> list)
-            {
-                var box = new StackPanel();
-                box.Children.Add(U.T(caption, "Overline").M(0, 12, 0, 6));
-                var wrap = new WrapPanel();
-                foreach (var st in list)
-                {
-                    var rb = new RadioButton { Classes = { "ChipRadio" }, Content = st.Title, GroupName = "vvstyle", IsChecked = st.Id == cur, Margin = new Thickness(0, 0, 6, 6) }.Tip(st.Original);
-                    var id = st.Id;
-                    rb.Checked += (_, _) => { p.OfflineStyleId = (int)id; ProgressStore.Notify(); if (Tts.UseOffline) Speech.Say("こんにちは、一緒に日本語を勉強しましょう。"); };
-                    wrap.Children.Add(rb);
-                }
-                box.Children.Add(wrap);
-                return box;
-            }
-            var good = styles.Where(x => Voicevox.Clear.Contains(x.Id)).ToList();
-            var female = good.Where(x => !Voicevox.IsMale(x)).ToList();
-            var male = good.Where(Voicevox.IsMale).ToList();
-            if (female.Count > 0) sp.Children.Add(Group("ЧЁТКИЕ ЖЕНСКИЕ ГОЛОСА — РЕКОМЕНДУЕМ", female));
-            if (male.Count > 0) sp.Children.Add(Group("ЧЁТКИЕ МУЖСКИЕ (ДЛЯ МУЖСКИХ РОЛЕЙ В ДИАЛОГАХ)", male));
-            var rest = styles.Where(x => !Voicevox.Clear.Contains(x.Id)).OrderBy(x => x.Title).ToList();
-            if (rest.Count > 0)
-            {
-                var other = Group("ЭМОЦИОНАЛЬНЫЕ И ОСОБЫЕ СТИЛИ (шёпот, эмоции — не для учёбы)", rest);
-                other.IsVisible = good.Count == 0 || rest.Any(x => x.Id == cur);
-                var showAll = U.Btn($"Показать остальные стили ({rest.Count})", () => { }, "Ghost", "");
-                showAll.HorizontalAlignment = HorizontalAlignment.Left;
-                showAll.IsVisible = !other.IsVisible;
-                showAll.Click += (_, _) => { other.IsVisible = true; showAll.IsVisible = false; };
-                sp.Children.Add(showAll);
-                sp.Children.Add(other);
-            }
-        }
-        var missing = Voicevox.Recommended.Where(f => !installed.Contains(f)).ToArray();
-        var chosen = new HashSet<string>(Voicevox.Installed ? Array.Empty<string>() : missing);
-        if (missing.Length > 0)
-        {
-            long mb = Voicevox.Catalog.Where(pk => missing.Contains(pk.File)).Sum(pk => pk.Size) / 1_000_000;
-            sp.Children.Add(new Border
-            {
-                Background = U.B("AccentSoft"), CornerRadius = new CornerRadius(14), Padding = new Thickness(14, 12), Margin = new Thickness(0, 14, 0, 0),
-                Child = U.Row(12, Art.Icon("sparkle", 36).CenterV(), U.Stack(
-                    U.T("Рекомендуемый набор: чёткие голоса для учёбы", "H3", 14),
-                    U.T($"Tsumugi, Himari, Metan, No.7 (диктор), Takehiro и Ryusei (мужские) — ровная дикция без придыхания. {(Voicevox.Installed ? $"Не хватает ~{mb} МБ" : $"~{mb} МБ")}.", "Muted", 12.5).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.MaxWidth = 520; })).CenterV()),
-            });
-        }
-        sp.Children.Add(U.T(Voicevox.Installed ? "ДОБАВИТЬ ПАКЕТЫ" : "ВЫБЕРИ ПАКЕТЫ ГОЛОСОВ", "Overline").M(0, 14, 0, 6));
-        var list = new WrapPanel();
-        int Cut = Shell.Compact ? 20 : 34; // на телефоне имена короче — полный список во всплывающей подсказке
-        foreach (var pack in Voicevox.Catalog.Where(pk => !installed.Contains(pk.File)).OrderBy(pk => !Voicevox.Recommended.Contains(pk.File)))
-        {
-            bool rec = Voicevox.Recommended.Contains(pack.File);
-            var names = string.Join(", ", pack.Chars.Select(c => VoiceNames.Name(c.Name)));
-            var tb = new ToggleButton
-            {
-                Classes = { "Chip" }, IsChecked = chosen.Contains(pack.File), Margin = new Thickness(0, 0, 6, 6),
-                Content = (rec ? "★ " : "") + (names.Length > Cut ? names[..Cut] + "…" : names) + $"  ·  {pack.Size / 1_000_000} МБ",
-            }.Tip((rec ? "Рекомендуем: чёткие голоса\n" : pack.File == "n0.vvm" ? "Голоса с придыханием — могут звучать нечётко\n" : "") + string.Join(", ", pack.Chars.Select(c => c.Name)));
-            var f = pack.File;
-            tb.Checked += (_, _) => chosen.Add(f);
-            tb.Unchecked += (_, _) => chosen.Remove(f);
-            list.Children.Add(tb);
-        }
-        sp.Children.Add(list);
-        var bar = new ProgressBar { Maximum = 1, IsVisible = false, Margin = new Thickness(0, 8, 0, 4) };
-        var status = U.T(Voicevox.LastError ?? "", "Muted");
-        var btn = U.Btn(Voicevox.BaseInstalled ? "Скачать выбранные пакеты" : "Установить VOICEVOX (+ ~30 МБ компонентов)", () => { }, "Primary", "\uE896");
-        btn.HorizontalAlignment = HorizontalAlignment.Left; btn.Margin = new Thickness(0, 8, 0, 0);
-        btn.Click += async (_, _) =>
-        {
-            if (chosen.Count == 0 && Voicevox.BaseInstalled) { Shell.Toast("Выбери хотя бы один пакет", "!"); return; }
-            btn.IsEnabled = false; bar.IsVisible = true;
-            var prog = new Progress<(double v, string what)>(x => { bar.Value = x.v; status.Text = $"Загрузка: {x.what}… {x.v * 100:0}%"; });
-            try
-            {
-                await Voicevox.InstallAsync(chosen, prog, CancellationToken.None);
-                status.Text = "Проверяю синтез в безопасном режиме…";
-                var (ok, msg) = await Voicevox.SelfCheckAsync();
-                if (!ok) { status.Text = msg + ". Онлайн-голос продолжит работать."; btn.IsEnabled = true; return; }
-                if (p.TtsEngine == "online") p.TtsEngine = "auto";
-                ProgressStore.Notify();
-                Shell.Toast("Офлайн-голоса установлены!", "声");
-                OnShown();
-                Speech.Say("こんにちは、一緒に日本語を勉強しましょう。");
-            }
-            catch (Exception ex) { status.Text = "Ошибка: " + ex.Message; btn.IsEnabled = true; }
-        };
-        sp.Children.Add(btn);
-        sp.Children.Add(bar);
-        sp.Children.Add(status);
         return sp;
     }
 

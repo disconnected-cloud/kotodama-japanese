@@ -1,0 +1,72 @@
+# Windows: тесты и проверка интерфейса на каждый push.
+# • тесты xUnit;
+# • --rerender — каждый экран открывается и перерисовывается трижды (ловит «already has a visual parent» и прочие вылеты);
+# • --cliptest в размере телефона 360×780 — ни одна надпись не обрезана и не уходит за край экрана;
+# • снимки главных экранов (компьютер и телефон) — артефакт windows-snapshots.
+# Звук и синтез речи в этих режимах выключены, прогресс не записывается.
+name: Windows
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Тесты
+        run: dotnet test tests/Kotodama.XTests -c Release
+
+      - name: Сборка (Debug — в ней есть отладочные флаги)
+        run: dotnet build xplat/Kotodama.csproj -c Debug -o build
+
+      - name: Перерисовка всех экранов (компьютер и телефон)
+        run: |
+          mkdir -p snaps
+          timeout 300 ./build/Kotodama.exe --rerender snaps/rerender.txt || true
+          KOTODAMA_PHONE=360x780 timeout 300 ./build/Kotodama.exe --phone --rerender snaps/rerender-phone.txt || true
+          cat snaps/rerender.txt snaps/rerender-phone.txt
+          test -s snaps/rerender.txt && test -s snaps/rerender-phone.txt
+          ! grep -h FAIL snaps/rerender.txt snaps/rerender-phone.txt
+
+      - name: Обрезанный текст на телефоне
+        run: |
+          mkdir -p snaps/phone
+          KOTODAMA_PHONE=360x780 KOTODAMA_CLIPSNAP=snaps/phone timeout 400 ./build/Kotodama.exe --phone --cliptest snaps/cliptest.txt || true
+          cat snaps/cliptest.txt
+          test -s snaps/cliptest.txt
+          # «многоточие» в превью — намеренно; всё остальное (за краем, сжат, шире, выше) — ошибка вёрстки
+          ! grep -E "за краем|сжат|шире на|выше на|FAIL" snaps/cliptest.txt
+
+      - name: Снимки экранов
+        if: always()
+        run: |
+          for page in home path words grammar speech settings; do
+            timeout 60 ./build/Kotodama.exe --page $page --snap snaps/$page.png || true
+            KOTODAMA_PHONE=360x780 timeout 60 ./build/Kotodama.exe --phone --page $page --snap snaps/phone-$page.png || true
+          done
+          ls -la snaps
+          cat "$APPDATA/Matsubakira/crash.log" 2>/dev/null || true
+
+      - name: Сравнение с эталонами (tests/snapshots)
+        run: |
+          pip install --quiet pillow
+          mkdir -p tests/snapshots
+          python tools/snapdiff.py snaps tests/snapshots 2.0
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-snapshots
+          path: snaps/
