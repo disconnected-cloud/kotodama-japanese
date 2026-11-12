@@ -4,7 +4,11 @@
 *Котодама* — «душа слова»: в японской традиции правильно произнесённое слово обретает силу.
 
 
-🎬 **[Видео-обзор Kotodama 2.0](https://github.com/disconnected-cloud/kotodama-japanese/releases/download/v2.0.0/Kotodama-2.0-video.mp4)** — 40 секунд: что умеет приложение.
+### 🎬 Видео-обзор Kotodama 2.0
+
+[![Видео-обзор Kotodama 2.0 — нажми, чтобы смотреть со звуком](docs/preview.webp)](https://disconnected-cloud.github.io/kotodama-japanese/)
+
+**[▶ Смотреть полное видео со звуком](https://disconnected-cloud.github.io/kotodama-japanese/)** (40 секунд, 1080p, 60 к/с)
 
 ## Что внутри
 

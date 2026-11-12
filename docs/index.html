@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kotodama 2.0 — японский шаг за шагом</title>
+<meta name="description" content="Kotodama — бесплатное приложение для изучения японского с нуля: кана, слова, кандзи, грамматика, говорение с проверкой произношения. Видео-обзор версии 2.0.">
+<meta property="og:title" content="Kotodama 2.0 — японский шаг за шагом">
+<meta property="og:description" content="Видео-обзор: умная сессия «Учиться», говорение с проверкой по слогам, японская классика в оригинале, путь от каны до N2.">
+<meta property="og:image" content="poster.jpg">
+<meta property="og:video" content="kotodama-2.0.mp4">
+<link rel="icon" href="icon.png">
+<style>
+  :root {
+    --bg: #0f1014; --surface: #16171c; --stroke: #24252c; --text: #ededf0; --muted: #9a9ca6; --accent: #f07aa0; --accent2: #9d8cff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; }
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(900px 600px at 10% 0%, rgba(240,122,160,.18), transparent 60%),
+      radial-gradient(800px 600px at 100% 100%, rgba(157,140,255,.14), transparent 60%),
+      var(--bg);
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 48px 16px 64px; }
+  header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+  header img { width: 56px; height: 56px; border-radius: 14px; }
+  .brand { display: flex; flex-direction: column; }
+  .brand b { font-size: 26px; letter-spacing: .2px; }
+  .brand span { color: var(--muted); font-size: 14px; }
+  .jp { color: var(--accent); font-family: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif; }
+  h1 { font-size: clamp(28px, 5vw, 48px); line-height: 1.12; margin: 0 0 12px; }
+  .lead { color: var(--muted); font-size: 18px; max-width: 760px; margin: 0 0 28px; line-height: 1.5; }
+  .player {
+    position: relative; border-radius: 22px; overflow: hidden; border: 1px solid var(--stroke);
+    box-shadow: 0 30px 80px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.03) inset; background: #000;
+  }
+  video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 40px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; border-radius: 14px; text-decoration: none;
+    font-weight: 600; font-size: 16px; color: var(--text); background: var(--surface); border: 1px solid var(--stroke);
+    transition: transform .15s ease, border-color .15s ease;
+  }
+  .btn:hover { transform: translateY(-2px); border-color: #3a3c46; }
+  .btn.primary { background: linear-gradient(135deg, #f48db0, #e65d8c); color: #1a0b11; border: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--stroke); border-radius: 16px; padding: 18px; }
+  .card b { display: block; margin-bottom: 6px; font-size: 16px; }
+  .card span { color: var(--muted); font-size: 14px; line-height: 1.45; }
+  footer { color: var(--muted); font-size: 13px; margin-top: 40px; line-height: 1.6; }
+  footer a { color: var(--accent); }
+  @media (max-width: 600px) { .wrap { padding-top: 28px; } .lead { font-size: 16px; } .player { border-radius: 14px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="icon.png" alt="">
+    <div class="brand"><b>Kotodama <span class="jp">言霊</span></b><span>японский язык шаг за шагом · бесплатно</span></div>
+  </header>
+
+  <h1>Kotodama 2.0 — видео-обзор</h1>
+  <p class="lead">Одна кнопка «Учиться», говорение с проверкой по слогам, японская классика в оригинале, путь от каны до N2. Посмотри, что умеет приложение, — 40 секунд.</p>
+
+  <div class="player">
+    <video controls playsinline preload="metadata" poster="poster.jpg">
+      <source src="kotodama-2.0.mp4" type="video/mp4">
+      Браузер не поддерживает видео — <a href="kotodama-2.0.mp4">скачай файл</a>.
+    </video>
+  </div>
+
+  <div class="actions">
+    <a class="btn primary" href="https://github.com/disconnected-cloud/kotodama-japanese/releases/latest">⬇ Скачать Kotodama 2.0</a>
+    <a class="btn" href="https://github.com/disconnected-cloud/kotodama-japanese">Исходный код на GitHub</a>
+  </div>
+
+  <div class="grid">
+    <div class="card"><b>Учиться — одна кнопка</b><span>Занятие на 5, 15 или 30 минут собирается само: повторение, ошибки, новое, речь.</span></div>
+    <div class="card"><b>Говорение с проверкой</b><span>Распознавание речи офлайн, ошибки подсвечиваются прямо по слогам.</span></div>
+    <div class="card"><b>От каны до N2</b><span>31 юнит, 55 уроков грамматики, слова и кандзи с порядком черт.</span></div>
+    <div class="card"><b>Классика в оригинале</b><span>Акутагава, Сосэки, Миядзава, Ниими Нанкити, хайку — с фуриганой и переводом.</span></div>
+    <div class="card"><b>Прогресс и награды</b><span>Испытания дня, недельная цель, щиты серии, память по FSRS.</span></div>
+    <div class="card"><b>Словарь на 219 000 статей</b><span>Поиск по-русски, латиницей, каной и кандзи.</span></div>
+  </div>
+
+  <footer>
+    Windows 10/11 и Linux. Иллюстрации Википе-тан — Wikimedia Commons (CC BY-SA), словарь — JMdict (EDRDG, CC BY-SA 4.0), порядок черт — KanjiVG.
+    Музыка в видео написана специально для обзора.
+  </footer>
+</div>
+</body>
+</html>
