@@ -36,6 +36,8 @@ public sealed class Progress
     public bool NightTheme { get; set; }               // «Ночь»: чёрный фон, приглушённые цвета
     public string JpFontName { get; set; } = "";       // шрифт японского текста, "" — системный по умолчанию
     public double UiScale { get; set; } = 1.0;
+    public double JpScale { get; set; } = 1.0;                // размер японского текста отдельно от интерфейса
+    public bool HighContrast { get; set; }                   // высокий контраст: ярче текст и границы
     public bool Sounds { get; set; } = true;
     public bool NotifySound { get; set; } = true;
     public string NotifyTone { get; set; } = "bell";    // bell | drop | koto | furin      // мягкий колокольчик у уведомлений и напоминаний

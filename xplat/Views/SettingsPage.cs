@@ -135,6 +135,10 @@ public sealed partial class SettingsPage : UserControl, IPage
                         Text = "日本語 あア 字", FontSize = 20, Foreground = U.B("Text"),
                         FontFamily = App.JpFonts[i].family.Length > 0 ? new FontFamily(App.JpFonts[i].family) : U.R<FontFamily>("JpFont"),
                     }.Tip(App.JpFonts[i].title)).ToArray()).M(0, 12, 0, 0)));
+                yield return Section("Размер японского текста", "Иероглифы и кана — крупнее или мельче, отдельно от остального интерфейса.",
+                    Choice(new[] { 90, 100, 115, 130, 145 }, (int)Math.Round(p.JpScale * 100), v => { p.JpScale = v / 100.0; ProgressStore.Notify(); OnShown(); }, v => v + "%"));
+                yield return Section("Высокий контраст", "Ярче текст, подписи и границы — легче читать на солнце и при слабом зрении. Применяется после перезапуска.",
+                    Toggle("Включить высокий контраст", p.HighContrast, v => { p.HighContrast = v; AskRestart(); }));
                 yield return Section("Акцентный цвет", null, Swatches());
                 yield return Section("Масштаб интерфейса", null,
                     Choice(new[] { 90, 100, 115, 130 }, (int)Math.Round(p.UiScale * 100), v => { p.UiScale = v / 100.0; AskRestart(); }, v => v + "%"));

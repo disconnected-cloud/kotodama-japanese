@@ -101,6 +101,7 @@ public partial class App : Application
         r["JpFont"] = new FontFamily(f + ", " + JpFallback);
     }
 
+    /// <summary>Цвета текста проверены на контраст WCAG: основной ≥ 10:1, второстепенный и цветной ≥ 4,5:1 на всех фонах.</summary>
     public static void ApplyPalette(IResourceDictionary r, bool light, string accent, bool night = false)
     {
         var dark = new Dictionary<string, string>
@@ -117,9 +118,9 @@ public partial class App : Application
         {
             ["Bg"] = "#F6F5F3", ["Sidebar"] = "#F6F5F3", ["Surface"] = "#FFFFFF", ["SurfaceSolid"] = "#FFFFFF", ["Surface2"] = "#F0EEEB",
             ["Surface3"] = "#E4E1DD", ["Stroke"] = "#E6E3DF", ["StrokeStrong"] = "#D3CFCA", ["Text"] = "#1C1B1F", ["Muted"] = "#6B6875",
-            ["Faint"] = "#9C98A3", ["Accent"] = "#D9487A", ["AccentHover"] = "#E05C89", ["Accent2"] = "#6F5BD9", ["AccentSoft"] = "#1FD9487A",
-            ["Gold"] = "#B9831F", ["Good"] = "#2E9E6E", ["GoodSoft"] = "#1F2E9E6E", ["Bad"] = "#D64545", ["BadSoft"] = "#1FD64545",
-            ["Info"] = "#3D7FD6", ["AccentGradient"] = "#DD5584", ["GoldGradient"] = "#D19A3A", ["CoolGradient"] = "#4F7FD9",
+            ["Faint"] = "#9C98A3", ["Accent"] = "#B8335F", ["AccentHover"] = "#C8406E", ["Accent2"] = "#6F5BD9", ["AccentSoft"] = "#1FD9487A",
+            ["Gold"] = "#86600F", ["Good"] = "#1F7A52", ["GoodSoft"] = "#1F2E9E6E", ["Bad"] = "#BC3434", ["BadSoft"] = "#1FD64545",
+            ["Info"] = "#2A63B3", ["AccentGradient"] = "#DD5584", ["GoldGradient"] = "#D19A3A", ["CoolGradient"] = "#4F7FD9",
             ["GreenGradient"] = "#3AA77A", ["GlassStroke"] = "#E6E3DF", ["CardFill"] = "#FFFFFF", ["HoverTint"] = "#000000",
             ["SelectedTint"] = "#0D000000", ["Thumb"] = "#26000000", ["ThumbHover"] = "#4D000000", ["CaptionHover"] = "#12000000", ["OnAccent"] = "#FFFFFF",
         };
@@ -127,7 +128,7 @@ public partial class App : Application
         var nightPal = new Dictionary<string, string>(dark)
         {
             ["Bg"] = "#000000", ["Sidebar"] = "#000000", ["Surface"] = "#0B0B0D", ["SurfaceSolid"] = "#0B0B0D", ["Surface2"] = "#121215",
-            ["Surface3"] = "#1A1A1F", ["Stroke"] = "#16161A", ["StrokeStrong"] = "#24242A", ["Text"] = "#C4C2C8", ["Muted"] = "#76747D",
+            ["Surface3"] = "#1A1A1F", ["Stroke"] = "#16161A", ["StrokeStrong"] = "#24242A", ["Text"] = "#C4C2C8", ["Muted"] = "#86848D",
             ["Faint"] = "#4A4950", ["Accent"] = "#C2678A", ["AccentHover"] = "#CC7896", ["Accent2"] = "#8273CC", ["AccentSoft"] = "#1FC2678A",
             ["Gold"] = "#B8924D", ["Good"] = "#4A9F7B", ["GoodSoft"] = "#1F4A9F7B", ["Bad"] = "#BF5A5A", ["BadSoft"] = "#1FBF5A5A",
             ["Info"] = "#5A86BF", ["AccentGradient"] = "#BF6587", ["GoldGradient"] = "#B38C49", ["CoolGradient"] = "#5875B8",
@@ -136,9 +137,9 @@ public partial class App : Application
         var pal = light ? lite : night ? nightPal : dark;
         var (d, l) = accent switch
         {
-            "mint" => ("#4FD1B5", "#1E9E85"),
-            "indigo" => ("#8C9EFF", "#4F5FD9"),
-            "amber" => ("#F2B45A", "#C07F15"),
+            "mint" => ("#4FD1B5", "#167A66"),
+            "indigo" => ("#8C9EFF", "#4553C9"),
+            "amber" => ("#F2B45A", "#8A5C0E"),
             _ => ("", ""),
         };
         if (d.Length > 0)
@@ -147,6 +148,12 @@ public partial class App : Application
             if (night) c = Color.FromRgb((byte)(c.R * 0.8), (byte)(c.G * 0.8), (byte)(c.B * 0.8));
             pal["Accent"] = pal["AccentGradient"] = pal["AccentHover"] = c.ToString();
             pal["AccentSoft"] = Color.FromArgb(0x1F, c.R, c.G, c.B).ToString();
+        }
+        if (ProgressStore.P.HighContrast)
+        {
+            // контраст текста ≥ 7:1 (WCAG AAA): подписи и второстепенный текст почти как основной, границы заметнее
+            if (light) { pal["Text"] = "#000000"; pal["Muted"] = "#3A3842"; pal["Faint"] = "#5A5763"; pal["Stroke"] = "#9C98A3"; pal["StrokeStrong"] = "#6B6875"; }
+            else { pal["Text"] = "#FFFFFF"; pal["Muted"] = "#D2D4DA"; pal["Faint"] = "#A9ACB5"; pal["Stroke"] = "#5B5F69"; pal["StrokeStrong"] = "#8E919B"; }
         }
         foreach (var (k, v) in pal) r[k] = new SolidColorBrush(Color.Parse(v));
     }

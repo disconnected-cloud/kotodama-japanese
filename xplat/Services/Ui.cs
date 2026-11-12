@@ -51,7 +51,7 @@ public static class U
 
     public static TextBlock Jp(string text, double size, IBrush? fg = null, bool serif = false) => new()
     {
-        Text = text, FontSize = size,
+        Text = text, FontSize = size * ProgressStore.P.JpScale,
         FontFamily = R<FontFamily>(serif ? "JpSerif" : "JpFont"),
         Foreground = fg ?? B("Text"),
         TextWrapping = TextWrapping.Wrap,
