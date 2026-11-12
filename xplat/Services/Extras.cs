@@ -177,7 +177,7 @@ public static class Achievements
         new("week1", "週", "Неделя взята", "Выполни недельную цель", p => p.Badges.Count >= 1),
         new("week4", "暦", "Месяц целей", "Выполни недельную цель 4 раза", p => p.Badges.Count >= 4),
         new("shield", "盾", "Спасённая серия", "Щит сохранил серию в пропущенный день", p => p.ShieldsUsed >= 1),
-        new("study10", "学", "Ученик", "Пройди 10 сессий «Учиться»", p => p.Flags.Count(f => f.StartsWith("study:")) >= 10),
+        new("study10", "学", "Ученик", "Пройди 10 сессий «Учиться»", p => p.StudySessions >= 10),
     };
 
     public static void CheckNew()

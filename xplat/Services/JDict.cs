@@ -34,7 +34,7 @@ public static class JDict
         using var s = typeof(JDict).Assembly.GetManifestResourceStream("dict.tsv.gz")!;
         using var gz = new GZipStream(s, CompressionMode.Decompress);
         using var r = new StreamReader(gz, Encoding.UTF8);
-        var k = new List<string>(70000); var kn = new List<string>(70000); var ru = new List<string>(70000); var c = new List<bool>(70000);
+        var k = new List<string>(230000); var kn = new List<string>(230000); var ru = new List<string>(230000); var c = new List<bool>(230000);
         string? line;
         while ((line = r.ReadLine()) != null)
         {
@@ -43,8 +43,10 @@ public static class JDict
             c.Add(p[0] == "1"); k.Add(string.Intern(p[1])); kn.Add(p[2]); ru.Add(p[3]);
         }
         _kanji = k.ToArray(); _kana = kn.ToArray(); _ru = ru.ToArray(); _common = c.ToArray();
-        _ruLower = _ru.Select(x => x.ToLowerInvariant()).ToArray();
-        _hira = _kana.Select(Kana.ToHiragana).ToArray();
+        // Копии храним, только если строка действительно меняется: большинство переводов уже в нижнем регистре,
+        // большинство чтений — уже хирагана (так словарь на 219 тыс. статей занимает заметно меньше памяти)
+        _ruLower = _ru.Select(x => { var l = x.ToLowerInvariant(); return l == x ? x : l; }).ToArray();
+        _hira = _kana.Select(x => { var h = Kana.ToHiragana(x); return h == x ? x : h; }).ToArray();
     }
 
     static DictEntry Entry(int i) => new(i, _common[i], _kanji[i], _kana[i], _ru[i]);

@@ -25,6 +25,9 @@ public sealed class Palette : Grid
     List<Item> _items = new();
     int _sel;
     readonly Action _close;
+    readonly DispatcherTimer _debounce = new() { Interval = TimeSpan.FromMilliseconds(90) };
+    // разделы, уроки, юниты, статьи — один раз за запуск (список не зависит от прогресса)
+    static readonly Lazy<Item[]> _all = new(() => All().ToArray());
 
     public Palette(Action close)
     {
@@ -45,7 +48,9 @@ public sealed class Palette : Grid
         sp.Children.Add(U.T("↑↓ — выбор · Enter — открыть · Esc — закрыть", "Muted", 11.5).Center().M(0, 8, 0, 0));
         card.Child = sp;
         Children.Add(card);
-        _box.TextChanged += (_, _) => Refresh();
+        // поиск — с небольшой задержкой: при быстром наборе список не перестраивается на каждую букву
+        _debounce.Tick += (_, _) => { _debounce.Stop(); Refresh(); };
+        _box.TextChanged += (_, _) => { _debounce.Stop(); _debounce.Start(); };
         _box.AddHandler(KeyDownEvent, OnKey, RoutingStrategies.Tunnel);
         Loaded += (_, _) => { _box.Focus(); Anim.FadeUp(card, 0, -10, 200); };
         Refresh();
@@ -53,6 +58,7 @@ public sealed class Palette : Grid
 
     void OnKey(object? s, KeyEventArgs e)
     {
+        if ((e.Key is Key.Enter or Key.Down or Key.Up) && _debounce.IsEnabled) { _debounce.Stop(); Refresh(); } // Enter сразу после набора — по свежему списку
         switch (e.Key)
         {
             case Key.Escape: _close(); e.Handled = true; break;
@@ -93,7 +99,7 @@ public sealed class Palette : Grid
     {
         var q = (_box.Text ?? "").Trim();
         var ql = q.ToLowerInvariant();
-        var items = All().Where(i => q.Length == 0 || i.Title.Contains(q, StringComparison.OrdinalIgnoreCase) || i.Sub.Contains(q, StringComparison.OrdinalIgnoreCase)).Take(q.Length == 0 ? 14 : 8).ToList();
+        var items = _all.Value.Where(i => q.Length == 0 || i.Title.Contains(q, StringComparison.OrdinalIgnoreCase) || i.Sub.Contains(q, StringComparison.OrdinalIgnoreCase)).Take(q.Length == 0 ? 14 : 8).ToList();
         if (q.Length >= 1)
         {
             var words = Db.Words.Where(w => w.Ru.Contains(ql, StringComparison.OrdinalIgnoreCase) || w.Jp.Contains(q) || w.Kana.Contains(q) || w.Romaji.StartsWith(ql))

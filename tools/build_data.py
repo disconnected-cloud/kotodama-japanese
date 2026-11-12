@@ -104,7 +104,8 @@ for e in d["words"]:
     kana = e["kana"][0]["text"] if e["kana"] else ""
     common = any(k.get("common") for k in e["kanji"] + e["kana"])
     ru = ("англ.: " if eng else "") + "; ".join(dict.fromkeys(senses))
-    if len(ru) > 180: ru = ru[:177] + "…"
+    lim = 100 if eng else 180   # английские статьи — короче: их много, а нужны они как подсказка
+    if len(ru) > lim: ru = ru[:lim - 3] + "…"
     rows.append((0 if common else 1, kanji, kana, ru.replace("\t", " ").replace("\n", " "), 1 if eng else 0))
 rows.sort(key=lambda r: (r[4], r[0]))  # сначала с русским переводом, внутри — частотные
 with gzip.open(D("dict.tsv.gz"), "wt", encoding="utf8", compresslevel=9) as f:

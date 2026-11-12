@@ -24,7 +24,7 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
     public static StudyPage? Active;
     /// <summary>Сейчас идёт шаг сессии: итоговые экраны пишут «Дальше» вместо «Готово».</summary>
     public static bool InFlow => Active is { _launched: true };
-    public bool IsResumable => !_finished && _day == DateTime.Today && _clock.IsRunning;
+    public bool IsResumable => !_finished && _day == DateTime.Today && _started;
 
     public static readonly (string name, string sub, int minutes)[] Modes =
     {
@@ -37,18 +37,59 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
     int _cur = -1;
     bool _launched, _finished;
     int _xpStart;
+    bool _started;
+    int _secondsBefore;                  // время, проведённое в сессии до перезапуска приложения
     readonly Stopwatch _clock = new();
+    int Seconds => _secondsBefore + (int)_clock.Elapsed.TotalSeconds;
     readonly DateTime _day = DateTime.Today;
     DispatcherTimer? _auto;
 
     StudyPage(int mode) { _mode = mode; _stages = Plan(mode); _state.AddRange(_stages.Select(_ => 0)); }
 
-    /// <summary>Открыть сессию: продолжить сегодняшнюю или собрать новую.</summary>
+    /// <summary>Открыть сессию: продолжить сегодняшнюю (в том числе после перезапуска) или собрать новую.</summary>
     public static void Start()
     {
         if (Active is { _finished: false } a && a._day == DateTime.Today) { Shell.Open(a); return; }
-        Active = new StudyPage(Math.Clamp(ProgressStore.P.StudyMode, 0, 2));
+        Active = Restore() ?? new StudyPage(Math.Clamp(ProgressStore.P.StudyMode, 0, 2));
         Shell.Open(Active);
+    }
+
+    /// <summary>Есть ли сегодня начатая и не законченная сессия (в памяти или сохранённая).</summary>
+    public static bool HasPaused => Active is { IsResumable: true } || (Active == null && ProgressStore.P.StudyDay == Today);
+    static string Today => DateTime.Today.ToString("yyyy-MM-dd");
+
+    /// <summary>Сохранить ход сессии в прогресс — чтобы после перезапуска продолжить с того же шага.</summary>
+    void Save()
+    {
+        var p = ProgressStore.P;
+        p.StudyDay = Today;
+        p.StudyDone = _stages.Where((_, i) => _state[i] == 1).Select(s => s.Title).ToList();
+        p.StudySkipped = _stages.Where((_, i) => _state[i] == 2).Select(s => s.Title).ToList();
+        p.StudySeconds = Seconds;
+        p.StudyXpStart = _xpStart;
+        ProgressStore.Notify();
+    }
+
+    static StudyPage? Restore()
+    {
+        var p = ProgressStore.P;
+        if (p.StudyDay != Today || p.Flags.Contains("study:" + Today)) return null;
+        var s = new StudyPage(Math.Clamp(p.StudyMode, 0, 2)) { _started = true, _secondsBefore = p.StudySeconds, _xpStart = p.StudyXpStart };
+        // шаги, сделанные до перезапуска, могли уйти из свежего плана (например, повторять уже нечего) — показываем их как сделанные
+        var gone = p.StudyDone.Where(t => s._stages.All(x => x.Title != t)).ToList();
+        for (int k = gone.Count - 1; k >= 0; k--) { s._stages.Insert(0, new StudyStage("review", gone[k], "сделано раньше сегодня", 0, () => false)); s._state.Insert(0, 1); }
+        for (int i = 0; i < s._stages.Count; i++)
+            if (p.StudyDone.Contains(s._stages[i].Title)) s._state[i] = 1;
+            else if (p.StudySkipped.Contains(s._stages[i].Title)) s._state[i] = 2;
+        return s;
+    }
+
+    // План для главной: пересчитывается только после изменения прогресса (главная перерисовывается часто)
+    static (int ver, int mode, List<StudyStage> plan) _planCache = (-1, -1, new());
+    public static List<StudyStage> PlanCached(int mode)
+    {
+        if (_planCache.ver != ProgressStore.Version || _planCache.mode != mode) _planCache = (ProgressStore.Version, mode, Plan(mode));
+        return _planCache.plan;
     }
 
     // ─────────── Подбор шагов ───────────
@@ -172,6 +213,7 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
         {
             _launched = false;
             _state[_cur] = 1;
+            Save();
             Advance(auto: true);
             return;
         }
@@ -186,19 +228,22 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
         if (!auto) { Launch(next); return; }
         // короткая пауза между шагами: видно, что шаг засчитан, и что будет дальше
         _auto?.Stop();
-        _auto = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1600) };
+        _auto = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(TransitionMs) };
         _auto.Tick += (_, _) => { _auto?.Stop(); if (_host.IsAttached()) Launch(_state.IndexOf(0)); };
         _auto.Start();
     }
+
+    const int TransitionMs = 1800;
 
     void Launch(int i)
     {
         _auto?.Stop();
         if (i < 0) { Finish(); return; }
-        if (!_clock.IsRunning) { _clock.Start(); _xpStart = ProgressStore.P.Xp; }
+        if (!_started) { _started = true; _xpStart = ProgressStore.P.Xp; }
+        if (!_clock.IsRunning) _clock.Start();
         _cur = i;
-        if (_stages[i].Launch()) _launched = true;
-        else { _state[i] = 2; Advance(auto: false); }
+        if (_stages[i].Launch()) { _launched = true; Save(); }
+        else { _state[i] = 2; Save(); Advance(auto: false); }
     }
 
     readonly Grid _host = new();
@@ -206,7 +251,7 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
     void Render(int justDone = -1)
     {
         var root = new StackPanel { MaxWidth = 760, HorizontalAlignment = HorizontalAlignment.Center };
-        bool started = _clock.IsRunning;
+        bool started = _started;
         int done = _state.Count(s => s != 0);
         int nextIdx = _state.IndexOf(0);
 
@@ -287,7 +332,19 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
             row.Children.Add(card.Col(1));
             row.Children.Add(U.T(st == 2 ? "пропущено" : $"{s.Minutes} мин", "Muted", 12).CenterV().M(12, 0, 4, 0).Col(2).DesktopOnly());
             route.Children.Add(row);
-            if (i == justDone) { Anim.Pop(dot, 0.4); Sfx.Ok(); }
+            if (i == justDone)
+            {
+                // засчитанный шаг: точка «выпрыгивает», карточка гаснет
+                Anim.Pop(dot, 0.4); Sfx.Ok();
+                Anim.Opacity(card, 1, 0.6, 500, 150);
+            }
+            if (justDone >= 0 && isNext)
+            {
+                // следующий шаг выезжает справа и подсвечивается
+                var tt = new TranslateTransform(40, 0); card.RenderTransform = tt;
+                Anim.Run((tt, "x"), 40, 0, 520, v => tt.X = v, Ease.QuinticOut, 220);
+                Anim.Opacity(card, 0, 1, 420, 220);
+            }
         }
         root.Children.Add(route);
 
@@ -300,8 +357,17 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
             buttons.Children.Add(U.Btn("Дальше", () => Launch(_state.IndexOf(0)), "Primary", "").Also(b => b.MinWidth = 180));
             buttons.Children.Add(U.Btn("Пропустить шаг", () => { _auto?.Stop(); _state[nextIdx] = 2; Advance(auto: false); }, "Ghost", ""));
         }
-        buttons.Children.Add(U.Btn(started ? "Пауза" : "Назад", () => { _auto?.Stop(); Shell.Back(); }, "Ghost", ""));
+        buttons.Children.Add(U.Btn(started ? "Пауза" : "Назад", () => { _auto?.Stop(); _clock.Stop(); if (_started) Save(); Shell.Back(); }, "Ghost", ""));
         root.Children.Add(buttons);
+        if (started && justDone >= 0 && nextIdx >= 0)
+        {
+            // полоска отсчёта до автоматического перехода
+            var track = new Border { Height = 4, Width = 260, CornerRadius = new CornerRadius(2), Background = U.B("Surface2"), HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 14, 0, 0) };
+            var fill = new Border { Height = 4, Width = 0, CornerRadius = new CornerRadius(2), Background = U.B("AccentGradient"), HorizontalAlignment = HorizontalAlignment.Left };
+            track.Child = fill;
+            root.Children.Add(track);
+            Anim.Run((fill, "w"), 0, 260, TransitionMs - 100, v => fill.Width = v, Ease.Linear);
+        }
         if (started) root.Children.Add(U.T("Следующий шаг откроется сам · Пробел — сразу", "Muted", 12).Center().M(0, 10, 0, 0));
 
         _host.Children.Clear();
@@ -318,8 +384,10 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
         _auto?.Stop();
         int xp = ProgressStore.P.Xp - _xpStart;
         int done = _state.Count(s => s == 1);
-        int min = Math.Max(1, (int)Math.Round(_clock.Elapsed.TotalMinutes));
+        int min = Math.Max(1, (int)Math.Round(Seconds / 60.0));
         ProgressStore.P.Flags.Add("study:" + DateTime.Today.ToString("yyyy-MM-dd"));
+        ProgressStore.P.StudySessions++;
+        ProgressStore.P.StudyDay = "";
         Challenges.Bump("study");
         ProgressStore.Notify();
         Sfx.Done();

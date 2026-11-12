@@ -92,3 +92,4 @@ public class DictSizeTests
         Assert.NotNull(Matsubakira.Services.JDict.Lookup("猫"));
     }
 }
+

@@ -73,7 +73,13 @@ public sealed class Progress
     public int ShieldsUsed { get; set; }
     public int PerfectDays { get; set; }                           // дни, когда выполнены все испытания
     public List<string> Badges { get; set; } = new();             // значки недель (понедельник недели)
-    public int StudyMode { get; set; } = 1;            // длина сессии «Учиться»: 0 — 5 мин, 1 — 15, 2 — 30
+    public int StudyMode { get; set; } = 1;
+    public string StudyDay { get; set; } = "";                     // незаконченная сессия «Учиться» (дата)
+    public List<string> StudyDone { get; set; } = new();
+    public List<string> StudySkipped { get; set; } = new();
+    public int StudySeconds { get; set; }
+    public int StudyXpStart { get; set; }
+    public int StudySessions { get; set; }                         // всего пройдено сессий            // длина сессии «Учиться»: 0 — 5 мин, 1 — 15, 2 — 30
 }
 
 [JsonSerializable(typeof(Progress))]
@@ -123,7 +129,12 @@ public static class ProgressStore
         if (P.Flags.Add("mig-v3")) P.Petals = false;
         // Голоса 女声/男声 звучали с придыханием — переключаем на чёткий голос по умолчанию
         if (P.Flags.Add("mig-vv2") && P.OfflineStyleId >= 10000) P.OfflineStyleId = -1;
-        if (P.Xp > 0) P.Flags.Add("onboarded"); // у кого уже есть прогресс — помощник первого запуска не нужен
+        if (P.Xp > 0) P.Flags.Add("onboarded");
+        // 2.0: число сессий — счётчиком; дневные флаги старше двух недель больше не нужны (файл не растёт)
+        if (P.StudySessions == 0) P.StudySessions = P.Flags.Count(f => f.StartsWith("study:"));
+        var cutoff = DateTime.Today.AddDays(-14).ToString("yyyy-MM-dd");
+        P.Flags.RemoveWhere(f => (f.StartsWith("study:") || f.StartsWith("perfect:") || f.StartsWith("ch:") || f.StartsWith("plan:") || f.StartsWith("week:"))
+            && f.IndexOf(':') is var c && f.Length >= c + 11 && string.CompareOrdinal(f.Substring(c + 1, 10), cutoff) < 0); // у кого уже есть прогресс — помощник первого запуска не нужен
         // Серия сгорает, если пропущен день — если нет щита
         ShieldsUsedOnLoad = Challenges.UseShields(P);
         if (P.LastStudy.Date < DateTime.Today.AddDays(-1)) P.Streak = 0;
@@ -152,8 +163,12 @@ public static class ProgressStore
         catch (Exception ex) { CrashReport.Log(ex); }
     }
 
+    /// <summary>Номер изменения прогресса — для кэшей, которые надо пересчитать после изменений.</summary>
+    public static int Version { get; private set; }
+
     static void Touch()
     {
+        Version++;
         Changed?.Invoke();
         // Сохранение через 2 с после последнего изменения (серия правок — одна запись на диск)
         _saveTimer ??= new Timer(_ => Avalonia.Threading.Dispatcher.UIThread.Post(Save), null, Timeout.Infinite, Timeout.Infinite);

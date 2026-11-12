@@ -54,8 +54,8 @@ public sealed class HomePage : UserControl, IPage
         });
         // Главное действие 2.0 — «Учиться»: сессия собирается сама, видно из чего она состоит
         bool studied = p.Flags.Contains("study:" + DateTime.Today.ToString("yyyy-MM-dd"));
-        bool resume = StudyPage.Active is { } act && !studied && act.IsResumable;
-        var plan = StudyPage.Plan(Math.Clamp(p.StudyMode, 0, 2));
+        bool resume = !studied && StudyPage.HasPaused;
+        var plan = StudyPage.PlanCached(Math.Clamp(p.StudyMode, 0, 2));
         left.Children.Add(U.T(studied ? "СЕССИЯ НА СЕГОДНЯ ВЫПОЛНЕНА ✓" : resume ? "СЕССИЯ НА ПАУЗЕ" : "СЕССИЯ НА СЕГОДНЯ", "Overline").M(0, 20, 0, 0));
         left.Children.Add(U.T(studied ? "Отлично! Можно закрепить ещё раз или выбрать раздел" : $"{plan.Count} {MainView.Plural(plan.Count, "шаг", "шага", "шагов")} · около {plan.Sum(x => x.Minutes)} минут", "H2", 19).M(0, 4, 0, 10));
         var chips = new WrapPanel();
