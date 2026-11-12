@@ -18,7 +18,6 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
-    <Compile Include="../Kotodama.Tests/CoreTests.cs" Link="CoreTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

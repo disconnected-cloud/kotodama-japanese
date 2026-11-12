@@ -183,7 +183,6 @@ public class SpeechScoringTests
     [Fact]
     public void KanaVersionOfKanjiPhraseMatches() => Assert.True(Speech.Score("にほんごをべんきょうしています", 0.8f, "日本語を勉強しています", "にほんごをべんきょうしています").Score >= 90);
 
-#if XPLAT
     [Fact]
     public void DifferentPhraseScoresLow()
     {
@@ -201,11 +200,6 @@ public class SpeechScoringTests
         // одна неточная мора («ございまう») — в лёгком режиме это зачёт, как в Duolingo
         Assert.True(Speech.Score("ありがとうございまう", 0.8f, "ありがとうございます", "ありがとうございます").Ok);
 
-#else
-    [Fact]
-    public void DifferentPhraseScoresLow() => Assert.True(Speech.Score("さようなら", 0.9f, "ありがとうございます", "ありがとうございます").Score < 35);
-
-#endif
     [Fact]
     public void EmptyRecognitionIsZero() => Assert.Equal(0, Speech.Score("", 0, "はい", "はい").Score);
 
@@ -366,7 +360,6 @@ public class PitchAndMnemonicsTests
         Assert.True(Db.Kanji.Count(k => Mnemonics.Hint(k.Char, k.Ru).Length > 0) > Db.Kanji.Length * 0.6);
 }
 
-#if XPLAT
 public class GrammarRulesTests
 {
     [Theory]
@@ -392,4 +385,3 @@ public class GrammarRulesTests
         Assert.Equal("sushi o tabemasu ka?", Reading.RomajiWords("寿司を食べますか？"));
     }
 }
-#endif

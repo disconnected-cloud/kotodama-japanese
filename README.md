@@ -37,22 +37,14 @@
 
 ## Сборка из исходников
 
-```
-publish-all.cmd           :: все файлы релиза (Windows, Linux, установщик) из xplat
-dotnet build Matsubakira.csproj
-run-tests.cmd             :: автотесты (xUnit)
-publish.cmd               :: обычная сборка → dist
-publish-portable.cmd      :: переносная сборка → dist-portable
-build-installer.cmd       :: установщик (нужен Inno Setup 6)
-```
-
-Кроссплатформенная версия (Avalonia, Windows и Linux) — папка [`xplat/`](xplat/):
+Весь код — кроссплатформенный проект [`xplat/`](xplat/) (Avalonia): Windows, Linux и общая часть Android ([`android/`](android/)).
 
 ```
-dotnet run --project xplat
-dotnet test tests/Kotodama.XTests
-dotnet publish xplat -c Release -r linux-x64 --self-contained -o release/Kotodama-linux
-python tools/pack_linux.py release/Kotodama-linux release/Kotodama-linux-x64.tar.gz
+dotnet run --project xplat           :: запуск
+run-tests.cmd                        :: автотесты (xUnit, tests/Kotodama.XTests)
+publish.cmd                          :: сборка для своего ПК → dist
+publish-all.cmd                      :: все файлы релиза (Windows, Linux, установщик)
+build-installer.cmd                  :: установщик (нужен Inno Setup 6)
 ```
 
 Linux-архив собирается и проверяется автоматически в GitHub Actions (`.github/workflows/linux.yml`) и прикрепляется к каждому новому релизу.

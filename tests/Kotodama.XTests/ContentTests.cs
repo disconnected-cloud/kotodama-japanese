@@ -51,11 +51,13 @@ public class ContentTests
         Assert.True(Math.Abs(y.Skip(4000).Average()) < 0.05);  // постоянная составляющая убрана
     }
 
-    static string RepoRoot
+    // корень репозитория — от исходника теста (сборка может лежать вне репо)
+    static string RepoRoot => FindRoot();
+
+    static string FindRoot([System.Runtime.CompilerServices.CallerFilePath] string src = "")
     {
-        get
         {
-            var d = new DirectoryInfo(AppContext.BaseDirectory);
+            var d = new DirectoryInfo(Path.GetDirectoryName(src)!);
             while (d != null && !Directory.Exists(Path.Combine(d.FullName, "Assets", "emoji"))) d = d.Parent;
             return d!.FullName;
         }
