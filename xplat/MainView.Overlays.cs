@@ -74,8 +74,10 @@ public partial class MainView : UserControl
         close.Click += (_, _) => CloseOverlay();
         var card = new Border
         {
-            Classes = { "Card" }, MinWidth = 440, MaxWidth = 620, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
-            Padding = new Thickness(30, 22), BoxShadow = BoxShadows.Parse("0 6 24 0 #59000000"),
+            // на телефоне — во всю ширину с полями (минимум 440 не помещался в экран 360)
+            Classes = { "Card" }, MinWidth = Shell.Compact ? 0 : 440, MaxWidth = 620, HorizontalAlignment = Shell.Compact ? HorizontalAlignment.Stretch : HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center, Margin = Shell.Compact ? new Thickness(12) : default,
+            Padding = Shell.Compact ? new Thickness(18, 16) : new Thickness(30, 22), BoxShadow = BoxShadows.Parse("0 6 24 0 #59000000"),
             Child = new Grid { Children = { content, close } },
         };
         overlay.Children.Add(card);

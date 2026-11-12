@@ -28,6 +28,15 @@ public class MainActivity : AvaloniaMainActivity<App>
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         Current = this;
+#if DEBUG
+        // проверка в эмуляторе: adb shell am start … --es args "--page kana" (отладочные флаги, как на компьютере)
+        if (Intent?.GetStringExtra("args") is { Length: > 0 } a)
+        {
+            Platform.Hooks.Args = new[] { "Kotodama" }.Concat(a.Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToArray();
+            Platform.AudioPlayer.Muted = true;
+            ProgressStore.ReadOnly = true;
+        }
+#endif
         base.OnCreate(savedInstanceState);
     }
 

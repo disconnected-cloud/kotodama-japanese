@@ -20,6 +20,7 @@ public sealed class StatsPage : UserControl, IPage
         var p = ProgressStore.P;
         var root = new StackPanel();
         root.Children.Add(U.Header("進歩", "Прогресс", "Как растут знания: активность, память, навыки и прогноз до цели", art: "trophy"));
+        root.Children.Add(U.Btn("Итоги недели", WeekSummary.ShowLatest, "", "").Also(b => b.HorizontalAlignment = HorizontalAlignment.Left).M(0, 0, 0, 16));
 
         // ─────────── Главные числа ───────────
         var cards = p.Cards.Values.ToList();

@@ -69,6 +69,7 @@ public sealed class Progress
     public string Level { get; set; } = "N5";
     public string DayDate { get; set; } = "";                     // счётчики испытаний дня
     public Dictionary<string, int> DayCounts { get; set; } = new();
+    public Dictionary<string, Dictionary<string, int>> DayLog { get; set; } = new(); // счётчики прошлых дней (60 дней) — для итогов недели
     public int Shields { get; set; } = 1;                          // щиты серии (первый — в подарок)
     public int ShieldsUsed { get; set; }
     public int PerfectDays { get; set; }                           // дни, когда выполнены все испытания

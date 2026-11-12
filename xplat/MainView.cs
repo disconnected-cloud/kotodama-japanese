@@ -201,12 +201,14 @@ public partial class MainView : UserControl
         _navItems["home"].IsChecked = true;
         PlayIntro();
         if (Win is { } win) Tray.Init(win);
-        var args = Environment.GetCommandLineArgs();
+        var args = Platform.Hooks.Args ?? Environment.GetCommandLineArgs();
         bool plain = !args.Skip(1).Any();
         if (!ProgressStore.P.Flags.Contains("onboarded") && plain) Push(new OnboardingPage());
         if (plain)
         {
             Updater.AutoCheck();
+            // итоги прошлой недели — один раз в начале новой (не поверх знакомства с приложением)
+            if (ProgressStore.P.Flags.Contains("onboarded")) DispatcherTimer.RunOnce(WeekSummary.MaybeShow, TimeSpan.FromSeconds(2.5));
             if (CrashReport.HasNew()) { CrashReport.MarkSeen(); Shell.Toast("В прошлый раз была ошибка — отправить отчёт можно в Настройках → «Обратная связь»", "!"); }
         }
         var remind = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };

@@ -3,7 +3,7 @@
              x:Class="Matsubakira.App"
              RequestedThemeVariant="Dark">
   <Application.Resources>
-    <FontFamily x:Key="UiFont">Segoe UI Variable Display, Segoe UI, Inter, Noto Sans, Ubuntu, Cantarell, DejaVu Sans, Yu Gothic UI, Noto Sans CJK JP</FontFamily>
+    <FontFamily x:Key="UiFont">Segoe UI Variable Display, Segoe UI, Inter, Roboto, Noto Sans, Ubuntu, Cantarell, DejaVu Sans, Yu Gothic UI, Noto Sans CJK JP</FontFamily>
     <FontFamily x:Key="JpFont">Yu Gothic UI, Meiryo, Noto Sans CJK JP, Noto Sans JP, Source Han Sans JP, IPAGothic, TakaoGothic, VL Gothic, sans-serif</FontFamily>
     <FontFamily x:Key="JpSerif">Yu Mincho, MS Mincho, Noto Serif CJK JP, Noto Serif JP, Source Han Serif JP, IPAMincho, Noto Sans CJK JP, Yu Gothic UI</FontFamily>
     <FontFamily x:Key="Icons">avares://Kotodama/Assets/fonts#Kotodama Icons</FontFamily>

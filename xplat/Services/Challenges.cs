@@ -23,7 +23,13 @@ public static class Challenges
         {
             var p = ProgressStore.P;
             var today = DateTime.Today.ToString("yyyy-MM-dd");
-            if (p.DayDate != today) { p.DayDate = today; p.DayCounts.Clear(); }
+            if (p.DayDate != today)
+            {
+                // вчерашние счётчики — в архив (итоги недели), храним два месяца
+                if (p.DayDate.Length > 0 && p.DayCounts.Count > 0) p.DayLog[p.DayDate] = new Dictionary<string, int>(p.DayCounts);
+                foreach (var old in p.DayLog.Keys.Where(k => string.CompareOrdinal(k, DateTime.Today.AddDays(-60).ToString("yyyy-MM-dd")) < 0).ToList()) p.DayLog.Remove(old);
+                p.DayDate = today; p.DayCounts.Clear();
+            }
             return p.DayCounts;
         }
     }
@@ -34,6 +40,14 @@ public static class Challenges
         if (!Dispatcher.UIThread.CheckAccess()) { Dispatcher.UIThread.Post(() => Bump(kind, n)); return; }
         Day[kind] = Day.GetValueOrDefault(kind) + n;
         ProgressStore.Notify();
+    }
+
+    /// <summary>Счётчик за день: сегодня — живой, прошлые дни — из архива.</summary>
+    public static int CountOn(DateTime day, string kind)
+    {
+        var key = day.ToString("yyyy-MM-dd");
+        if (day.Date == DateTime.Today) return Day.GetValueOrDefault(kind);
+        return ProgressStore.P.DayLog.TryGetValue(key, out var d) ? d.GetValueOrDefault(kind) : 0;
     }
 
     static int Count(string kind) => kind == "xp" ? ProgressStore.TodayXp : Day.GetValueOrDefault(kind);

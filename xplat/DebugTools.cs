@@ -295,6 +295,7 @@ public partial class MainView
 #if !MOBILE
 #endif
             case "wod": WordOfDay.Show(); break;
+            case "week": WeekSummary.ShowLatest(); break;
             case "quiz":
             case "quizwrong":
                 var w = Db.Words.Where(x => x.Jp.Any(Reading.IsKanji)).Take(8).ToArray();

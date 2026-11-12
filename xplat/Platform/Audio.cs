@@ -171,6 +171,8 @@ public static class Hooks
     public static Func<IMic>? Mic;
     /// <summary>Системный синтез речи → путь к WAV (на Android — голос Google/Samsung, если онлайн-голос недоступен).</summary>
     public static Func<string, bool, Task<string?>>? SystemTts;
+    /// <summary>Аргументы запуска там, где нет командной строки (Android: отладочная сборка, extra «args» у intent).</summary>
+    public static string[]? Args;
 }
 
 /// <summary>Один канал воспроизведения (озвучка и звуки интерфейса — разные экземпляры, не перебивают друг друга).</summary>
