@@ -36,7 +36,26 @@ public sealed class ReaderPage : UserControl, IPage
         ["Японские сказки"] = ("#8FB8FF", "#3446A8", "昔", "Момотаро, Урасима Таро и другие · N5–N4"),
         ["Год в Японии"] = ("#7FE0B0", "#1E8A64", "季", "Праздники и обычаи по сезонам · N4"),
         ["Пропавший кот"] = ("#FFC56B", "#C76A12", "謎", "Детектив по соседству · N4"),
+        // настоящая японская литература (общественное достояние, тексты — Аодзора Бунко)
+        ["Лисёнок Гон"] = ("#F4A259", "#A2421E", "狐", "Ниими Нанкити, «Гон-гицунэ», 1932 · 6 глав"),
+        ["Паутинка"] = ("#B9C6D8", "#3C4A63", "糸", "Акутагава Рюноскэ, «Кумо-но ито», 1918 · 3 главы"),
+        ["Ваш покорный слуга кот"] = ("#D9C2A0", "#6B4F2E", "猫", "Нацумэ Сосэки, «Вагахай ва нэко дэ ару», 1905 · начало"),
+        ["Не сдаваясь дождю"] = ("#9FC9E8", "#2F5F8A", "雨", "Миядзава Кэндзи, «Амэ ни мо макэдзу», 1931 · стихотворение"),
+        ["Хайку"] = ("#C8E0A8", "#4E7A2E", "句", "Басё, Бусон, Исса · 12 знаменитых трёхстиший"),
     };
+
+    /// <summary>Русские книги о Японии (только описание — тексты новых книг защищены авторским правом).</summary>
+    static readonly (string title, string author, string year, string about, bool free, string jp)[] RussianBooks =
+    {
+        ("Записки в плену у японцев", "Василий Головнин", "1816", "Капитан русского флота два года провёл в японском плену и подробно описал страну, закрытую от мира: законы, быт, характер людей.", true, "獄"),
+        ("Фрегат «Паллада»", "Иван Гончаров", "1858", "Путевые очерки писателя, побывавшего в Нагасаки с посольством Путятина: первые русские впечатления о японских чиновниках, церемониях и еде.", true, "船"),
+        ("Корни японского солнца", "Борис Пильняк", "1927", "Записки о поездке в Японию 1926 года: города, театр, люди — живо и субъективно.", false, "根"),
+        ("Ветка сакуры", "Всеволод Овчинников", "1971", "Классика: журналист, семь лет проживший в Японии, объясняет японский характер, эстетику и обычаи.", false, "桜"),
+        ("Книга японских обыкновений", "Александр Мещеряков", "1999", "Как жили японцы в старину: дом, еда, праздники, приметы — коротко и с юмором.", false, "習"),
+    };
+
+    /// <summary>Книги-оригиналы японских писателей (остальные — учебные повести для начинающих).</summary>
+    static readonly HashSet<string> Classics = new() { "Лисёнок Гон", "Паутинка", "Ваш покорный слуга кот", "Не сдаваясь дождю", "Хайку" };
 
     /// <summary>Обложка книги: градиент, крупный иероглиф, прогресс по главам.</summary>
     static Control BookCard(string book, RText[] chapters)
@@ -55,7 +74,7 @@ public sealed class ReaderPage : UserControl, IPage
         });
         cover.Children.Add(new TextBlock { Text = jp, FontFamily = U.R<FontFamily>("JpSerif"), FontSize = 96, FontWeight = FontWeight.Bold, Foreground = Brushes.White, Opacity = 0.9, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(22, 0, 0, 6) });
         // на обложке — Википе-тан в подходящем образе
-        var pic = book.StartsWith("Котоха") ? Art.Anime("student", 260) : book.Contains("сказк") ? Art.Anime("reading", 180)
+        var pic = Classics.Contains(book) ? new Border() : book.StartsWith("Котоха") ? Art.Anime("student", 260) : book.Contains("сказк") ? Art.Anime("reading", 180)
             : book.Contains("кот") ? Art.Anime("teacher", 250) : Art.Anime("casual", 260);
         pic.HorizontalAlignment = HorizontalAlignment.Right; pic.VerticalAlignment = VerticalAlignment.Top; pic.Margin = new Thickness(0, 8, 12, -60);
         cover.ClipToBounds = true;
@@ -64,7 +83,7 @@ public sealed class ReaderPage : UserControl, IPage
             U.Cols("*", "auto").Also(g =>
             {
                 g.Children.Add(new ProgressBar { Maximum = chapters.Length, Value = read, Height = 5, VerticalAlignment = VerticalAlignment.Center });
-                g.Children.Add(U.T($"{read}/{chapters.Length} глав", "Muted", 12).M(10, 0, 0, 0).Col(1));
+                g.Children.Add(U.T($"{read}/{chapters.Length} {MainView.Plural(chapters.Length, "глава", "главы", "глав")}", "Muted", 12).M(10, 0, 0, 0).Col(1));
             }));
         var card = new Border
         {
@@ -97,13 +116,46 @@ public sealed class ReaderPage : UserControl, IPage
         var root = new StackPanel();
         root.Children.Add(U.Header("読", "Книги и тексты", "Фуригана, озвучка, перевод по клику на слово и «+» в карточки."));
         // ─────────── Книги ───────────
-        root.Children.Add(U.T("Книги", "H2").M(0, 0, 0, 4));
-        root.Children.Add(U.T("Читай по главам: каждая глава — 8–11 предложений с озвучкой и вопросами.", "Muted").M(0, 0, 0, 12));
+        root.Children.Add(U.T("Японская литература в оригинале", "H2").M(0, 0, 0, 4));
+        root.Children.Add(U.T("Настоящие произведения японских писателей — полный текст с фуриганой, озвучкой и переводом каждого предложения. Сложнее учебных текстов: читай с переводом по клику.", "Muted").Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 0, 0, 12));
+        var classics = new UniformGrid { Columns = U.Columns(3), Margin = new Thickness(-8, 0, -8, 0) };
+        foreach (var g in Texts.Where(t => t.Book != null && Classics.Contains(t.Book)).GroupBy(t => t.Book!))
+            classics.Children.Add(BookCard(g.Key, g.ToArray()));
+        root.Children.Add(classics);
+        Anim.Stagger(classics, 50, 60);
+
+        root.Children.Add(U.T("Учебные повести", "H2").M(0, 26, 0, 4));
+        root.Children.Add(U.T("Написаны простым языком для уровней N5–N4: каждая глава — 8–11 предложений с озвучкой и вопросами.", "Muted").M(0, 0, 0, 12));
         var books = new UniformGrid { Columns = U.Columns(3), Margin = new Thickness(-8, 0, -8, 0) };
-        foreach (var g in Texts.Where(t => t.Book != null).GroupBy(t => t.Book!))
+        foreach (var g in Texts.Where(t => t.Book != null && !Classics.Contains(t.Book)).GroupBy(t => t.Book!))
             books.Children.Add(BookCard(g.Key, g.ToArray()));
         root.Children.Add(books);
         Anim.Stagger(books, 50, 60);
+
+        // ─────────── Русские книги о Японии ───────────
+        root.Children.Add(U.T("Русские книги о Японии", "H2").M(0, 26, 0, 4));
+        root.Children.Add(U.T("Что почитать по-русски о стране, языке и людях. Старые книги — в общественном достоянии (бесплатно в Викитеке), новые — в библиотеке или книжном.", "Muted").Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 0, 0, 12));
+        var ru = new UniformGrid { Columns = U.Columns(2), Margin = new Thickness(-6, 0, -6, 0) };
+        foreach (var (title, author, year, about, free, jp) in RussianBooks)
+        {
+            var g = U.Cols("auto", "*");
+            g.Children.Add(new Border
+            {
+                Width = 54, Height = 72, CornerRadius = new CornerRadius(8), VerticalAlignment = VerticalAlignment.Top,
+                Background = new LinearGradientBrush
+                {
+                    StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative), EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
+                    GradientStops = { new GradientStop(Color.Parse(free ? "#C9A46A" : "#8C7BD9"), 0), new GradientStop(Color.Parse(free ? "#6E4A1F" : "#3E2F8F"), 1) },
+                },
+                Child = U.Jp(jp, 26, Brushes.White, true).Center().CenterV(),
+            });
+            g.Children.Add(U.Stack(U.T(title, "H3", 14.5), U.T($"{author} · {year}", "Muted", 12),
+                U.T(about, "Body", 13).Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 6, 0, 6),
+                U.Pill(free ? "общественное достояние" : "в библиотеке", free ? U.B("GoodSoft") : U.B("Surface2"), free ? U.B("Good") : U.B("Muted")).Also(b => b.HorizontalAlignment = HorizontalAlignment.Left))
+                .M(14, 0, 0, 0).Col(1));
+            ru.Children.Add(new Border { Classes = { "Card" }, Child = g, Margin = new Thickness(6) });
+        }
+        root.Children.Add(ru);
 
         // ─────────── Рассказы ───────────
         root.Children.Add(U.T("Короткие рассказы", "H2").M(0, 26, 0, 12));
