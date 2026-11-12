@@ -20,6 +20,8 @@ public partial class MainView
 {
     void DebugArgs(string[] args)
     {
+        int rr = Array.IndexOf(args, "--rerender");
+        if (rr > 0 && rr + 1 < args.Length) DispatcherTimer.RunOnce(() => DebugRerender(args[rr + 1]), TimeSpan.FromSeconds(1));
         int oi = Array.IndexOf(args, "--open");
         if (oi > 0 && oi + 1 < args.Length) DebugOpen(args[oi + 1]);
         int pt = Array.IndexOf(args, "--playtest");
@@ -59,6 +61,38 @@ public partial class MainView
         }, TimeSpan.FromSeconds(double.TryParse(Environment.GetEnvironmentVariable("KOTODAMA_SNAP_DELAY"), out var sd) ? sd : 2.5));
     }
 
+
+    /// <summary>Каждый экран открывается и перерисовывается трижды: ловит «already has a visual parent» и прочие ошибки повторной отрисовки.</summary>
+    void DebugRerender(string outPath)
+    {
+        var log = new List<string>();
+        void Try(string name, Func<Control> make)
+        {
+            try
+            {
+                var page = make();
+                Push(page);
+                for (int i = 0; i < 3; i++) (page as IPage)?.OnShown();
+                log.Add("ok   " + name);
+            }
+            catch (Exception ex) { log.Add($"FAIL {name}: {ex.GetType().Name}: {ex.Message}"); }
+        }
+        foreach (var key in Factories.Keys.Where(k => k != "more" || Shell.Compact)) Try(key, () => Factories[key]());
+        Try("study", () => { StudyPage.Start(); return (Control)_stack[^1]; });
+        Try("pairs", () => new PairsPage());
+        Try("speechlesson", () => new SpeechLessonPage(Db.SpeechLessons[0]));
+        Try("dialog", () => new DialogPage(Db.Dialogs[0]));
+        Try("grammarlesson", () => new GrammarLessonPage(Db.Grammar[0]));
+        Try("unit", () => new UnitPage(Db.Course[0]));
+        Try("text", () => new TextPage(ReaderPage.Texts[0]));
+        Try("word", () => new WordPage(JDict.Lookup("猫")!));
+        Try("mic", () => new MicCheckPage());
+        Try("radicals", () => new RadicalsPage());
+        Try("writing", () => new WritingPage());
+        Try("article", () => new ArticlePage(JapanPage.All[0]));
+        System.IO.File.WriteAllLines(outPath, log);
+        Environment.Exit(0);
+    }
 
     /// <summary>Шумоподавление: фразы с наложенным шумом (вентилятор + гул + шипение, SNR ≈ 8 дБ) — балл без фильтра и с ним.</summary>
     async void DebugNoiseBench(string outPath)

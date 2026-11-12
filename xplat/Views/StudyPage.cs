@@ -372,7 +372,7 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
 
         _host.Children.Clear();
         _host.Children.Add(root);
-        Content = U.Page(_host.M(Shell.Compact ? 0 : 24, 8, Shell.Compact ? 0 : 24, 24));
+        Content = U.Page(_host.Detach().M(Shell.Compact ? 0 : 24, 8, Shell.Compact ? 0 : 24, 24));
         Anim.FadeUp(root, 0, 10, 320);
         if (justDone < 0) Anim.Stagger(route, 50, 80);
     }

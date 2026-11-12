@@ -138,7 +138,7 @@ public sealed class PairsPage : UserControl, IPage, IKeyTarget
         nav.Children.Add(U.T("Пробел — говорить · L — послушать · → — другая пара", "Muted", 12).DesktopOnly().Center().CenterV().Col(1));
         nav.Children.Add(U.Btn("Другая пара", NextPair, "", "").Col(2));
         _root.Children.Add(nav);
-        Content = U.Page(_root);
+        Content = U.Page(_root.Detach()); // Build() вызывается повторно при смене группы — отцепляем от старой обёртки
     }
 
     IEnumerable<Pair> Pool => _group == "all" ? All : All.Where(p => p.Group == _group);
