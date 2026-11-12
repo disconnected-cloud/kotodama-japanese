@@ -54,7 +54,7 @@ public sealed class MicCheckPage : UserControl, IPage
         root.Children.Add(Section("Устройство", devPanel));
 
         // Режим
-        var mode = new StackPanel { Orientation = Orientation.Horizontal };
+        var mode = new WrapPanel { Orientation = Orientation.Horizontal };
         foreach (var (key, name) in new[] { ("auto", "Авто: стоп после паузы"), ("manual", "Вручную: стоп кнопкой") })
         {
             var rb = new RadioButton { Classes = { "ChipRadio" }, Content = name, GroupName = "mode", IsChecked = p.MicMode == key };
@@ -66,7 +66,7 @@ public sealed class MicCheckPage : UserControl, IPage
             : "Нажми на микрофон, говори сколько нужно и нажми ещё раз (или пробел), чтобы закончить.", "Muted").M(0, 8, 0, 0));
         if (p.MicMode == "auto")
         {
-            var pause = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 10, 0, 0) };
+            var pause = new WrapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 10, 0, 0) };
             pause.Children.Add(U.T("Пауза:", "Muted").CenterV().M(0, 0, 10, 0));
             foreach (var v in new[] { 1.0, 1.5, 2.0, 2.5 })
             {

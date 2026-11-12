@@ -131,7 +131,7 @@ public static class SpeechUi
                 sp.Children.Add(U.T("⚠ Микрофон не найден — подключи его, чтобы проверять произношение.", "Body", 13, U.B("Gold")).M(0, 10, 0, 0));
             if (Asr.Ready) return;
 
-            var choose = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 14, 0, 0) };
+            var choose = new WrapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 14, 0, 0) };
             foreach (var m in Asr.Models)
             {
                 var rb = new RadioButton { Classes = { "ChipRadio" }, GroupName = "asr" + card.GetHashCode(), IsChecked = Asr.ModelId == m.id, Content = $"{m.title} · {m.size / 1_000_000} МБ"}.Tip(m.desc);

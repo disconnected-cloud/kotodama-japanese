@@ -131,7 +131,7 @@ public static class SpeechDetail
             }
             await Speech.SayAsync(mora, slow: true);
         }
-        catch { }
+        catch (Exception e) { CrashReport.Warn("Озвучка моры", e); }
     }
 
     /// <summary>Выравнивание целевых и услышанных мор: '=' верно, '-' пропущено, '+' лишнее, '~' замена.</summary>

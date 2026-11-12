@@ -14,7 +14,7 @@
 
 - **«Учиться» — одна кнопка** — приложение само собирает занятие на 5, 15 или 30 минут: повторение, ошибки, новое по пути, аудирование, речь.
 - **Путь обучения** — 31 юнит от каны до начала N2: сначала теория, потом практика по шагам.
-- **Кана, слова, кандзи** — уровни N5–N2, около 3 200 слов с примерами фраз, 580 кандзи с анимацией порядка черт, разбором на части и подсказками для запоминания, интервальные повторения по алгоритму **FSRS**.
+- **Кана, слова, кандзи** — уровни N5–N2, около 2 600 слов с примерами фраз, 480 кандзи с анимацией порядка черт, разбором на части и подсказками для запоминания, интервальные повторения по алгоритму **FSRS**.
 - **Питч-акцент** — линии высокого и низкого тона у 70 000 слов (например, 箸 / 橋 / 端 — «палочки», «мост», «край»).
 - **Тест уровня при первом запуске** — не нужно начинать с азбуки, если ты её уже знаешь.
 - **Грамматика** — 55 уроков N5–N3 (включая кэйго) с объяснениями, озвученными примерами и упражнениями.
@@ -34,10 +34,11 @@
 
 | Архив | Для кого |
 |---|---|
-| `Kotodama-Setup-1.2.0.exe` | Обычная установка: ярлык в «Пуске», удаление через «Приложения». Права администратора не нужны. |
+| `Kotodama-Setup-2.0.0.exe` | Обычная установка: ярлык в «Пуске», удаление через «Приложения». Права администратора не нужны. |
 | `Kotodama-portable-win-x64.zip` | Распакуй и запусти `Kotodama.exe`. Ничего устанавливать не нужно. |
-| `Kotodama-win-x64.zip` | Архив поменьше, но нужен [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0). |
+| `Kotodama-win-x64.zip` | Архив поменьше, но нужен [.NET 8 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0). |
 | `Kotodama-linux-x64.tar.gz` | **Linux** (x64): распакуй, запусти `./Kotodama` или `./install.sh` — появится в меню приложений. |
+| `Kotodama-android.apk` | **Android** (тестовая версия): установи APK, разрешив установку из этого источника. |
 
 Требования: Windows 10 (1809+) или 11, 64-бит; Linux x64 (Ubuntu 22.04+, Fedora, Arch и др.). В Linux для звука нужен PulseAudio или PipeWire (`pulseaudio-utils`), для японского текста — шрифт `fonts-noto-cjk`.
 
@@ -70,9 +71,9 @@ Linux-архив собирается и проверяется автомати
 | Порядок черт | [KanjiVG](https://kanjivg.tagaini.net/) © Ulrich Apel | CC BY-SA 3.0 |
 | Примеры фраз | [Tatoeba](https://tatoeba.org) | CC BY 2.0 FR |
 | Иллюстрации | [Microsoft Fluent Emoji](https://github.com/microsoft/fluentui-emoji) | MIT |
+| Маскот | [Википе-тан](https://commons.wikimedia.org/wiki/Category:Wikipe-tan) (Wikimedia Commons; авторы по файлам — в [`Assets/anime/CREDITS.txt`](Assets/anime/CREDITS.txt)) | CC BY-SA 3.0 / 4.0 |
 | Распознавание речи | [OpenAI Whisper](https://github.com/openai/whisper) через [Whisper.net](https://github.com/sandrohanea/whisper.net) | MIT |
 | Офлайн-голоса | [VOICEVOX](https://voicevox.hiroshiba.jp/) (скачиваются отдельно) | по условиям персонажей; при публикации озвучки укажи «VOICEVOX:имя» |
 | Аудио | [NAudio](https://github.com/naudio/NAudio), [NLayer](https://github.com/naudio/NLayer) | MIT |
 | Интерфейс | [Avalonia](https://avaloniaui.net/) | MIT |
-| Языковая модель | [llama.cpp](https://github.com/ggml-org/llama.cpp) через [LLamaSharp](https://github.com/SciSharp/LLamaSharp); модели Qwen 2.5 (Apache 2.0 / Qwen Research), Gemma 2 JPN (Gemma Terms) — скачиваются отдельно | MIT |
 | Иконки (Linux) | [Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) © Microsoft | MIT |

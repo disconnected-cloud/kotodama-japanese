@@ -64,7 +64,7 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget
     internal bool RecallPreview { set { _recall = value; } }
     readonly TextBlock _status = U.T("", "Muted", 13);
     readonly SpeechUi.LevelMeter _meter = new();
-    readonly StackPanel _controls = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+    readonly Panel _controls = Shell.Compact ? new WrapPanel() : new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
     CancellationTokenSource? _cts;
     TaskCompletionSource<bool>? _wait;   // ожидание «Дальше / Повторить»
     readonly List<int> _scores = new();
@@ -72,14 +72,14 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget
     public DialogPage(Dialog d)
     {
         _d = d;
-        var root = new Grid { Margin = new Thickness(40, 8, 40, 16), MaxWidth = 900 };
+        var root = new Grid { Margin = Shell.Compact ? new Thickness(16, 8, 16, 12) : new Thickness(40, 8, 40, 16), MaxWidth = 900 };
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition());
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
         var head = U.Cols("*", "auto");
         head.Children.Add(U.Stack(U.T(d.Title, "H1", 24), U.T(d.Desc, "Muted")));
-        var roles = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        var roles = U.Row(0); roles.VerticalAlignment = VerticalAlignment.Center;
         roles.Children.Add(U.T("Моя роль:", "Muted").CenterV().M(0, 0, 10, 0));
         for (int r = 0; r < d.Roles.Length; r++)
         {
@@ -89,7 +89,7 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget
             roles.Children.Add(rb);
         }
         head.Children.Add(roles.Col(1));
-        root.Children.Add(head);
+        root.Children.Add(U.Stackify(head));
 
         _scroll = new ScrollViewer { Content = _chat, Margin = new Thickness(0, 16, 0, 12) };
         root.Children.Add(_scroll.RowAt(1));
@@ -99,7 +99,7 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget
         bg.Children.Add(_meter.CenterV().M(0, 0, 14, 0));
         bg.Children.Add(_status.CenterV().Col(1));
         bg.Children.Add(_controls.Col(2));
-        bar.Child = bg;
+        bar.Child = U.Stackify(bg);
         root.Children.Add(bar.RowAt(2));
         Content = root;
         Unloaded += (_, _) => Stop();

@@ -9,6 +9,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Matsubakira.Services;
 using Matsubakira.Views;
 using RadioButton = Matsubakira.Compat.RadioButton;
@@ -44,8 +45,21 @@ public partial class MainView
         if (nb > 0 && nb + 1 < args.Length) DebugNoiseBench(args[nb + 1]);
         int bi = Array.IndexOf(args, "--asrbench");
         if (bi > 0 && bi + 2 < args.Length) DebugAsrBench(args[bi + 1], args[bi + 2]);
+        int ct = Array.IndexOf(args, "--cliptest");
+        if (ct > 0 && ct + 1 < args.Length) DebugClipTest(args[ct + 1]);
+        int pf = Array.IndexOf(args, "--perf");
+        if (pf > 0 && pf + 1 < args.Length) DebugPerf(args[pf + 1]);
         int si = Array.IndexOf(args, "--snap");
         if (si > 0 && si + 1 < args.Length) DebugSnap(args[si + 1]);
+    }
+
+    /// <summary>Замер запуска: ждёт фоновые загрузки, пишет метки времени и память, выходит.</summary>
+    async void DebugPerf(string outPath)
+    {
+        await Task.Delay(500); // первый кадр
+        await Perf.WarmedUp;
+        System.IO.File.WriteAllText(outPath, Perf.Report());
+        if (Win is { } w) w.Close(); else Environment.Exit(0);
     }
 
     // Рендер собственного окна в PNG (без захвата экрана) и выход — для визуальной проверки
@@ -94,6 +108,58 @@ public partial class MainView
         Try("article", () => new ArticlePage(JapanPage.All[0]));
         System.IO.File.WriteAllLines(outPath, log);
         Environment.Exit(0);
+    }
+
+    /// <summary>
+    /// Обрезанный текст: каждый экран открывается (запускать с --phone и KOTODAMA_PHONE=360x780), и у каждой надписи
+    /// проверяется многоточие, выход за свою ширину/высоту и за край экрана. Отчёт — по экранам.
+    /// </summary>
+    async void DebugClipTest(string outPath)
+    {
+        var log = new List<string>();
+        await Task.Delay(1500);
+        var screens = Factories.Keys.Where(k => k != "more" || Shell.Compact).Select(k => ("root:" + k, (Action)(() => NavigateRoot(k)))).ToList();
+        foreach (var t in new[] { "learn", "voice", "mic", "look", "notify", "data", "awards", "about" })
+            screens.Add(("settings:" + t, () => { SettingsPage._tab = t; NavigateRoot("settings"); }));
+        foreach (var o in new[] { "flash", "kanjiflash", "grammar", "grammar1", "onboard", "speech", "dialog", "dialogr", "unit", "reader", "writing", "mic", "pairs", "study", "report",
+                                  "radicals", "textl", "word", "article", "match", "build", "listen", "gon", "book", "learn", "learnw", "learn1", "learnk", "learnq", "quiz" })
+            screens.Add(("open:" + o, () => { NavigateRoot("home"); DebugOpen(o); }));
+        await JDict.LoadAsync();
+        foreach (var (name, open) in screens)
+        {
+            try { open(); } catch (Exception ex) { log.Add($"{name}: FAIL {ex.Message}"); continue; }
+            await Task.Delay(900); // анимации появления
+            var issues = new List<string>();
+            foreach (var tb in this.GetVisualDescendants().OfType<TextBlock>())
+            {
+                var text = tb.Text ?? tb.Inlines?.Text;
+                if (string.IsNullOrWhiteSpace(text) || !tb.IsEffectivelyVisible || tb.Bounds.Width <= 0 || tb.Bounds.Height <= 0) continue;
+                var p = tb.TranslatePoint(default, this);
+                var lay = tb.TextLayout;
+                double w = tb.Bounds.Width - tb.Padding.Left - tb.Padding.Right, h = tb.Bounds.Height - tb.Padding.Top - tb.Padding.Bottom;
+                var why = new List<string>();
+                if (lay.TextLines.Any(l => l.HasCollapsed)) why.Add("многоточие");
+                if (lay.WidthIncludingTrailingWhitespace > w + 4) why.Add($"шире на {lay.WidthIncludingTrailingWhitespace - w:0}");
+                if (lay.Height > h + 1.5) why.Add($"выше на {lay.Height - h:0}");
+                // сжат соседней колонкой: узкая надпись разбита на много строк («В / каф / е»)
+                if (tb.Bounds.Width < Bounds.Width * 0.3 && lay.TextLines.Count >= 3 && text.Contains(' ')) why.Add($"сжат ({lay.TextLines.Count} строк в {tb.Bounds.Width:0} px)");
+                bool inHScroll = tb.GetVisualAncestors().OfType<ScrollViewer>().Any(s => s.HorizontalScrollBarVisibility != ScrollBarVisibility.Disabled);
+                if (p != null && !inHScroll && (p.Value.X + tb.Bounds.Width > Bounds.Width + 1.5 || p.Value.X < -1.5)) why.Add($"за краем экрана (x={p.Value.X:0}, w={tb.Bounds.Width:0})");
+                if (why.Count > 0)
+                    issues.Add($"    [{string.Join(", ", why)}] «{(text.Length > 60 ? text[..60] + "…" : text).Replace('\n', ' ')}»");
+            }
+            log.Add($"{name}: {(issues.Count == 0 ? "ok" : issues.Count + " проблем")}");
+            // снимок экрана с проблемами (KOTODAMA_CLIPSNAP=папка) — чтобы глазами отличить настоящую обрезку
+            if (issues.Count > 0 && Environment.GetEnvironmentVariable("KOTODAMA_CLIPSNAP") is { Length: > 0 } dir)
+            {
+                using var rtb = new RenderTargetBitmap(new PixelSize((int)Bounds.Width, (int)Bounds.Height));
+                rtb.Render(this);
+                rtb.Save(System.IO.Path.Combine(dir, name.Replace(':', '_') + ".png"));
+            }
+            log.AddRange(issues.Distinct());
+            System.IO.File.WriteAllLines(outPath, log);
+        }
+        if (Win is { } w2) w2.Close(); else Environment.Exit(0);
     }
 
     /// <summary>Шумоподавление: фразы с наложенным шумом (вентилятор + гул + шипение, SNR ≈ 8 дБ) — балл без фильтра и с ним.</summary>

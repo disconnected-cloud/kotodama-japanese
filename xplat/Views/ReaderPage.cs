@@ -164,7 +164,7 @@ public sealed class ReaderPage : UserControl, IPage
         {
             bool done = ProgressStore.P.Flags.Contains("read:" + t.Title);
             var sp = U.Stack(Emoji.Img(Emoji.For(t.Title, "open_book"), 44).Also(i => { i.HorizontalAlignment = HorizontalAlignment.Left; i.Margin = new Thickness(0, 0, 0, 8); }), U.Row(8, U.Pill(t.Level), done ? U.Pill("✓ прочитано", U.B("GoodSoft"), U.B("Good")) : new Border()),
-                U.T(t.Title, "H3", 15).M(0, 10, 0, 4), U.Jp(t.Sentences[0].Jp, 14, U.B("Muted")).Also(x => x.TextTrimming = TextTrimming.CharacterEllipsis).Also(x => x.TextWrapping = TextWrapping.NoWrap));
+                U.T(t.Title, "H3", 15).M(0, 10, 0, 4), U.Jp(t.Sentences[0].Jp, 14, U.B("Muted")).Also(U.Preview));
             var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
             HomePage.Hover(card);
             var text = t;
@@ -312,7 +312,7 @@ public sealed class TextPage : UserControl, IPage
             U.T(Kana.ToRomaji(reading), "Muted", 13),
             Pitch.Pattern(e?.Jp ?? t.Lemma, reading) is { } pat ? new Controls.AccentView(pat) { HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 4, 0, 0) } : new Border(),
             U.T(e != null ? System.Text.RegularExpressions.Regex.Replace(e.Ru.TrimStart(':', ' '), @"\{[^}]*\}", "") : "Нет в словаре (служебное слово или имя)", "Body", 14).M(0, 6, 0, 0)));
-        var acts = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Top };
+        var acts = new WrapPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Top };
         acts.Children.Add(U.SpeakBtn(() => reading));
         if (e != null)
         {
@@ -411,7 +411,7 @@ public sealed class BookPage : UserControl, IPage
                 Width = 40, Height = 40, CornerRadius = new CornerRadius(12), Background = U.B(read ? "GoodSoft" : next ? "AccentSoft" : "Surface2"),
                 Child = U.T(read ? "✓" : (i + 1).ToString(), "H3", 15, U.B(read ? "Good" : next ? "Accent" : "Muted")).Center().CenterV(),
             });
-            g.Children.Add(U.Stack(U.T(t.Title, "H3", 15), U.Jp(t.Sentences[0].Jp, 13.5, U.B("Muted")).Also(x => { x.TextTrimming = TextTrimming.CharacterEllipsis; x.TextWrapping = TextWrapping.NoWrap; }))
+            g.Children.Add(U.Stack(U.T(t.Title, "H3", 15), U.Jp(t.Sentences[0].Jp, 13.5, U.B("Muted")).Also(U.Preview))
                 .CenterV().M(14, 0, 12, 0).Col(1));
             var text = t;
             g.Children.Add(U.Btn(read ? "Перечитать" : "Читать", () => Shell.Open(new TextPage(text)), next ? "Primary" : "", "").CenterV().Col(2));

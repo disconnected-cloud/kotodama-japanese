@@ -72,7 +72,9 @@ public sealed class GrammarPage : UserControl, IPage
             U.T(l.Points.Length > 0 ? string.Join("  ·  ", l.Points.Select(p => p.Pattern)) : "", "Muted", 13).M(0, 4, 0, 0));
         ((TextBlock)info.Children[1]).FontFamily = U.R<FontFamily>("JpFont");
         ((TextBlock)info.Children[1]).TextTrimming = TextTrimming.CharacterEllipsis;
-        ((TextBlock)info.Children[1]).TextWrapping = TextWrapping.NoWrap;
+        // на компьютере — одна строка, на телефоне — до трёх (иначе от схемы урока видно два слова)
+        ((TextBlock)info.Children[1]).TextWrapping = Shell.Compact ? TextWrapping.Wrap : TextWrapping.NoWrap;
+        if (Shell.Compact) ((TextBlock)info.Children[1]).MaxLines = 3;
         g.Children.Add(info.CenterV().M(16, 0, 10, 0).Col(1));
         g.Children.Add(U.Pill(l.Level).CenterV().Col(2));
         var card = new Border { Classes = { "Card" }, Child = g, Margin = new Thickness(8), Padding = new Thickness(18), Cursor = Cursors.Hand };
@@ -125,7 +127,7 @@ public sealed class GrammarLessonPage : UserControl, IPage
         var cta = U.Cols("*", "auto");
         cta.Children.Add(U.Stack(U.T("Закрепим?", "H2"), U.T($"{_l.Quiz.Length} упражнений. Набери 70%, чтобы пройти урок.", "Muted")).CenterV());
         cta.Children.Add(U.Btn("Начать упражнения", StartQuiz, "Primary", "").Col(1));
-        var ctaCard = U.Card(cta).M(0, 20, 0, 0);
+        var ctaCard = U.Card(U.Stackify(cta)).M(0, 20, 0, 0);
         ctaCard.BorderBrush = U.B("Accent");
         root.Children.Add(ctaCard);
 

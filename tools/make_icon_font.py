@@ -26,6 +26,11 @@ MAP = {
     # запас на будущее
     0xE70F: "edit", 0xE713: "settings", 0xE718: "pin", 0xE734: "star", 0xE735: "star", 0xE7C3: "document",
     0xE8A7: "open", 0xE946: "info", 0xE9CE: "question_circle", 0xEA8F: "alert", 0xE7E8: "power", 0xE80F: "home",
+    # Обычные символы и эмодзи из текстов интерфейса. В Android-шрифте Roboto их нет, и без этого шрифта
+    # (он подключён как общий запасной — FontFallbacks в Program/MainActivity) они не видны.
+    0x2713: "checkmark", 0x2714: "checkmark", 0x2605: "star", 0x2606: "star", 0x2661: "heart", 0x2665: "heart",
+    0x26A0: "warning", 0x2708: "airplane", 0x1F50A: "speaker_2", 0x1F4A1: "lightbulb", 0x1F393: "hat_graduation",
+    0x1F4BC: "briefcase", 0x1F38C: "flag", 0x1F338: "sparkle", 0x1F525: "fire",
 }
 
 src, js, out = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -59,6 +64,12 @@ for table in font["cmap"].tables:
     if table.isUnicode():
         table.cmap = {code: g for code, g in wanted.items()}
 font["cmap"].tables = [t for t in font["cmap"].tables if t.isUnicode()]
+# эмодзи (коды выше U+FFFF) не помещаются в таблицу формата 4 — нужна таблица формата 12
+from fontTools.ttLib.tables._c_m_a_p import CmapSubtable
+bmp = {c: g for c, g in wanted.items() if c <= 0xFFFF}
+t4 = CmapSubtable.newSubtable(4); t4.platformID, t4.platEncID, t4.language, t4.cmap = 3, 1, 0, bmp
+t12 = CmapSubtable.newSubtable(12); t12.platformID, t12.platEncID, t12.language, t12.cmap = 3, 10, 0, dict(wanted)
+font["cmap"].tables = [t4, t12]
 
 name = font["name"]
 name.names = []

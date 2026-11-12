@@ -225,9 +225,10 @@ public static class U
         object content = text;
         if (icon != null)
         {
-            var sp = new StackPanel { Orientation = Orientation.Horizontal };
+            // на телефоне подпись кнопки может переноситься (в горизонтальном StackPanel длинная уходила за край)
+            Panel sp = Shell.Compact ? new Grid { ColumnDefinitions = new ColumnDefinitions("auto,*") } : new StackPanel { Orientation = Orientation.Horizontal };
             sp.Children.Add(new TextBlock { Text = icon, FontFamily = R<FontFamily>("Icons"), FontSize = 14, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, text.Length > 0 ? 8 : 0, 0) });
-            if (text.Length > 0) sp.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center });
+            if (text.Length > 0) sp.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center }.Col(1));
             content = sp;
         }
         var b = new Button { Content = content };
@@ -274,7 +275,7 @@ public static class U
 
     public static Grid Cols(params string[] widths)
     {
-        var g = new Grid();
+        var g = Shell.Compact ? new AdaptiveGrid() : new Grid();
         foreach (var w in widths)
             g.ColumnDefinitions.Add(new ColumnDefinition
             {
@@ -298,12 +299,16 @@ public static class U
     public static Grid Stackify(Grid g, bool starRows = false)
     {
         if (!Shell.Compact || g.ColumnDefinitions.Count < 2) return g;
+        if (g is AdaptiveGrid ag) ag.Stacked = true;
+        // каждая занятая колонка — своя строка (пустые колонки-отступы пропускаем)
+        var cols = g.Children.Select(Grid.GetColumn).Distinct().OrderBy(c => c).ToList();
         g.ColumnDefinitions.Clear();
-        g.RowDefinitions = new RowDefinitions(starRows ? "*,*" : "auto,auto");
+        g.RowDefinitions = new RowDefinitions(string.Join(",", cols.Select(_ => starRows ? "*" : "auto")));
         foreach (var c in g.Children)
         {
-            int col = Grid.GetColumn(c);
-            if (col > 0) { Grid.SetColumn(c, 0); Grid.SetRow(c, 1); c.Margin = new Thickness(c.Margin.Left, c.Margin.Top + 16, c.Margin.Right, c.Margin.Bottom); }
+            int row = cols.IndexOf(Grid.GetColumn(c));
+            Grid.SetColumn(c, 0); Grid.SetRow(c, row);
+            if (row > 0) c.Margin = new Thickness(c.Margin.Left, c.Margin.Top + 16, c.Margin.Right, c.Margin.Bottom);
         }
         return g;
     }
@@ -426,13 +431,24 @@ public static class U
         return sp;
     }
 
-    public static StackPanel Row(double gap, params Control[] kids)
+    /// <summary>Строка-превью (первая фраза текста и т.п.): на компьютере одна строка с «…», на телефоне до двух строк.</summary>
+    public static void Preview(TextBlock t)
     {
-        var sp = new StackPanel { Orientation = Orientation.Horizontal };
+        t.TextTrimming = TextTrimming.CharacterEllipsis;
+        t.TextWrapping = Shell.Compact ? TextWrapping.Wrap : TextWrapping.NoWrap;
+        if (Shell.Compact) t.MaxLines = 2;
+    }
+
+    /// <summary>
+    /// Элементы в ряд. На телефоне — с переносом: что не помещается по ширине, уходит на следующую строку,
+    /// а длинный текст переносится внутри (горизонтальный StackPanel даёт детям бесконечную ширину — текст уходил за край).
+    /// </summary>
+    public static Panel Row(double gap, params Control[] kids)
+    {
+        Panel sp = Shell.Compact ? new WrapPanel { Orientation = Orientation.Horizontal } : new StackPanel { Orientation = Orientation.Horizontal };
         for (int i = 0; i < kids.Length; i++)
         {
             if (i > 0) kids[i].Margin = new Thickness(gap, kids[i].Margin.Top, kids[i].Margin.Right, kids[i].Margin.Bottom);
-            if (Shell.Compact && kids[i] is TextBlock { TextWrapping: TextWrapping.Wrap } tw) tw.MaxWidth = Math.Min(double.IsNaN(tw.MaxWidth) ? 1e9 : tw.MaxWidth, 270);
             sp.Children.Add(kids[i]);
         }
         return sp;
@@ -499,4 +515,37 @@ public static class FontWeights
 public static class Geo
 {
     public static double Dist(Avalonia.Point a, Avalonia.Point b) => Math.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y));
+}
+
+/// <summary>
+/// Сетка из U.Cols на телефоне: если боковые колонки (auto и фиксированные) занимают больше половины ширины,
+/// основная колонка «*» сжимается до пары букв в строке — тогда колонки сами встают друг под другом.
+/// </summary>
+public sealed class AdaptiveGrid : Grid
+{
+    public bool Stacked;
+
+    protected override Size MeasureOverride(Size available)
+    {
+        if (!Stacked && !double.IsInfinity(available.Width) && ColumnDefinitions.Count >= 2 && RowDefinitions.Count <= 1
+            && ColumnDefinitions.Any(c => c.Width.IsStar) && Children.All(c => GetRow(c) == 0 && GetColumnSpan(c) == 1))
+        {
+            double side = 0;
+            for (int i = 0; i < ColumnDefinitions.Count; i++)
+            {
+                var w = ColumnDefinitions[i].Width;
+                if (w.IsAbsolute) side += w.Value;
+                else if (w.IsAuto)
+                {
+                    double m = 0;
+                    foreach (var c in Children)
+                        if (GetColumn(c) == i && c.IsVisible) { c.Measure(Size.Infinity); m = Math.Max(m, c.DesiredSize.Width); }
+                    side += m;
+                }
+            }
+            if (side > available.Width * 0.5) U.Stackify(this);
+            Stacked = true; // решение принимается один раз: на телефоне ширина не меняется
+        }
+        return base.MeasureOverride(available);
+    }
 }

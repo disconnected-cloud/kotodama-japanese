@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media.Fonts;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -22,12 +23,17 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        Perf.Mark("Avalonia готова");
         if (!ProgressStore.IsLoaded) ProgressStore.Load(); // на телефоне нет Program.Main
         bool light = ProgressStore.P.LightTheme || Environment.GetCommandLineArgs().Contains("--light");
         RequestedThemeVariant = light ? ThemeVariant.Light : ThemeVariant.Dark;
         bool night = !light && (ProgressStore.P.NightTheme || Environment.GetCommandLineArgs().Contains("--night"));
         ApplyPalette(Resources, light, ProgressStore.P.AccentColor, night);
         ApplyJpFont(Resources, ProgressStore.P.JpFontName);
+        // Телефон: любая надпись переносится на следующую строку, а не обрезается краем узкого экрана.
+        // Где перенос не нужен (иконки, цифры), он ничего не меняет; явный TextWrapping в коде сильнее стиля.
+        if (Shell.Compact)
+            Styles.Add(new Style(x => x.OfType<TextBlock>()) { Setters = { new Setter(TextBlock.TextWrappingProperty, TextWrapping.Wrap) } });
 
         Dispatcher.UIThread.UnhandledException += (_, e) =>
         {
@@ -49,9 +55,9 @@ public partial class App : Application
         }
 #endif
         // Тяжёлое — в фоне, чтобы окно появилось сразу
-        Task.Run(Db.Preload);
-        _ = JDict.LoadAsync(); // словарь нужен латинице, распознаванию речи и чтению — грузим в фоне сразу
-        if (Environment.GetCommandLineArgs().Length <= 1 && Voicevox.Downloaded && !ProgressStore.P.Flags.Contains("vv-ok"))
+        // данные курса нужны главной уже для первого кадра; словарь и акценты — после него (Perf.WarmUpAfterFirstFrame)
+        Task.Run(() => { Db.Preload(); Perf.Mark("данные курса загружены"); });
+        if (Environment.GetCommandLineArgs().Length <= 1 && Voicevox.Downloaded && !ProgressStore.P.Flags.Contains("vv-ok") && !ProgressStore.P.Flags.Contains("vv-crashed"))
             _ = Task.Run(async () =>
             {
                 var (ok, _) = await Voicevox.SelfCheckAsync();
@@ -59,6 +65,15 @@ public partial class App : Application
             });
         base.OnFrameworkInitializationCompleted();
     }
+
+    /// <summary>
+    /// Запасной шрифт для всего интерфейса: значки ✓ ★ ♥ ⚠ и эмодзи 🔊 💡, которых нет в системном шрифте
+    /// (на Android в Roboto их нет — без этого они просто не видны). Глифы — в Kotodama Icons (tools/make_icon_font.py).
+    /// </summary>
+    public static AppBuilder WithFonts(AppBuilder b) => b.With(new FontManagerOptions
+    {
+        FontFallbacks = new[] { new FontFallback { FontFamily = new FontFamily("avares://Kotodama/Assets/fonts#Kotodama Icons") } },
+    });
 
     /// <summary>Палитра «тихий минимализм, один акцент (сакура)». Кисти кладутся в ресурсы до создания окна.</summary>
     /// <summary>Шрифты для японского: учебный (как в школьных прописях) удобнее для запоминания формы знаков.</summary>

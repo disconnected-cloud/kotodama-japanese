@@ -50,6 +50,7 @@ public static class Report
             hs.Children.Add(row);
         }
         g.Children.Add(hs.Col(4));
+        U.Stackify(g);
         var all = new StackPanel();
         all.Children.Add(g);
         all.Children.Add(new Border { Height = 1, Background = U.B("Stroke"), Margin = new Thickness(0, 18, 0, 14) });

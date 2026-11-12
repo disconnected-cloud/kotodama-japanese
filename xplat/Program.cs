@@ -8,6 +8,7 @@ static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        Services.Perf.Mark("Main");
         Directory.CreateDirectory(ProgressStore.Folder);
         // Профиль JIT: второй и последующие запуски стартуют быстрее
         System.Runtime.ProfileOptimization.SetProfileRoot(ProgressStore.Folder);
@@ -27,7 +28,7 @@ static class Program
         return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
-    public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<App>()
+    public static AppBuilder BuildAvaloniaApp() => App.WithFonts(AppBuilder.Configure<App>())
         .UsePlatformDetect()
         .With(new X11PlatformOptions { WmClass = "Kotodama" })
         .LogToTrace();

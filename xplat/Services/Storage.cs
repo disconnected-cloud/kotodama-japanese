@@ -16,7 +16,7 @@ public static class Storage
         new Item("models", "Модели распознавания (Whisper)", "Нужны для проверки произношения", System.IO.Path.Combine(ProgressStore.Folder, "models"), true),
         new Item("voicevox", "Офлайн-голоса VOICEVOX", "Ядро, словарь и пакеты голосов", Voicevox.Dir, true),
         new Item("llm", "Модель ИИ-собеседника", "Раздел убран в версии 1.3.1 — файлы больше не нужны", System.IO.Path.Combine(ProgressStore.Folder, "llm"), true),
-        new Item("logs", "Журналы и временные файлы", "crash.log, профиль запуска, старые записи", ProgressStore.Folder, false),
+        new Item("logs", "Журналы и временные файлы", "crash.log, warn.log, профиль запуска, старые записи", ProgressStore.Folder, false),
     };
 
     public static long Size(Item it)
@@ -24,7 +24,7 @@ public static class Storage
         try
         {
             if (it.Key == "logs")
-                return new[] { "crash.log", "startup.jitprofile", "progress.json.bak", "progress.json.before-import" }
+                return new[] { "crash.log", "warn.log", "startup.jitprofile", "progress.json.bak", "progress.json.before-import" }
                     .Select(f => System.IO.Path.Combine(ProgressStore.Folder, f)).Where(File.Exists).Sum(f => new FileInfo(f).Length)
                     + DirSize(System.IO.Path.Combine(ProgressStore.Folder, "rec"));
             return DirSize(it.Path);
@@ -43,7 +43,7 @@ public static class Storage
         if (it.Key == "voicevox") { ProgressStore.P.Flags.Remove("vv-ok"); ProgressStore.Notify(); }
         if (it.Key == "logs")
         {
-            foreach (var f in new[] { "crash.log", "startup.jitprofile", "progress.json.bak", "progress.json.before-import" })
+            foreach (var f in new[] { "crash.log", "warn.log", "startup.jitprofile", "progress.json.bak", "progress.json.before-import" })
                 TryDelete(System.IO.Path.Combine(ProgressStore.Folder, f));
             TryDeleteDir(System.IO.Path.Combine(ProgressStore.Folder, "rec"));
             return true;

@@ -99,7 +99,7 @@ public static class Db
 
     public static void Preload()
     {
-        try { _ = Words; _ = Kanji; _ = Grammar; _ = SpeechLessons; _ = Dialogs; _ = Course; _ = _romaji.Value; } catch { }
+        try { _ = Words; _ = Kanji; _ = Grammar; _ = SpeechLessons; _ = Dialogs; _ = Course; _ = _romaji.Value; } catch (Exception e) { CrashReport.Warn("Db.Preload", e); }
     }
 
     static JsonDocument Open(string name)

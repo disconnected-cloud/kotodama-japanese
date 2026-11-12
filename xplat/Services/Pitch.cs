@@ -30,6 +30,12 @@ public static class Pitch
         return (pair, kana);
     }
 
+    /// <summary>Загрузить заранее в фоне, чтобы первое открытие слова не ждало распаковки.</summary>
+    public static void Preload()
+    {
+        try { _ = _data.Value; } catch (Exception e) { CrashReport.Warn("Акценты", e); }
+    }
+
     /// <summary>Номер ударения слова или null, если его нет в словаре.</summary>
     public static int? Accent(string word, string reading)
     {

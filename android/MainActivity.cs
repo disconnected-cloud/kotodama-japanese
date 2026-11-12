@@ -20,7 +20,7 @@ public class MainActivity : AvaloniaMainActivity<App>
         Platform.Hooks.Mic = () => new AndroidMic();
         Platform.Hooks.SystemTts = AndroidTts.SynthesizeAsync;
         ProgressStore.Load();
-        return base.CustomizeAppBuilder(builder);
+        return App.WithFonts(base.CustomizeAppBuilder(builder));
     }
 
     public static MainActivity? Current { get; private set; }

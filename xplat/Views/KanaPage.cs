@@ -31,7 +31,7 @@ public sealed class KanaPage : UserControl, IPage
         var root = new StackPanel();
 
         // Переключатель азбуки
-        var sw = new StackPanel { Orientation = Orientation.Horizontal };
+        var sw = new WrapPanel { Orientation = Orientation.Horizontal };
         foreach (var (text, kata) in new[] { ("ひらがな  Хирагана", false), ("カタカナ  Катакана", true) })
         {
             var rb = new RadioButton { Classes = { "ChipRadio" }, Content = text, GroupName = "script", IsChecked = _kata == kata };
@@ -62,7 +62,7 @@ public sealed class KanaPage : UserControl, IPage
         btns.Children.Add(U.Btn("Квиз: ввод ромадзи", () => StartQuiz(true), "", "").M(0, 0, 0, 8));
         btns.Children.Add(U.Btn("Только слабые знаки", () => StartQuiz(false, weakOnly: true), "", ""));
         train.Children.Add(btns.Col(1));
-        var trainCard = U.Card(train);
+        var trainCard = U.Card(U.Stackify(train));
         root.Children.Add(trainCard);
 
         // Таблицы

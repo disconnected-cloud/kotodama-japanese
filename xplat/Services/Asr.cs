@@ -72,7 +72,7 @@ public static class Asr
         Task.Run(async () =>
         {
             await Gate.WaitAsync();
-            try { EnsureLoaded(); } catch { } finally { Gate.Release(); }
+            try { EnsureLoaded(); } catch (Exception e) { CrashReport.Warn("Whisper: загрузка модели", e); } finally { Gate.Release(); }
         });
     }
 

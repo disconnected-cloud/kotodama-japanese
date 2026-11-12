@@ -302,9 +302,9 @@ public sealed class SettingsPage : UserControl, IPage
         }
     }
 
-    static StackPanel ChoiceS(string[] values, string current, Action<string> set, Func<string, string> label)
+    static WrapPanel ChoiceS(string[] values, string current, Action<string> set, Func<string, string> label)
     {
-        var sp = new StackPanel { Orientation = Orientation.Horizontal };
+        var sp = new WrapPanel { Orientation = Orientation.Horizontal };
         var group = Guid.NewGuid().ToString();
         foreach (var v in values)
         {
@@ -382,6 +382,7 @@ public sealed class SettingsPage : UserControl, IPage
         }
         sp.Children.Add(U.T(Voicevox.Installed ? "ДОБАВИТЬ ПАКЕТЫ" : "ВЫБЕРИ ПАКЕТЫ ГОЛОСОВ", "Overline").M(0, 14, 0, 6));
         var list = new WrapPanel();
+        int Cut = Shell.Compact ? 20 : 34; // на телефоне имена короче — полный список во всплывающей подсказке
         foreach (var pack in Voicevox.Catalog.Where(pk => !installed.Contains(pk.File)).OrderBy(pk => !Voicevox.Recommended.Contains(pk.File)))
         {
             bool rec = Voicevox.Recommended.Contains(pack.File);
@@ -389,7 +390,7 @@ public sealed class SettingsPage : UserControl, IPage
             var tb = new ToggleButton
             {
                 Classes = { "Chip" }, IsChecked = chosen.Contains(pack.File), Margin = new Thickness(0, 0, 6, 6),
-                Content = (rec ? "★ " : "") + (names.Length > 34 ? names[..34] + "…" : names) + $"  ·  {pack.Size / 1_000_000} МБ",
+                Content = (rec ? "★ " : "") + (names.Length > Cut ? names[..Cut] + "…" : names) + $"  ·  {pack.Size / 1_000_000} МБ",
             }.Tip((rec ? "Рекомендуем: чёткие голоса\n" : pack.File == "n0.vvm" ? "Голоса с придыханием — могут звучать нечётко\n" : "") + string.Join(", ", pack.Chars.Select(c => c.Name)));
             var f = pack.File;
             tb.Checked += (_, _) => chosen.Add(f);
@@ -471,7 +472,7 @@ public sealed class SettingsPage : UserControl, IPage
     {
         var p = ProgressStore.P;
         var sp = new StackPanel();
-        var voices = new StackPanel { Orientation = Orientation.Horizontal };
+        var voices = new WrapPanel { Orientation = Orientation.Horizontal };
         foreach (var (male, name) in new[] { (false, "Nanami · женский"), (true, "Keita · мужской") })
         {
             var rb = new RadioButton { Classes = { "ChipRadio" }, Content = name, GroupName = "voice", IsChecked = p.MaleVoice == male };
@@ -518,9 +519,9 @@ public sealed class SettingsPage : UserControl, IPage
         return U.Card(sp).M(0, 0, 0, 16);
     }
 
-    static StackPanel Choice(int[] values, int current, Action<int> set, Func<int, string> label)
+    static WrapPanel Choice(int[] values, int current, Action<int> set, Func<int, string> label)
     {
-        var sp = new StackPanel { Orientation = Orientation.Horizontal };
+        var sp = new WrapPanel { Orientation = Orientation.Horizontal };
         var group = Guid.NewGuid().ToString();
         foreach (var v in values)
         {

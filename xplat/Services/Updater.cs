@@ -54,7 +54,7 @@ public static class Updater
                     return Available;
                 }
         }
-        catch { }
+        catch (Exception e) { CrashReport.Warn("Проверка обновлений", e); }
         return null;
     }
 

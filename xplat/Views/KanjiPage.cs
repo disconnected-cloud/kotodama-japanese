@@ -31,11 +31,11 @@ public sealed class KanjiPage : UserControl, IPage
         int learning = kanji.Count(k => ProgressStore.Card(k.Id)?.Reps > 0);
         int due = kanji.Count(k => ProgressStore.IsDue(k.Id));
 
-        var root = new Grid { Margin = new Thickness(40, 12, 40, 16), MaxWidth = 1240 };
+        var root = new Grid { Margin = (Shell.Compact ? new Thickness(12, 12, 12, 16) : new Thickness(40, 12, 40, 16)), MaxWidth = 1240 };
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition());
-        var lv = new StackPanel { Orientation = Orientation.Horizontal };
+        var lv = new WrapPanel { Orientation = Orientation.Horizontal };
         foreach (var l in new[] { "N5", "N4", "N3", "N2" })
         {
             var rb = new RadioButton { Classes = { "ChipRadio" }, Content = l, GroupName = "klevel", IsChecked = _level == l };

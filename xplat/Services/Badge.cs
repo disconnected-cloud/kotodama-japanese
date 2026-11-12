@@ -86,6 +86,6 @@ public static class Badge
             w.Icon = new WindowIcon(new MemoryStream(big));
             Tray.SetIcon(Render(due, light, 32), due);
         }
-        catch { }
+        catch (Exception e) { CrashReport.Warn("Значок с числом карточек", e); }
     }
 }

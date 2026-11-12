@@ -29,10 +29,10 @@ public class MainWindow : Window
         }
 #if DEBUG
         var args = Environment.GetCommandLineArgs();
-        if (args.Any(a => a is "--snap" or "--selftest" or "--offscreen" or "--speechaudit"))
+        if (args.Any(a => a is "--snap" or "--selftest" or "--offscreen" or "--speechaudit" or "--cliptest" or "--perf"))
         {
             ShowActivated = false; ShowInTaskbar = false;
-            if (args.Contains("--snap")) { Platform.AudioPlayer.Muted = true; ProgressStore.ReadOnly = true; }
+            if (args.Contains("--snap") || args.Contains("--cliptest") || args.Contains("--perf")) { Platform.AudioPlayer.Muted = true; ProgressStore.ReadOnly = true; }
             WindowStartupLocation = WindowStartupLocation.Manual; Position = new PixelPoint(-20000, 0);
         }
         // проверка телефонной раскладки на компьютере: размер экрана телефона

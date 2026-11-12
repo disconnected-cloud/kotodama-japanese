@@ -58,6 +58,8 @@ jobs:
           APK=$(ls out/arm64/*-Signed.apk | head -1)
           cp "$APK" Kotodama-android.apk
           ls -la Kotodama-android.apk
+          # без неё не запустятся офлайн-голоса VOICEVOX
+          unzip -l Kotodama-android.apk | grep -q "lib/arm64-v8a/libc++_shared.so" || { echo "::error::в APK нет libc++_shared.so"; exit 1; }
 
       - uses: actions/upload-artifact@v4
         with:

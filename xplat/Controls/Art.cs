@@ -77,6 +77,7 @@ public static class Art
     /// <summary>Маскот с репликой в облачке — для пустых экранов, итогов и подсказок.</summary>
     public static Control Say(string text, Mood mood = Mood.Happy, double size = 120, bool tama = false)
     {
+        if (Shell.Compact) size = Math.Min(size, 72); // узкий экран: облачку с текстом нужна ширина
         var g = new Grid { ColumnDefinitions = new ColumnDefinitions("auto,*") };
         // в облачке нужен крупный портрет, а не фигура в полный рост
         g.Children.Add(Anime(mood switch { Mood.Joy => "cheer", Mood.Wow => "bunny", _ => "head" }, size * 0.85).Also(i => i.VerticalAlignment = VerticalAlignment.Center));

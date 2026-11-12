@@ -44,7 +44,7 @@ public sealed class MatchRushGame : Grid, IPage
     const int Rows = 5;
     readonly TextBlock _score = U.T("", "H3", 16);
     readonly ProgressBar _timer = new() { Maximum = 60 };
-    readonly Grid _board = new() { ColumnDefinitions = new ColumnDefinitions("*,24,*"), Width = 680 };
+    readonly Grid _board = new() { ColumnDefinitions = new ColumnDefinitions(Shell.Compact ? "*,10,*" : "*,24,*"), Width = Shell.Compact ? double.NaN : 680 };
     readonly DispatcherTimer _tick = new() { Interval = TimeSpan.FromMilliseconds(200) };
     List<Word> _pool = new();
     int _next, _points, _combo, _pairs;
@@ -54,7 +54,7 @@ public sealed class MatchRushGame : Grid, IPage
 
     public MatchRushGame()
     {
-        Margin = new Thickness(40, 8, 40, 24);
+        Margin = (Shell.Compact ? new Thickness(12, 8, 12, 24) : new Thickness(40, 8, 40, 24));
         _tick.Tick += (_, _) => { _left -= 0.2; _timer.Value = Math.Max(0, _left); if (_left <= 0) Over(); };
         Unloaded += (_, _) => _tick.Stop();
         Start();
@@ -160,7 +160,7 @@ public sealed class WordBuilderGame : Grid, IPage, IKeyTarget
 
     public WordBuilderGame()
     {
-        Margin = new Thickness(40, 8, 40, 24);
+        Margin = (Shell.Compact ? new Thickness(12, 8, 12, 24) : new Thickness(40, 8, 40, 24));
         Start();
     }
 
@@ -207,7 +207,7 @@ public sealed class WordBuilderGame : Grid, IPage, IKeyTarget
         sp.Children.Add(U.Row(6, U.SpeakBtn(() => w.Kana, true), U.SpeakBtn(() => w.Kana)).Center());
         sp.Children.Add(new Border
         {
-            Margin = new Thickness(0, 18, 0, 18), Padding = new Thickness(10), CornerRadius = new CornerRadius(16), MinWidth = 320, HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 18, 0, 18), Padding = new Thickness(10), CornerRadius = new CornerRadius(16), MinWidth = Shell.Compact ? 0 : 320, HorizontalAlignment = HorizontalAlignment.Center,
             Background = U.B("Surface2"), BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(1), Child = _answer,
         });
         sp.Children.Add(_tiles);
@@ -296,7 +296,7 @@ public sealed class ListenCatchGame : Grid, IPage, IKeyTarget
 
     public ListenCatchGame()
     {
-        Margin = new Thickness(40, 8, 40, 24);
+        Margin = (Shell.Compact ? new Thickness(12, 8, 12, 24) : new Thickness(40, 8, 40, 24));
         _tick.Tick += (_, _) =>
         {
             if (_locked) return;

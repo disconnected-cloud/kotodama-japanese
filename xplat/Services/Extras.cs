@@ -128,7 +128,7 @@ public static class Sfx
         if (Platform.AudioPlayer.Muted) return;
         _last = DateTime.Now;
         // Отдельный канал: звук интерфейса не обрывает озвучку
-        Task.Run(async () => { try { var (x, r) = Platform.Pcm.Decode(s.Value, true); await Fx.PlayAsync(x, r); } catch { } });
+        Task.Run(async () => { try { var (x, r) = Platform.Pcm.Decode(s.Value, true); await Fx.PlayAsync(x, r); } catch (Exception e) { CrashReport.Warn("Звуковой эффект", e); } });
     }
 
     /// <summary>Мягкие синусоидальные ноты с огибающей (без щелчков).</summary>

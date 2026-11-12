@@ -68,7 +68,7 @@ public sealed class DictPage : UserControl, IPage
         _debounce.Tick += (_, _) => { _debounce.Stop(); Search(); };
         _box.TextChanged += (_, _) => { _debounce.Stop(); _debounce.Start(); };
 
-        var root = new Grid { Margin = new Thickness(40, 12, 40, 16), MaxWidth = 1240 };
+        var root = new Grid { Margin = (Shell.Compact ? new Thickness(12, 12, 12, 16) : new Thickness(40, 12, 40, 16)), MaxWidth = 1240 };
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });

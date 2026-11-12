@@ -64,10 +64,14 @@ public sealed record VoicePack(string File, long Size, (string Name, (string Sty
 /// </summary>
 public static class Voicevox
 {
-    // Сборки ядра и ONNX Runtime под свою ОС (Windows — .dll, Linux — .so)
+    // Сборки ядра и ONNX Runtime под свою ОС и процессор (Windows — .dll; Linux и Android — .so)
     static readonly bool Win = OperatingSystem.IsWindows();
-    static string CoreUrl => $"https://github.com/VOICEVOX/voicevox_core/releases/download/0.17.1/voicevox_core-{(Win ? "windows" : "linux")}-x64-0.17.1.zip";
-    static string OrtUrl => $"https://github.com/VOICEVOX/onnxruntime-builder/releases/download/voicevox_onnxruntime-1.23.2/voicevox_onnxruntime-{(Win ? "win" : "linux")}-x64-1.23.2.tgz";
+    static readonly bool Droid = OperatingSystem.IsAndroid();
+    static readonly bool Arm = RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
+    static string CorePlatform => Win ? "windows-x64" : Droid ? (Arm ? "android-arm64" : "android-x86_64") : Arm ? "linux-arm64" : "linux-x64";
+    static string OrtPlatform => Win ? "win-x64" : Droid ? (Arm ? "android-arm64" : "android-x64") : Arm ? "linux-arm64" : "linux-x64";
+    static string CoreUrl => $"https://github.com/VOICEVOX/voicevox_core/releases/download/0.17.1/voicevox_core-{CorePlatform}-0.17.1.zip";
+    static string OrtUrl => $"https://github.com/VOICEVOX/onnxruntime-builder/releases/download/voicevox_onnxruntime-1.23.2/voicevox_onnxruntime-{OrtPlatform}-1.23.2.tgz";
     static string LibExt => Win ? ".dll" : ".so";
     const string DictUrl = "https://github.com/r9y9/open_jtalk/releases/download/v1.11.1/open_jtalk_dic_utf_8-1.11.tar.gz";
     const string VvmUrl = "https://github.com/VOICEVOX/voicevox_vvm/releases/download/0.17.1/";
@@ -82,7 +86,11 @@ public static class Voicevox
         : null;
     static string ModelsDir => Path.Combine(Dir, "models");
 
-    public static bool BaseInstalled => File.Exists(CoreDll) && OrtDll != null && DictDir != null;
+    // Для какой платформы скачано ядро. Старые установки без метки — только на компьютере (там скачивалась верная сборка);
+    // на телефоне до версии 2.1 скачивалась сборка для Linux-ПК — её нужно заменить.
+    static string PlatformMark => Path.Combine(Dir, "core", "platform.txt");
+    static bool PlatformOk => File.Exists(PlatformMark) ? File.ReadAllText(PlatformMark).Trim() == CorePlatform : !Droid;
+    public static bool BaseInstalled => File.Exists(CoreDll) && OrtDll != null && DictDir != null && PlatformOk;
     /// <summary>Установлен и прошёл проверку в отдельном процессе (несовместимая библиотека не уронит приложение).</summary>
     public static bool Installed => BaseInstalled && InstalledPacks.Count > 0 && ProgressStore.P.Flags.Contains("vv-ok");
     public static bool Downloaded => BaseInstalled && InstalledPacks.Count > 0;
@@ -90,6 +98,7 @@ public static class Voicevox
     /// <summary>Пробный синтез в дочернем процессе: Matsubakira.exe --vv-check. Код 0 — всё работает.</summary>
     public static async Task<(bool ok, string message)> SelfCheckAsync()
     {
+        if (Droid) return await SelfCheckInProcessAsync();
         try
         {
             var resultFile = Path.Combine(Dir, "check.txt");
@@ -106,6 +115,34 @@ public static class Voicevox
             return (ok, ok ? "VOICEVOX работает" : "VOICEVOX не запустился: " + (output.Trim().Length > 0 ? output.Trim() : $"код {proc.ExitCode}"));
         }
         catch (Exception ex) { return (false, ex.Message); }
+    }
+
+    /// <summary>
+    /// Android не позволяет запустить приложение вторым процессом — проверяем прямо здесь. Если нативная библиотека
+    /// уронит приложение, метка vv-checking останется, и при следующем запуске проверка считается непройденной.
+    /// </summary>
+    static async Task<(bool ok, string message)> SelfCheckInProcessAsync()
+    {
+        void Flags(Action<HashSet<string>> f) { f(ProgressStore.P.Flags); ProgressStore.Notify(); ProgressStore.Save(); }
+        if (ProgressStore.P.Flags.Contains("vv-checking"))
+        {
+            Flags(s => { s.Remove("vv-checking"); s.Remove("vv-ok"); s.Add("vv-crashed"); });
+            return (false, "VOICEVOX не запустился на этом телефоне (прошлая проверка закрыла приложение)");
+        }
+        Flags(s => s.Add("vv-checking"));
+        var (code, msg) = await Task.Run(() =>
+        {
+            try
+            {
+                var wav = Synthesize("こんにちは。", PickStyleRaw());
+                return wav is { Length: > 1000 } ? (0, "ok") : (1, LastError ?? "пустой результат");
+            }
+            catch (Exception ex) { return (2, ex.Message); }
+        });
+        bool ok = code == 0;
+        Flags(s => { s.Remove("vv-checking"); s.Remove("vv-crashed"); if (ok) s.Add("vv-ok"); else s.Remove("vv-ok"); });
+        if (!ok) CrashReport.Warn("VOICEVOX: проверка", new Exception(msg));
+        return (ok, ok ? "VOICEVOX работает" : "VOICEVOX не запустился: " + msg);
     }
 
     /// <summary>Вызывается в дочернем процессе проверки.</summary>
@@ -222,14 +259,22 @@ public static class Voicevox
         if (!BaseInstalled)
         {
             var core = await Get(CoreUrl, P("ядро VOICEVOX"), 0, 1, ct); step++;
-            var coreDir = Path.Combine(Dir, "core"); Directory.CreateDirectory(coreDir);
+            var coreDir = Path.Combine(Dir, "core");
+            if (Directory.Exists(coreDir)) Directory.Delete(coreDir, true); // сборка от другой платформы
+            Directory.CreateDirectory(coreDir);
             using (var zip = new ZipArchive(new MemoryStream(core)))
                 foreach (var e in zip.Entries.Where(e => e.Name.EndsWith(LibExt, StringComparison.OrdinalIgnoreCase)))
                     e.ExtractToFile(Path.Combine(coreDir, e.Name), true);
             var ort = await Get(OrtUrl, P("ONNX Runtime"), 0, 1, ct); step++;
+            if (Directory.Exists(Path.Combine(Dir, "ort"))) Directory.Delete(Path.Combine(Dir, "ort"), true);
             ExtractTgz(ort, Path.Combine(Dir, "ort"));
-            var dict = await Get(DictUrl, P("словарь произношения"), 0, 1, ct); step++;
-            ExtractTgz(dict, Path.Combine(Dir, "dict"));
+            if (!Directory.Exists(Path.Combine(Dir, "dict")) || DictDir == null)
+            {
+                var dict = await Get(DictUrl, P("словарь произношения"), 0, 1, ct);
+                ExtractTgz(dict, Path.Combine(Dir, "dict"));
+            }
+            step++;
+            File.WriteAllText(PlatformMark, CorePlatform);
         }
         Directory.CreateDirectory(ModelsDir);
         foreach (var pack in list)
@@ -283,9 +328,13 @@ public static class Voicevox
     /// <summary>Готовит синтезатор и загружает только пакет с нужным голосом (а не все ~60 МБ каждый).</summary>
     static void EnsureReady(uint style)
     {
+        if (Platform.AudioPlayer.Muted) throw new InvalidOperationException("звук выключен (режим проверки)"); // --snap/--cliptest не запускают синтез
         if (!BaseInstalled) throw new InvalidOperationException("VOICEVOX не установлен");
         if (!_resolverSet)
         {
+            // Android: ядру нужна libc++_shared.so из APK — загружаем её заранее, тогда загрузчик найдёт её по имени
+            if (Droid && !NativeLibrary.TryLoad("libc++_shared.so", out _))
+                throw new InvalidOperationException("в этой сборке приложения нет libc++_shared.so");
             NativeLibrary.SetDllImportResolver(typeof(Voicevox).Assembly, (name, asm, path) =>
                 name == Lib ? NativeLibrary.Load(CoreDll) : IntPtr.Zero);
             _resolverSet = true;

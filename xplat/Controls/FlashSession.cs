@@ -105,7 +105,7 @@ public sealed class FlashSession : Grid, IPage, IKeyTarget
 
         _bottom.Children.Clear();
         _bottom.ColumnDefinitions.Clear();
-        var show = U.Btn("Показать ответ   ␣", Flip, "Primary");
+        var show = U.Btn(Shell.Compact ? "Показать ответ" : "Показать ответ · пробел", Flip, "Primary");
         show.MinWidth = 280; show.HorizontalAlignment = HorizontalAlignment.Center; show.VerticalAlignment = VerticalAlignment.Top; show.Padding = new Thickness(24, 14, 24, 14);
         _bottom.Children.Add(show);
     }

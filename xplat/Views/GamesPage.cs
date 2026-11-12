@@ -37,7 +37,7 @@ static class GameUi
             U.T(score.ToString(), "H1", 56).Center().M(0, 10, 0, 0),
             U.T($"Рекорд: {Best(bestKey)}", "Muted").Center(),
             U.Row(10, U.Btn("Ещё раз", again, "Primary", ""), U.Btn("Выйти", Shell.Back, "", "")).Center().M(0, 20, 0, 0));
-        var card = U.Card(sp, new Thickness(40, 30, 40, 30));
+        var card = U.Card(sp, (Shell.Compact ? new Thickness(12, 30, 12, 30) : new Thickness(40, 30, 40, 30)));
         card.HorizontalAlignment = HorizontalAlignment.Center; card.VerticalAlignment = VerticalAlignment.Center;
         Anim.Pop(card, 0.85);
         if (record) card.Loaded += (_, _) => { if (card.Parent is Panel p) Results.Confetti(p); };
@@ -63,7 +63,7 @@ public sealed class KanaRainGame : Grid, IPage
     public KanaRainGame(bool katakana)
     {
         _kata = katakana;
-        Margin = new Thickness(40, 8, 40, 20);
+        Margin = (Shell.Compact ? new Thickness(12, 8, 12, 20) : new Thickness(40, 8, 40, 20));
         RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         RowDefinitions.Add(new RowDefinition());
         RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -92,7 +92,7 @@ public sealed class KanaRainGame : Grid, IPage
     readonly DispatcherTimer _frame = new(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
     void StopLoop() { if (_running) { _frame.Stop(); _running = false; } }
 
-    void Hud() => _hud.Text = $"Очки: {_score}    Комбо ×{Math.Max(1, _combo)}    Жизни: {new string('♥', _lives)}{new string('♡', 3 - _lives)}    Уровень {(int)_level}    Рекорд: {GameUi.Best(Key)}";
+    void Hud() => _hud.Text = $"Очки: {_score}    Комбо ×{Math.Max(1, _combo)}    Жизни: {(_lives > 0 ? new string('♥', _lives) : "0")}    Уровень {(int)_level}    Рекорд: {GameUi.Best(Key)}";
     string Key => _kata ? "rain-k" : "rain-h";
 
     void Tick(object? s, EventArgs e)
@@ -179,7 +179,7 @@ public sealed class MemoryGame : Grid, IPage
 
     public MemoryGame()
     {
-        Margin = new Thickness(40, 8, 40, 20);
+        Margin = (Shell.Compact ? new Thickness(12, 8, 12, 20) : new Thickness(40, 8, 40, 20));
         RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         RowDefinitions.Add(new RowDefinition());
         Children.Add(_hud);
@@ -265,7 +265,7 @@ public sealed class SprintGame : Grid, IPage, IKeyTarget
 
     public SprintGame()
     {
-        Margin = new Thickness(40, 8, 40, 20);
+        Margin = (Shell.Compact ? new Thickness(12, 8, 12, 20) : new Thickness(40, 8, 40, 20));
         _jp.FontFamily = U.R<FontFamily>("JpFont"); _jp.Foreground = U.B("Text");
         var sp = new StackPanel { MaxWidth = 640, HorizontalAlignment = HorizontalAlignment.Center };
         sp.Children.Add(_timer);

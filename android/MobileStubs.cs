@@ -34,7 +34,7 @@ public static class Tray
             if (pi != null) b.SetContentIntent(pi);
             nm.Notify(_id++, b.Build());
         }
-        catch { }
+        catch (Exception e) { CrashReport.Warn("Уведомление", e); }
     }
 
     /// <summary>Раз в минуту, пока приложение открыто: слово дня по расписанию и напоминание о повторении.</summary>

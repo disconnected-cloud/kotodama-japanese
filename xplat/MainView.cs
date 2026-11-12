@@ -55,6 +55,7 @@ public partial class MainView : UserControl
 
     public MainView()
     {
+        Perf.Mark("построение интерфейса");
         Shell.Main = this;
         Background = U.B("Bg");
         _host.RenderTransform = _hostShift;
@@ -103,6 +104,8 @@ public partial class MainView : UserControl
             left.Margin = new Thickness(6, 0, 0, 0);
             _crumb.FontSize = 20; _crumb.FontWeight = FontWeight.SemiBold; _crumb.Foreground = U.B("Text"); _crumb.Margin = new Thickness(10, 0, 0, 0);
             _crumb.TextTrimming = TextTrimming.CharacterEllipsis; _crumb.MaxWidth = 300;
+            // узкий экран (320 dp): длинный заголовок — с многоточием, а не за краем
+            SizeChanged += (_, e) => _crumb.MaxWidth = Math.Clamp(e.NewSize.Width - 130, 120, 600);
             _brand = new TextBlock { Text = "言霊", FontFamily = U.R<FontFamily>("JpSerif"), FontSize = 22, Foreground = U.B("Accent"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
             left.Children.Insert(0, _brand);
             _backBtn.Content = Controls.Art.Glyph("back", 22, U.B("Text"));
@@ -191,6 +194,8 @@ public partial class MainView : UserControl
 
     void OnOpened()
     {
+        // настоящий первый кадр — после отрисовки, а не после построения дерева
+        TopLevel.GetTopLevel(this)?.RequestAnimationFrame(_ => Perf.WarmUpAfterFirstFrame());
         UpdateStats();
         Dispatcher.UIThread.Post(() => { if (Win is { } w) Badge.Update(w); }, DispatcherPriority.Background);
         Dispatcher.UIThread.Post(() => { if (!Environment.GetCommandLineArgs().Skip(1).Any()) WordOfDay.Tick(); }, DispatcherPriority.Background);

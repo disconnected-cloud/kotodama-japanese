@@ -20,36 +20,67 @@ public static class JDict
 {
     static string[] _kanji = Array.Empty<string>(), _kana = Array.Empty<string>(), _ru = Array.Empty<string>(), _ruLower = Array.Empty<string>(), _hira = Array.Empty<string>();
     static bool[] _common = Array.Empty<bool>();
+    // Английские переводы (~150 тыс. статей без русского) — не отдельными строками, а одним блоком UTF-8:
+    // по-русски в них не ищут, а нужны они только для показа найденной статьи. Так словарь занимает заметно меньше памяти.
+    const string EngMark = "англ.: ";
+    static byte[] _eng = Array.Empty<byte>();
+    static int[] _engAt = Array.Empty<int>();   // начало перевода статьи в _eng (у русских статей -1)
     // Lazy: при одновременном первом обращении из разных потоков загрузка запускается ровно один раз
     static readonly Lazy<Task> _load = new(() => Task.Run(Load));
     public static int Count => _kana.Length;
     /// <summary>Размер словаря для подписей: точное число статей, если словарь уже загружен.</summary>
-    public static string CountLabel => Loaded && Count > 0 ? $"{Count / 1000 * 1000:N0}+".Replace(' ', ' ') : "69 000+";
+    public static string CountLabel => Loaded && Count > 0 ? $"{Count / 1000 * 1000:N0}+".Replace(' ', ' ') : "219 000+";
     public static bool Loaded => _load.IsValueCreated && _load.Value.IsCompletedSuccessfully;
 
     public static Task LoadAsync() => _load.Value;
 
     static void Load()
     {
+        Perf.Mark("словарь: начало загрузки");
+        LoadCore();
+    }
+
+    static void LoadCore()
+    {
         using var s = typeof(JDict).Assembly.GetManifestResourceStream("dict.tsv.gz")!;
         using var gz = new GZipStream(s, CompressionMode.Decompress);
         using var r = new StreamReader(gz, Encoding.UTF8);
         var k = new List<string>(230000); var kn = new List<string>(230000); var ru = new List<string>(230000); var c = new List<bool>(230000);
+        var engAt = new List<int>(230000);
+        using var eng = new MemoryStream(7_000_000);
         string? line;
         while ((line = r.ReadLine()) != null)
         {
-            var p = line.Split('\t');
-            if (p.Length < 4) continue;
-            c.Add(p[0] == "1"); k.Add(string.Intern(p[1])); kn.Add(p[2]); ru.Add(p[3]);
+            // поля: частотное (0/1) \t кандзи \t чтение \t перевод; разбор без Split — меньше мусора на 219 тыс. строк
+            int a = line.IndexOf('\t'), b = a < 0 ? -1 : line.IndexOf('\t', a + 1), d = b < 0 ? -1 : line.IndexOf('\t', b + 1);
+            if (d < 0) continue;
+            c.Add(a == 1 && line[0] == '1');
+            k.Add(b == a + 1 ? "" : line.Substring(a + 1, b - a - 1));
+            kn.Add(line.Substring(b + 1, d - b - 1));
+            if (string.CompareOrdinal(line, d + 1, EngMark, 0, EngMark.Length) == 0)
+            {
+                engAt.Add((int)eng.Length);
+                eng.Write(Encoding.UTF8.GetBytes(line, d + 1 + EngMark.Length, line.Length - d - 1 - EngMark.Length));
+                eng.WriteByte(0);
+                ru.Add(null!);
+            }
+            else { engAt.Add(-1); ru.Add(line[(d + 1)..]); }
         }
+        _eng = eng.ToArray(); _engAt = engAt.ToArray();
         _kanji = k.ToArray(); _kana = kn.ToArray(); _ru = ru.ToArray(); _common = c.ToArray();
         // Копии храним, только если строка действительно меняется: большинство переводов уже в нижнем регистре,
         // большинство чтений — уже хирагана (так словарь на 219 тыс. статей занимает заметно меньше памяти)
-        _ruLower = _ru.Select(x => { var l = x.ToLowerInvariant(); return l == x ? x : l; }).ToArray();
+        _ruLower = _ru.Select(x => { if (x == null) return null!; var l = x.ToLowerInvariant(); return l == x ? x : l; }).ToArray();
         _hira = _kana.Select(x => { var h = Kana.ToHiragana(x); return h == x ? x : h; }).ToArray();
     }
 
-    static DictEntry Entry(int i) => new(i, _common[i], _kanji[i], _kana[i], _ru[i]);
+    static DictEntry Entry(int i) => new(i, _common[i], _kanji[i], _kana[i], _ru[i] ?? Eng(i));
+
+    static string Eng(int i)
+    {
+        int s = _engAt[i], e = Array.IndexOf(_eng, (byte)0, s);
+        return EngMark + Encoding.UTF8.GetString(_eng, s, e - s);
+    }
 
     /// <summary>Поиск. Язык запроса определяется автоматически: кириллица, латиница (ромадзи) или японский.</summary>
     public static List<DictEntry> Search(string query, int limit = 120)
@@ -74,6 +105,7 @@ public static class JDict
             for (int i = 0; i < _ruLower.Length; i++)
             {
                 var ru = _ruLower[i];
+                if (ru == null) continue; // английская статья
                 int pos = ru.IndexOf(q, StringComparison.Ordinal);
                 if (pos < 0) continue;
                 int rank = IsWholeGloss(ru, pos, q.Length) ? 0 : (pos == 0 || !char.IsLetter(ru[pos - 1])) ? 1 : 2;

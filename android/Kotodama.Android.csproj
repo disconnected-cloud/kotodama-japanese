@@ -65,6 +65,17 @@
     <AndroidResource Include="Resources/**/*" />
   </ItemGroup>
 
+  <!-- Офлайн-голоса VOICEVOX: их ядро (скачивается в приложении) требует libc++_shared.so — кладём её из NDK в APK -->
+  <PropertyGroup>
+    <KotodamaNdk Condition="'$(KotodamaNdk)' == ''">$(ANDROID_NDK_LATEST_HOME)</KotodamaNdk>
+    <KotodamaNdk Condition="'$(KotodamaNdk)' == ''">$(ANDROID_NDK_HOME)</KotodamaNdk>
+    <KotodamaLibCxx>$(KotodamaNdk)/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib</KotodamaLibCxx>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(KotodamaNdk)' != ''">
+    <AndroidNativeLibrary Include="$(KotodamaLibCxx)/aarch64-linux-android/libc++_shared.so" Abi="arm64-v8a" Condition="$(RuntimeIdentifiers.Contains('arm64'))" />
+    <AndroidNativeLibrary Include="$(KotodamaLibCxx)/x86_64-linux-android/libc++_shared.so" Abi="x86_64" Condition="$(RuntimeIdentifiers.Contains('x64'))" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Avalonia.Android" Version="11.3.22" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />

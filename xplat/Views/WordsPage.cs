@@ -102,7 +102,7 @@ public sealed class WordsPage : UserControl, IPage
         var words = Db.Words.Where(w => w.Level == _level).ToArray();
         int learning = words.Count(w => ProgressStore.Card(w.Id)?.Reps > 0);
         int mastered = words.Count(w => ProgressStore.Card(w.Id)?.Mastered == true);
-        var lv = new StackPanel { Orientation = Orientation.Horizontal };
+        var lv = new WrapPanel { Orientation = Orientation.Horizontal };
         foreach (var l in new[] { "N5", "N4", "N3", "N2", "1000", "Мои" })
         {
             var rb = new RadioButton { Classes = { "ChipRadio" }, Content = l == "Мои" ? "Мои слова" : l == "1000" ? "1000+ частых" : l, GroupName = "wlevel", IsChecked = _level == l };
