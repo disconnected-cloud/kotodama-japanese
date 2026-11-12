@@ -186,9 +186,11 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
         if (known.Count >= 6 && !p.QuietMode)
         {
             int n = mode switch { 0 => 5, 1 => 8, _ => 12 };
-            list.Add(new("voice", "Аудирование", "Слова, которые ты учишь, — только на слух", 2, () =>
+            // через день — целые фразы в обычном темпе, когда слов уже достаточно
+            bool phrases = known.Count >= 20 && DateTime.Today.DayOfYear % 2 == 0;
+            list.Add(new("voice", "Аудирование", phrases ? "Целые фразы в обычном темпе — без текста" : "Слова, которые ты учишь, — только на слух", 2, () =>
             {
-                Shell.Open(ListeningQuiz(n));
+                Shell.Open(phrases ? TrainersPage.PhraseListening(n) : ListeningQuiz(n));
                 return true;
             }));
         }

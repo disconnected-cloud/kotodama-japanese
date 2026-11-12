@@ -274,6 +274,7 @@ public sealed class TrainersPage : UserControl, IPage
         grid.Children.Add(Tile("数", "Счётные суффиксы", "本・枚・匹・人… с особыми чтениями", () => Shell.Open(new CountersPage())));
         grid.Children.Add(Tile("対", "Минимальные пары", "おばさん или おばあさん? Слух и произношение", () => Shell.Open(new PairsPage())));
         grid.Children.Add(Tile("聞", "Диктант", "Слушай и записывай слово", () => Shell.Open(Dictation())));
+        grid.Children.Add(Tile("耳", "Фразы на слух", "Целые фразы в обычном темпе, без текста — что сказали?", () => Shell.Open(PhraseListening())));
         grid.Children.Add(Tile("組", "Собери предложение", "Расставь слова по порядку", () => Shell.Open(new BuilderSession())));
         grid.Children.Add(Tile("書", "Прописи", "Пиши кандзи мышью или пером — проверка порядка черт", () => Shell.Open(new WritingPage())));
         grid.Children.Add(Tile("試", "Пробный тест JLPT", $"30 вопросов уровня {ProgressStore.P.Level}", () => Shell.Open(MockTest(ProgressStore.P.Level))));
@@ -428,6 +429,29 @@ public sealed class TrainersPage : UserControl, IPage
             }
         }
         return qs.Count == 0 ? null : new QuizSession("Работа над ошибками", qs);
+    }
+
+    // ─────────── Фразы на слух ───────────
+    /// <summary>
+    /// Аудирование без текста: фраза звучит в обычном темпе (из уроков говорения, диалогов и примеров к словам),
+    /// нужно выбрать перевод. Текст фразы показывается только после ответа.
+    /// </summary>
+    public static QuizSession PhraseListening(int n = 10)
+    {
+        var lvl = ProgressStore.P.Level;
+        var pool = Db.SpeechLessons.SelectMany(l => l.Items.Select(i => (i.Jp, i.Ru)))
+            .Concat(Db.Dialogs.Where(d => string.CompareOrdinal(d.Level, lvl) >= 0).SelectMany(d => d.Lines.Select(l => (l.Jp, l.Ru))))
+            .Concat(Db.Words.Where(w => w.Level == lvl && w.ExJp.Length > 0).Select(w => (Jp: w.ExJp, Ru: w.ExRu)))
+            .Where(x => x.Jp.Length is >= 4 and <= 28 && x.Ru.Length is > 0 and <= 70)
+            .DistinctBy(x => x.Ru).ToList();
+        var ruPool = pool.Select(x => x.Ru).ToArray();
+        var qs = pool.Shuffled().Take(n).Select(x => new QuizQ
+        {
+            Prompt = "聞いて", PromptSize = 52, Sub = "Что сказали? Текст покажу после ответа · 🔊 повторить", SpeakOnShow = true,
+            Answer = x.Ru, Options = QuizSession.MakeOptions(x.Ru, ruPool), Speak = x.Jp,
+            Explain = $"{x.Jp}\n{Reading.RomajiWords(x.Jp)}",
+        });
+        return new QuizSession("Фразы на слух", qs);
     }
 
     // ─────────── Диктант ───────────
