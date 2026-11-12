@@ -65,7 +65,7 @@ def segment(jp, kana=None):
 texts = {}
 def add(jp, kana=None):
     if jp and jp not in texts: texts[jp] = segment(jp, kana)
-for f in ("grammar.json", "grammar_n4.json", "grammar_n3.json", "grammar_n3b.json"):
+for f in ("grammar.json", "grammar_n4.json", "grammar_n3.json", "grammar_n3b.json", "grammar_more.json"):
     for l in load(f):
         for p in l["points"]:
             for ex in p["ex"]: add(ex[0], ex[1])
@@ -91,14 +91,22 @@ for e in d["words"]:
         g = [x["text"] for x in s["gloss"] if x.get("lang") == "rus"]
         if g: senses.append(", ".join(g[:4]))
         if len(senses) >= 3: break
-    if not senses: continue
+    eng = False
+    if not senses:
+        # Русского перевода нет — даём английский (помечен), чтобы в словаре находилось любое слово
+        for s in e["sense"]:
+            g = [x["text"] for x in s["gloss"] if x.get("lang") == "eng"]
+            if g: senses.append(", ".join(g[:3]))
+            if len(senses) >= 2: break
+        if not senses: continue
+        eng = True
     kanji = "、".join(k["text"] for k in e["kanji"][:2])
     kana = e["kana"][0]["text"] if e["kana"] else ""
     common = any(k.get("common") for k in e["kanji"] + e["kana"])
-    ru = "; ".join(senses)
+    ru = ("англ.: " if eng else "") + "; ".join(dict.fromkeys(senses))
     if len(ru) > 180: ru = ru[:177] + "…"
-    rows.append((0 if common else 1, kanji, kana, ru.replace("\t", " ").replace("\n", " ")))
-rows.sort(key=lambda r: r[0])
+    rows.append((0 if common else 1, kanji, kana, ru.replace("\t", " ").replace("\n", " "), 1 if eng else 0))
+rows.sort(key=lambda r: (r[4], r[0]))  # сначала с русским переводом, внутри — частотные
 with gzip.open(D("dict.tsv.gz"), "wt", encoding="utf8", compresslevel=9) as f:
-    for c, k, kn, ru in rows: f.write(f"{1 - c}\t{k}\t{kn}\t{ru}\n")
-print("dict entries:", len(rows), "common:", sum(1 for r in rows if r[0] == 0), "size KB:", os.path.getsize(D("dict.tsv.gz")) // 1024)
+    for c, k, kn, ru, _ in rows: f.write(f"{1 - c}\t{k}\t{kn}\t{ru}\n")
+print("dict entries:", len(rows), "ru:", sum(1 for r in rows if not r[4]), "common:", sum(1 for r in rows if r[0] == 0), "size KB:", os.path.getsize(D("dict.tsv.gz")) // 1024)

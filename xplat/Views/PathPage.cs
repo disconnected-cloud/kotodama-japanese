@@ -43,7 +43,9 @@ public static class Course
     public static int DoneCount(CourseUnit u) => (F.Contains(TheoryKey(u)) ? 1 : 0) + Enumerable.Range(0, u.Steps.Length).Count(i => StepDone(u, i));
     public static int Total(CourseUnit u) => u.Steps.Length + 1;
     public static bool Complete(CourseUnit u) => F.Contains("skip:" + u.Id) || DoneCount(u) == Total(u);
-    public static bool Unlocked(CourseUnit u) => u.Id == 1 || Complete(Db.Course[u.Id - 2]);
+    /// <summary>Открыт, если пройден предыдущий — или если ученик уже начинал этот юнит
+    /// (в 2.0 в старые юниты добавились уроки: пройденное дальше не должно закрыться).</summary>
+    public static bool Unlocked(CourseUnit u) => u.Id == 1 || Complete(Db.Course[u.Id - 2]) || F.Contains(TheoryKey(u)) || (u.Id < Db.Course.Length && F.Contains(TheoryKey(Db.Course[u.Id])));
     public static CourseUnit Current => Db.Course.FirstOrDefault(u => !Complete(u) && Unlocked(u)) ?? Db.Course[^1];
 
     public static string StepTitle(CourseStep s) => s.Title ?? s.T switch

@@ -31,7 +31,7 @@ public sealed class GrammarPage : UserControl, IPage
         {
             root.Children.Add(U.T(level switch { "N5" => "N5 · основы", "N4" => "N4 · продолжение", _ => "N3 · средний уровень" }, "H2").M(0, 6, 0, 10));
             var grid = new UniformGrid { Columns = U.Columns(2), Margin = new Thickness(-6, 0, -6, 16) };
-            foreach (var l in Db.Grammar.Where(g => g.Level == level))
+            foreach (var l in Db.Grammar.Where(g => g.Level == level).OrderBy(Num))
             {
                 bool isDone = done.Contains(l.Id);
                 bool recommended = !isDone && unlockedNext;
@@ -44,6 +44,15 @@ public sealed class GrammarPage : UserControl, IPage
         Content = U.Page(root);
     }
 
+    /// <summary>Номер урока — в порядке пути обучения (уроки, добавленные в 2.0, встают на свои места).</summary>
+    public static int Num(GrammarLesson l) => _num.Value.TryGetValue(l.Id, out var n) ? n : l.Id;
+    static readonly Lazy<Dictionary<int, int>> _num = new(() =>
+    {
+        var order = Db.Course.SelectMany(u => u.Steps).Where(s => s.T == "grammar").Select(s => s.Id).Distinct()
+            .Concat(Db.Grammar.Select(g => g.Id)).Distinct().ToList();
+        return order.Select((id, i) => (id, i)).ToDictionary(x => x.id, x => x.i + 1);
+    });
+
     static Border LessonCard(GrammarLesson l, bool done, bool next)
     {
         var g = U.Cols("auto", "*", "auto");
@@ -53,7 +62,7 @@ public sealed class GrammarPage : UserControl, IPage
             Background = done ? U.B("GreenGradient") : next ? U.B("AccentGradient") : U.B("Surface2"),
             Child = new TextBlock
             {
-                Text = done ? "" : l.Id.ToString(), FontFamily = U.R<FontFamily>(done ? "Icons" : "UiFont"),
+                Text = done ? "" : Num(l).ToString(), FontFamily = U.R<FontFamily>(done ? "Icons" : "UiFont"),
                 FontSize = done ? 20 : 22, FontWeight = FontWeights.Bold, Foreground = Brushes.White,
                 HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
             },
@@ -76,13 +85,13 @@ public sealed class GrammarPage : UserControl, IPage
 public sealed class GrammarLessonPage : UserControl, IPage
 {
     readonly GrammarLesson _l;
-    public string Title => $"Урок {_l.Id}";
+    public string Title => $"Урок {GrammarPage.Num(_l)}";
     public GrammarLessonPage(GrammarLesson l) { _l = l; Build(); }
 
     void Build()
     {
         var root = new StackPanel { MaxWidth = 900 };
-        root.Children.Add(U.Header("文", _l.Title, "Урок " + _l.Id + " · " + _l.Level));
+        root.Children.Add(U.Header("文", _l.Title, "Урок " + GrammarPage.Num(_l) + " · " + _l.Level));
 
         root.Children.Add(U.Card(U.T(_l.Intro, "Body", 15)));
 

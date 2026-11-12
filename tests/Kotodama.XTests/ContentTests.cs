@@ -76,3 +76,19 @@ public class ContentTests
         }
     }
 }
+
+public class DictSizeTests
+{
+    [Fact]
+    public async Task DictionaryLoadsFastAndBig()
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        await Matsubakira.Services.JDict.LoadAsync();
+        Assert.True(Matsubakira.Services.JDict.Count > 200_000);
+        Assert.True(sw.ElapsedMilliseconds < 4000, $"загрузка {sw.ElapsedMilliseconds} мс");
+        // русские статьи — первыми в выдаче
+        var r = Matsubakira.Services.JDict.Search("собака", 5);
+        Assert.Contains(r, e => e.Kana == "いぬ");
+        Assert.NotNull(Matsubakira.Services.JDict.Lookup("猫"));
+    }
+}

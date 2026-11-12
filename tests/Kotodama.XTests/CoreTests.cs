@@ -267,9 +267,26 @@ public class DataIntegrityTests
     {
         Assert.True(Db.Words.Length > 2000);
         Assert.True(Db.Kanji.Length >= 370);
-        Assert.Equal(45, Db.Grammar.Length);
+        Assert.Equal(55, Db.Grammar.Length);
         Assert.NotEmpty(Db.Dialogs);
         Assert.NotEmpty(Db.Course);
+    }
+
+    [Fact]
+    public void EveryGrammarLessonIsOnThePath()
+    {
+        var ids = Db.Course.SelectMany(u => u.Steps).Where(s => s.T == "grammar").Select(s => s.Id).ToList();
+        Assert.All(ids, id => Assert.InRange(id, 1, Db.Grammar.Length));
+        Assert.Equal(Enumerable.Range(1, Db.Grammar.Length), ids.Distinct().OrderBy(x => x));
+        // N5 раньше N4, N4 раньше N3 (по первому появлению урока в пути)
+        var order = ids.Distinct().Select(id => Db.Grammar[id - 1].Level).ToList();
+        Assert.True(order.LastIndexOf("N5") < order.IndexOf("N3"));
+        // шаги «кандзи» достижимы: столько знаков уровня действительно есть
+        foreach (var s in Db.Course.SelectMany(u => u.Steps).Where(s => s.T == "kanji"))
+            Assert.True(Db.KanjiOf(s.Level ?? "N5").Count() >= s.Count, $"{s.Level}: {s.Count}");
+        // слова для шагов «слова» существуют
+        foreach (var s in Db.Course.SelectMany(u => u.Steps).Where(s => s.T == "words"))
+            Assert.True(Db.Words.Any(w => w.Topic == s.Topic), s.Topic);
     }
 
     [Fact]
