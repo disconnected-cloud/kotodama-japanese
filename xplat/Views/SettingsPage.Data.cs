@@ -61,7 +61,7 @@ public sealed partial class SettingsPage : UserControl, IPage
             if (it.Key == "llm" && size == 0) continue;
             var row = U.Cols("*", "auto", "auto");
             row.Margin = new Thickness(0, 0, 0, 10);
-            row.Children.Add(U.Stack(U.T(it.Title, "H3", 14), U.T(it.Desc, "Muted", 12)));
+            row.Children.Add(U.Stack(U.T(it.Title, "H3", 14).Also(t => t.TextWrapping = TextWrapping.Wrap), U.T(it.Desc, "Muted", 12).Also(t => t.TextWrapping = TextWrapping.Wrap)));
             row.Children.Add(U.T(Storage.Format(size), "Body", 13.5, U.B("Muted")).CenterV().M(12, 0, 12, 0).Col(1));
             var item = it;
             var b = U.Btn("Очистить", async () =>

@@ -49,6 +49,13 @@ jobs:
           # «многоточие» в превью — намеренно; всё остальное (за краем, сжат, шире, выше) — ошибка вёрстки
           ! grep -E "за краем|сжат|шире на|выше на|FAIL" snaps/cliptest.txt
 
+      - name: Обрезанный текст на компьютере (минимальный размер окна)
+        run: |
+          KOTODAMA_SIZE=1020x680 timeout 400 ./build/Kotodama.exe --cliptest snaps/cliptest-desktop.txt || true
+          test -s snaps/cliptest-desktop.txt
+          # «сжат» — признак для узкого экрана телефона, на компьютере это обычный перенос в колонке
+          ! grep -E "за краем|шире на|выше на|FAIL" snaps/cliptest-desktop.txt
+
       - name: Снимки экранов
         if: always()
         run: |

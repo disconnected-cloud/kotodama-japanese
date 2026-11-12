@@ -285,8 +285,9 @@ public sealed partial class SettingsPage : UserControl, IPage
         foreach (var a in Achievements.All)
         {
             bool got = p.Achievements.Contains(a.Id);
-            var sp = U.Stack(U.Jp(a.Jp, 22, U.B(got ? "Accent" : "Faint"), true).Center(), U.T(a.Title, "H3", 12.5, U.B(got ? "Text" : "Faint")).Center().M(0, 4, 0, 0), U.T(a.Desc, "Muted", 11).Center());
-            wrap.Children.Add(new Border { Width = 132, Height = 112, Margin = new Thickness(0, 0, 8, 8), CornerRadius = new CornerRadius(12), Padding = new Thickness(8),
+            var sp = U.Stack(U.Jp(a.Jp, 22, U.B(got ? "Accent" : "Faint"), true).Center(), U.T(a.Title, "H3", 12.5, U.B(got ? "Text" : "Faint")).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.TextAlignment = TextAlignment.Center; }).Center().M(0, 4, 0, 0),
+                U.T(a.Desc, "Muted", 11).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.TextAlignment = TextAlignment.Center; }).Center());
+            wrap.Children.Add(new Border { Width = 132, MinHeight = 112, Margin = new Thickness(0, 0, 8, 8), CornerRadius = new CornerRadius(12), Padding = new Thickness(8),
                 Background = U.B(got ? "AccentSoft" : "Surface2"), Child = sp.CenterV(), Opacity = got ? 1 : 0.6 });
         }
         return wrap;

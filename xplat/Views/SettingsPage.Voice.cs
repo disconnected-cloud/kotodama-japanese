@@ -79,9 +79,10 @@ public sealed partial class SettingsPage : UserControl, IPage
             sp.Children.Add(new Border
             {
                 Background = U.B("AccentSoft"), CornerRadius = new CornerRadius(14), Padding = new Thickness(14, 12), Margin = new Thickness(0, 14, 0, 0),
-                Child = U.Row(12, Art.Icon("sparkle", 36).CenterV(), U.Stack(
-                    U.T("Рекомендуемый набор: чёткие голоса для учёбы", "H3", 14),
-                    U.T($"Tsumugi, Himari, Metan, No.7 (диктор), Takehiro и Ryusei (мужские) — ровная дикция без придыхания. {(Voicevox.Installed ? $"Не хватает ~{mb} МБ" : $"~{mb} МБ")}.", "Muted", 12.5).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.MaxWidth = 520; })).CenterV()),
+                // сетка, а не ряд: текст справа от значка переносится по ширине карточки
+                Child = new Grid { ColumnDefinitions = new ColumnDefinitions("auto,*"), Children = { Art.Icon("sparkle", 36).CenterV(), U.Stack(
+                    U.T("Рекомендуемый набор: чёткие голоса для учёбы", "H3", 14).Also(t => t.TextWrapping = TextWrapping.Wrap),
+                    U.T($"Tsumugi, Himari, Metan, No.7 (диктор), Takehiro и Ryusei (мужские) — ровная дикция без придыхания. {(Voicevox.Installed ? $"Не хватает ~{mb} МБ" : $"~{mb} МБ")}.", "Muted", 12.5).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.MaxWidth = 520; })).CenterV().M(12, 0, 0, 0).Col(1) } },
             });
         }
         sp.Children.Add(U.T(Voicevox.Installed ? "ДОБАВИТЬ ПАКЕТЫ" : "ВЫБЕРИ ПАКЕТЫ ГОЛОСОВ", "Overline").M(0, 14, 0, 6));

@@ -68,7 +68,8 @@ public sealed class GrammarPage : UserControl, IPage
             },
         });
         var info = U.Stack(
-            U.Row(8, U.T(l.Title, "H3", 16), next ? U.Pill("СЛЕДУЮЩИЙ", U.B("AccentSoft"), U.B("Accent")) : new Border()),
+            // с переносом и на компьютере: в две колонки длинный заголовок уходил под значок уровня
+            new WrapPanel { Children = { U.T(l.Title, "H3", 16).Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 0, 8, 0), next ? U.Pill("СЛЕДУЮЩИЙ", U.B("AccentSoft"), U.B("Accent")) : new Border() } },
             U.T(l.Points.Length > 0 ? string.Join("  ·  ", l.Points.Select(p => p.Pattern)) : "", "Muted", 13).M(0, 4, 0, 0));
         ((TextBlock)info.Children[1]).FontFamily = U.R<FontFamily>("JpFont");
         ((TextBlock)info.Children[1]).TextTrimming = TextTrimming.CharacterEllipsis;

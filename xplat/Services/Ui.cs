@@ -71,9 +71,10 @@ public static class U
         if (icon != null)
         {
             // на телефоне подпись кнопки может переноситься (в горизонтальном StackPanel длинная уходила за край)
-            Panel sp = Shell.Compact ? new Grid { ColumnDefinitions = new ColumnDefinitions("auto,*") } : new StackPanel { Orientation = Orientation.Horizontal };
+            // подпись может переноситься, если кнопке не хватает ширины (в StackPanel длинная уходила за край)
+            var sp = new Grid { ColumnDefinitions = new ColumnDefinitions("auto,*") };
             sp.Children.Add(new TextBlock { Text = icon, FontFamily = R<FontFamily>("Icons"), FontSize = 14, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, text.Length > 0 ? 8 : 0, 0) });
-            if (text.Length > 0) sp.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center }.Col(1));
+            if (text.Length > 0) sp.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap }.Col(1));
             content = sp;
         }
         var b = new Button { Content = content };
@@ -191,7 +192,9 @@ public static class U
                 foreach (var c in rs.Children.ToList()) { rs.Children.Remove(c); c.Margin = new Thickness(0, 0, 6, 6); wp.Children.Add(c); }
                 right = wp;
             }
-            if (Shell.Compact) { g.RowDefinitions = new RowDefinitions("auto,auto"); right.Margin = new Thickness(0, 12, 0, 0); right.HorizontalAlignment = HorizontalAlignment.Left; Grid.SetColumnSpan(right, 3); g.Children.Add(right.RowAt(1)); }
+            // много переключателей (больше четырёх) — и на компьютере под заголовок: справа они сжимали описание
+            bool below = Shell.Compact || right is Panel { Children.Count: > 4 };
+            if (below) { g.RowDefinitions = new RowDefinitions("auto,auto"); right.Margin = new Thickness(0, 12, 0, 0); right.HorizontalAlignment = HorizontalAlignment.Left; Grid.SetColumnSpan(right, 3); g.Children.Add(right.RowAt(1)); }
             else { right.VerticalAlignment = VerticalAlignment.Center; g.Children.Add(right.Col(2)); }
         }
         if (Shell.Compact) { g.Margin = new Thickness(0, 4, 0, 16); return g; }

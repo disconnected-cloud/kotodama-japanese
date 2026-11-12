@@ -62,7 +62,7 @@ public sealed class JapanPage : UserControl, IPage
         var head = U.Cols("auto", "*");
         head.Children.Add(Emoji.Img(a.Emoji, 46));
         if (Read(a)) head.Children.Add(U.Pill("✓ прочитано", U.B("GoodSoft"), U.B("Good")).Also(p => { p.HorizontalAlignment = HorizontalAlignment.Right; p.VerticalAlignment = VerticalAlignment.Top; }).Col(1));
-        var sp = U.Stack(head, U.T(a.Cat.ToUpperInvariant(), "Overline").M(0, 10, 0, 0), U.T(a.Title, "H3", 15).M(0, 2, 0, 2), U.Jp(a.Jp, 13, U.B("Accent")),
+        var sp = U.Stack(head, U.T(a.Cat.ToUpperInvariant(), "Overline").M(0, 10, 0, 0), U.T(a.Title, "H3", 15).Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 2, 0, 2), U.Jp(a.Jp, 13, U.B("Accent")),
             U.T(a.Lead, "Muted", 12.5).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.MaxHeight = 52; t.TextTrimming = TextTrimming.CharacterEllipsis; }).M(0, 6, 0, 0));
         var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
         HomePage.Hover(card);
