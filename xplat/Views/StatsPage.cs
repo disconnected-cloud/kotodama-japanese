@@ -71,6 +71,7 @@ public sealed class StatsPage : UserControl, IPage
         rw.Children.Add(Kpi("trophy", "Достижения", p.Achievements.Count, $"из {Achievements.All.Length}", "Открытые достижения"));
         root.Children.Add(rw);
         root.Children.Add(U.Card(U.Stack(U.T("ДОСТИЖЕНИЯ", "Overline").M(0, 0, 0, 12), SettingsPage.AchievementsGrid()), new Thickness(22, 18, 22, 10)).M(0, 16, 0, 0));
+        root.Children.Add(U.Card(Postcards(), new Thickness(22, 18, 22, 14)).M(0, 16, 0, 0));
         return root;
     }
 
@@ -202,6 +203,33 @@ public sealed class StatsPage : UserControl, IPage
             g.Children.Add(U.Stack(head, new ProgressBar { Maximum = Math.Max(1, r.total), Value = r.done, Height = 6, Margin = new Thickness(0, 5, 0, 0) }).CenterV().M(12, 0, 0, 0).Col(1));
             sp.Children.Add(g);
         }
+        return sp;
+    }
+
+    /// <summary>Открытки: за каждый сданный экзамен юнита — статья о Японии (место, обычай, праздник).</summary>
+    static Control Postcards()
+    {
+        var arts = JapanPage.All;
+        int got = Db.Course.Count(Course.ExamPassed);
+        var sp = U.Stack(U.T("ОТКРЫТКИ ИЗ ЯПОНИИ", "Overline"),
+            U.T(got == 0 ? "Сдай итоговый тест юнита (в конце каждого юнита пути) — откроется первая открытка." : $"Собрано {got} из {Db.Course.Length}", "Muted", 13).M(0, 4, 0, 12));
+        var wrap = new WrapPanel();
+        foreach (var u in Db.Course)
+        {
+            var a = arts[(u.Id - 1) % arts.Length];
+            bool open = Course.ExamPassed(u);
+            var card = new Border
+            {
+                Width = 96, Height = 104, Margin = new Thickness(0, 0, 8, 8), CornerRadius = new CornerRadius(14), Padding = new Thickness(6),
+                Background = U.B(open ? "Surface2" : "Surface"), BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(1), Opacity = open ? 1 : 0.45,
+                Child = U.Stack(
+                    open ? Emoji.Img(a.Emoji, 40).Also(i => i.HorizontalAlignment = HorizontalAlignment.Center) : U.Jp("?", 30, U.B("Faint"), true).Center(),
+                    U.T(open ? a.Title : $"Юнит {u.Id}", "Muted", 11).Also(t => { t.TextAlignment = TextAlignment.Center; t.TextWrapping = TextWrapping.Wrap; t.MaxLines = 2; }).Center().M(0, 6, 0, 0)),
+            }.Tip(open ? a.Lead : $"Сдай экзамен юнита {u.Id}: {u.Title}");
+            if (open) { card.Cursor = Cursors.Hand; card.PointerReleased += (_, _) => Shell.Open(new ArticlePage(a)); }
+            wrap.Children.Add(card);
+        }
+        sp.Children.Add(wrap);
         return sp;
     }
 }
