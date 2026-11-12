@@ -82,22 +82,8 @@ jobs:
           arch: x86_64
           target: google_apis
           disable-animations: true
-          script: |
-            adb install -r $(ls out/x64/*-Signed.apk | head -1)
-            adb shell pm grant io.github.disconnectedcloud.kotodama android.permission.RECORD_AUDIO || true
-            ACT=io.github.disconnectedcloud.kotodama/$(adb shell cmd package resolve-activity --brief io.github.disconnectedcloud.kotodama | tail -1 | cut -d/ -f2)
-            adb shell am start -n $ACT
-            sleep 25
-            adb exec-out screencap -p > android-start.png
-            # каждый экран: перезапуск с флагом отладочной сборки и снимок (шрифты, значки, обрезка текста на настоящем Android)
-            for s in "--page home" "--page path" "--page kana" "--page kanji" "--page words" "--page grammar" "--page speech" "--page review" "--page more" "--page dict" "--page trainers" "--page stats" "--open quiz" "--open learnq" "--open dialog" "--open wod" "--open setvoice"; do
-              name=$(echo "$s" | tr -d '-' | tr ' ' '_')
-              adb shell am start -S -n $ACT --es args "'$s'" > /dev/null
-              sleep 9
-              adb exec-out screencap -p > android-$name.png
-            done
-            adb logcat -d | grep -iE "kotodama|mono|dotnet|avalonia|FATAL|AndroidRuntime" | tail -300 > android-log.txt || true
-            ! grep -q "FATAL EXCEPTION" android-log.txt
+          # каждая строка script выполняется отдельной командой — вся логика в одном файле
+          script: bash tools/android_screens.sh
 
       - uses: actions/upload-artifact@v4
         if: always()
