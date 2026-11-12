@@ -205,9 +205,12 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
     public void DebugWrong() { if (_options.Children.OfType<Button>().FirstOrDefault(o => o.Tag as string != Q.Answer) is { } b) Choose(b); }
 #endif
 
+    string? _chosen;   // что выбрано — для объяснения ошибки
+
     void Choose(Button b)
     {
         if (_locked) return;
+        _chosen = b.Tag as string;
         bool ok = b.Tag as string == Q.Answer;
         foreach (Button o in _options.Children)
         {
@@ -262,8 +265,12 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
         _fbIcon.Foreground = U.B(ok ? "Good" : "Bad");
         _fbTitle.Text = ok ? Praise() : $"Правильно: {first}";
         _fbTitle.Foreground = U.B(ok ? "Good" : "Bad");
+        // почему неверно: ты выбрал X, а нужно Y (частицы и формы — по смыслу)
+        var why = !ok && _chosen != null ? MistakeExplain.For(q.Answer, _chosen) : null;
         _fbText.Text = !ok && q.WrongHint != null ? q.WrongHint + (q.Explain != null ? "\n" + q.Explain : "")
+                     : !ok && why != null ? why + (q.Explain != null ? "\n" + q.Explain : "")
                      : q.Explain ?? (ok ? "" : "Этот вопрос вернётся в конце.");
+        _chosen = null;
         _fbText.IsVisible = string.IsNullOrEmpty(_fbText.Text) ? false : true;
         _smart.Content = ok ? null : SmartHints.For(q); // после ошибки: с чем не путать, кандзи слова, правило
         _feedback.IsHitTestVisible = true;

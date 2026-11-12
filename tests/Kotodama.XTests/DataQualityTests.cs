@@ -101,3 +101,18 @@ public class DataQualityTests
         Assert.Contains(Db.Course, u => u.Level == "N2");
     }
 }
+
+public class MistakeExplainTests
+{
+    [Fact]
+    public void ParticleMixupIsExplained()
+    {
+        var why = Matsubakira.Services.MistakeExplain.For("が", "は");
+        Assert.NotNull(why);
+        Assert.Contains("«は»", why);
+        Assert.Contains("«が»", why);
+    }
+
+    [Fact]
+    public void RightAnswerNeedsNoExplanation() => Assert.Null(Matsubakira.Services.MistakeExplain.For("に", "に"));
+}
