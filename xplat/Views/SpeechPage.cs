@@ -196,7 +196,7 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
                      : best >= 0 ? $"Лучший результат: {best}. Нажми на микрофон и повтори" : "Послушай образец, затем нажми на микрофон и повтори";
         _result.Content = null;
         _last = null;
-        if (ProgressStore.P.AutoSpeak) Speech.Say(p.Jp);
+        if (ProgressStore.AutoSpeakOn) Speech.Say(p.Jp);
         _ = Tts.GetAsync(p.Jp, true); // заранее готовим медленный вариант
         if (_i + 1 < _l.Items.Length) _ = Tts.GetAsync(_l.Items[_i + 1].Jp); // и следующую фразу — «Дальше» звучит без задержки
     }

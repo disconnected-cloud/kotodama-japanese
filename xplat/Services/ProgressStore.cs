@@ -64,6 +64,8 @@ public sealed class Progress
     public List<string[]> CustomWords { get; set; } = new();
     public bool ShowRomaji { get; set; } = true;
     public bool AutoSpeak { get; set; } = true;
+    public bool QuietMode { get; set; }                       // «тихо»: без автоозвучки, аудирования и говорения — только текст
+    public bool StudyNoSpeech { get; set; }                   // сессия «Учиться» без шага говорения
     public bool MaleVoice { get; set; }
     public string AsrModel { get; set; } = "small-q5_1";
     public string Level { get; set; } = "N5";
@@ -119,12 +121,13 @@ public static class ProgressStore
         {
             if (File.Exists(FilePath))
                 P = JsonSerializer.Deserialize(File.ReadAllBytes(FilePath), ProgressJson.Default.Progress) ?? new();
+            DailyBackup();
         }
         catch
         {
-            // Повреждённый файл — сохраняем копию и начинаем заново
+            // Повреждённый файл — сохраняем копию и берём последнюю целую автокопию (если есть)
             try { File.Copy(FilePath, FilePath + ".bak", true); } catch { }
-            P = new();
+            P = Backups().Select(TryRead).FirstOrDefault(x => x != null) ?? new();
         }
         // v0.3: декор по умолчанию выключен (лепестки заметно нагружали CPU) — сбрасываем один раз
         if (P.Flags.Add("mig-v3")) P.Petals = false;
@@ -148,6 +151,48 @@ public static class ProgressStore
 
     /// <summary>Сохранить прогресс. Вызывать из потока интерфейса: данные меняются только там, и сериализация
     /// из фонового потока могла сорваться («коллекция изменена») — тогда изменения терялись до следующей записи.</summary>
+    // ─────────── Автокопии: раз в день, последние 14 ───────────
+    public static string BackupDir => Path.Combine(Folder, "backups");
+    const int KeepBackups = 14;
+
+    /// <summary>Автокопии прогресса, новые первыми.</summary>
+    public static List<string> Backups() =>
+        Directory.Exists(BackupDir) ? Directory.GetFiles(BackupDir, "progress-*.json").OrderByDescending(f => f, StringComparer.Ordinal).ToList() : new();
+
+    static Progress? TryRead(string path)
+    {
+        try { return JsonSerializer.Deserialize(File.ReadAllBytes(path), ProgressJson.Default.Progress); }
+        catch { return null; }
+    }
+
+    /// <summary>При запуске: если сегодня копии ещё нет — копируем progress.json (до любых изменений этого дня).</summary>
+    static void DailyBackup()
+    {
+        if (ReadOnly || !File.Exists(FilePath)) return;
+        try
+        {
+            Directory.CreateDirectory(BackupDir);
+            var today = Path.Combine(BackupDir, $"progress-{DateTime.Today:yyyy-MM-dd}.json");
+            if (!File.Exists(today)) File.Copy(FilePath, today);
+            foreach (var old in Backups().Skip(KeepBackups)) File.Delete(old);
+        }
+        catch (Exception e) { CrashReport.Warn("Автокопия прогресса", e); }
+    }
+
+    /// <summary>Восстановить прогресс из автокопии (текущий перед этим тоже сохраняется рядом).</summary>
+    public static bool RestoreBackup(string path)
+    {
+        if (TryRead(path) is not { } p) return false;
+        try { File.Copy(FilePath, FilePath + ".before-restore", true); } catch { }
+        P = p;
+        Save();
+        Touch();
+        return true;
+    }
+
+    /// <summary>Озвучивать автоматически: включено и не «тихий режим».</summary>
+    public static bool AutoSpeakOn => P.AutoSpeak && !P.QuietMode;
+
     public static void Save()
     {
         if (ReadOnly) return;

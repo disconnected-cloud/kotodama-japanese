@@ -164,7 +164,7 @@ public sealed class FlashSession : Grid, IPage, IKeyTarget
         _flipped = true;
         var c = C;
         Anim.Flip(_card, () => _face.Content = Back(c));
-        if (ProgressStore.P.AutoSpeak) Speech.Say(c.Speak);
+        if (ProgressStore.AutoSpeakOn) Speech.Say(c.Speak);
 
         _bottom.Children.Clear();
         var card = ProgressStore.Card(c.Id);

@@ -216,7 +216,7 @@ public sealed class WordBuilderGame : Grid, IPage, IKeyTarget
         sp.Children.Add(acts);
         _area.Content = U.Card(sp, new Thickness(28, 22, 28, 22)).Also(c => c.MaxWidth = 760);
         Anim.FadeUp((Control)_area.Content, 0, 12, 280);
-        if (ProgressStore.P.AutoSpeak) Speech.Say(w.Kana);
+        if (ProgressStore.AutoSpeakOn) Speech.Say(w.Kana);
     }
 
     void Tap(Button b)

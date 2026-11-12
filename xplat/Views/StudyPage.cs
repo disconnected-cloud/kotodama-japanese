@@ -8,6 +8,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Matsubakira.Controls;
 using Matsubakira.Services;
+using ToggleButton = Matsubakira.Compat.ToggleButton;
 
 namespace Matsubakira.Views;
 
@@ -182,7 +183,7 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
 
         // Аудирование по уже знакомым словам: проверяет, узнаёшь ли ты их на слух
         var known = Db.Words.Where(w => ProgressStore.Card(w.Id)?.Reps > 0).ToList();
-        if (known.Count >= 6)
+        if (known.Count >= 6 && !p.QuietMode)
         {
             int n = mode switch { 0 => 5, 1 => 8, _ => 12 };
             list.Add(new("voice", "Аудирование", "Слова, которые ты учишь, — только на слух", 2, () =>
@@ -193,7 +194,7 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
         }
 
         // Говорение: урок, который меньше всего практиковался
-        if (Db.SpeechLessons.Length > 0 && (mode > 0 || p.Cards.Count > 20))
+        if (Db.SpeechLessons.Length > 0 && (mode > 0 || p.Cards.Count > 20) && !p.QuietMode && !p.StudyNoSpeech)
         {
             var lesson = Db.SpeechLessons.OrderBy(l => l.Items.Count(it => p.SpeechBest.ContainsKey(it.Id)) / (double)Math.Max(1, l.Items.Length))
                 .ThenBy(l => l.Id).First();
@@ -208,7 +209,7 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
         if (mode == 2)
             list.Add(new("games", "Игра на закрепление", "Быстрый раунд на слова, которые ты учишь", 3, () =>
             {
-                Shell.Open((DateTime.Today.DayOfYear % 3) switch { 0 => new MatchRushGame(), 1 => (Control)new WordBuilderGame(), _ => new ListenCatchGame() });
+                Shell.Open((DateTime.Today.DayOfYear % (p.QuietMode ? 2 : 3)) switch { 0 => new MatchRushGame(), 1 => (Control)new WordBuilderGame(), _ => new ListenCatchGame() });
                 return true;
             }));
 
@@ -219,6 +220,20 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
                 return true;
             }));
         return list;
+    }
+
+    ToggleButton Chip(string text, bool on, Action<bool> set, string tip)
+    {
+        var tb = new ToggleButton { Classes = { "Chip" }, Content = text, IsChecked = on }.Tip(tip);
+        void Apply(bool v)
+        {
+            set(v); ProgressStore.Notify();
+            _stages = Plan(_mode); _state.Clear(); _state.AddRange(_stages.Select(_ => 0));
+            Render();
+        }
+        tb.Checked += (_, _) => Apply(true);
+        tb.Unchecked += (_, _) => Apply(false);
+        return tb;
     }
 
     static QuizSession ListeningQuiz(int n)
@@ -320,6 +335,11 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
                 modes.Children.Add(b);
             }
             root.Children.Add(modes);
+            // состав: например, в транспорте — без говорения или совсем без звука
+            var opts = U.Row(8,
+                Chip("Без говорения", ProgressStore.P.StudyNoSpeech, v => ProgressStore.P.StudyNoSpeech = v, "Сегодня без микрофона: шаг «Говорение» не добавляется"),
+                Chip("Тихо: без звука", ProgressStore.P.QuietMode, v => ProgressStore.P.QuietMode = v, "Без автоозвучки, аудирования и говорения — только текстовые задания"));
+            root.Children.Add(opts.M(0, 10, 0, 0));
         }
 
         // Маршрут: вертикальная линия с шагами

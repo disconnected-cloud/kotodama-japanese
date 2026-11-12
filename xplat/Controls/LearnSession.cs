@@ -88,7 +88,7 @@ public sealed class LearnSession : Grid, IPage, IKeyTarget
         Control view = _i < 0 ? Overview(false) : _i >= _items.Count ? Overview(true) : ItemCard(_items[_i]);
         _body.Content = view;
         Anim.FadeUp(view, 0, 14, 300);
-        if (_i >= 0 && _i < _items.Count && ProgressStore.P.AutoSpeak) Speech.Say(_items[_i].Speak);
+        if (_i >= 0 && _i < _items.Count && ProgressStore.AutoSpeakOn) Speech.Say(_items[_i].Speak);
     }
 
     // ─────────── Обзор: все знаки урока сразу ───────────
@@ -261,7 +261,7 @@ public sealed class LearnSession : Grid, IPage, IKeyTarget
                 Prompt = it.Meaning, PromptSize = 34, PromptJp = false, Sub = it.IsKanji ? "Найди этот иероглиф" : "Как это будет по-японски?", Answer = it.Front,
                 Options = Opts(it.Front, fronts, poolFront), OptionsJp = true, Speak = it.Speak, Key = key, OnResult = mark,
             });
-            if (!it.IsKanji)
+            if (!it.IsKanji && !ProgressStore.P.QuietMode) // в тихом режиме — без вопросов на слух
                 qs.Add(new QuizQ
                 {
                     Prompt = "🔊", PromptSize = 64, PromptJp = false, Sub = "Послушай и выбери перевод (R — ещё раз)", Answer = it.Meaning, SpeakOnShow = true,

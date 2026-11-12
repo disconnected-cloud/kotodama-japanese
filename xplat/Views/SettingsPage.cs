@@ -104,7 +104,8 @@ public sealed partial class SettingsPage : UserControl, IPage
                         }, "Muted", 12.5).M(0, 10, 0, 0)));
                 yield return Section("Подсказки на карточках", null, U.Stack(
                     Toggle("Показывать ромадзи (латиницу)", p.ShowRomaji, v => p.ShowRomaji = v),
-                    Toggle("Автоматически озвучивать слова", p.AutoSpeak, v => p.AutoSpeak = v)));
+                    Toggle("Автоматически озвучивать слова", p.AutoSpeak, v => p.AutoSpeak = v),
+                    Toggle("Тихий режим: без звука и микрофона (только текстовые задания)", p.QuietMode, v => p.QuietMode = v)));
                 break;
 
             case "voice":
@@ -167,6 +168,7 @@ public sealed partial class SettingsPage : UserControl, IPage
                 yield return Section("Резервная копия", "Сохрани прогресс в файл — пригодится при переустановке или переносе на другой компьютер.", U.Row(10,
                     U.Btn("Экспорт прогресса", ExportProgress, "", ""),
                     U.Btn("Импорт из файла", ImportProgress, "", "")));
+                yield return Section("Автокопии", "Каждый день при запуске прогресс копируется сам — хранятся последние 14 дней. Если что-то пошло не так, можно вернуться к копии.", AutoBackupBlock());
                 yield return Section("Обновления", $"Установлена версия {Updater.Current.ToString(3)}. Новые версии берутся из github.com/{Updater.Repo}.", UpdateBlock());
                 yield return Section("Хранилище", $"Всего занято: {Storage.Format(Storage.Total)} · папка: {ProgressStore.Folder}", StorageBlock());
                 var reset = U.Btn("Сбросить весь прогресс", () => { }, "", "");

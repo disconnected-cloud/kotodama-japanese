@@ -99,4 +99,28 @@ public sealed partial class SettingsPage : UserControl, IPage
         sp.Children.Add(full);
         return sp;
     }
+
+    Control AutoBackupBlock()
+    {
+        var list = ProgressStore.Backups();
+        var sp = new StackPanel();
+        if (list.Count == 0) { sp.Children.Add(U.T("Первая копия появится при следующем запуске.", "Muted", 13)); return sp; }
+        foreach (var f in list.Take(5))
+        {
+            var name = System.IO.Path.GetFileNameWithoutExtension(f).Replace("progress-", "");
+            var label = DateTime.TryParse(name, out var d) ? d.ToString("d MMMM, dddd") : name;
+            var row = U.Cols("*", "auto");
+            row.Children.Add(U.T(label, "Body", 14).CenterV());
+            var path = f;
+            row.Children.Add(U.Btn("Вернуть", async () =>
+            {
+                if (!await Shell.Confirm($"Вернуть прогресс к копии от {label}? Всё, что сделано после неё, пропадёт (текущий файл сохранится рядом как progress.json.before-restore).", "Вернуть")) return;
+                Shell.Toast(ProgressStore.RestoreBackup(path) ? "Прогресс восстановлен из копии" : "Копия повреждена — выбери другую", "復");
+                OnShown();
+            }, "Ghost", "").Col(1));
+            sp.Children.Add(row.M(0, 0, 0, 4));
+        }
+        if (list.Count > 5) sp.Children.Add(U.T($"и ещё {list.Count - 5} в папке backups", "Muted", 12));
+        return sp;
+    }
 }

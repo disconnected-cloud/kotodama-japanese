@@ -253,7 +253,7 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
         Anim.Opacity(_comboPill, _comboPill.Opacity, _combo >= 3 ? 1 : 0, 200);
         if (_combo >= 3) Anim.Pop(_comboPill, 0.7);
 
-        if (ProgressStore.P.AutoSpeak && q.Speak != null) Speech.Say(q.Speak);
+        if (ProgressStore.AutoSpeakOn && q.Speak != null) Speech.Say(q.Speak);
 
         var first = q.Answer.Split('|')[0];
         _feedback.Background = U.B(ok ? "GoodSoft" : "BadSoft");
