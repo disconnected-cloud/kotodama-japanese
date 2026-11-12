@@ -64,6 +64,8 @@ public sealed class Progress
     public List<string[]> CustomWords { get; set; } = new();
     public bool ShowRomaji { get; set; } = true;
     public bool AutoSpeak { get; set; } = true;
+    public string LastPlace { get; set; } = "";               // «Продолжить»: последний урок/текст/диалог (Resume)
+    public string LastPlaceTitle { get; set; } = "";
     public bool QuietMode { get; set; }                       // «тихо»: без автоозвучки, аудирования и говорения — только текст
     public bool StudyNoSpeech { get; set; }                   // сессия «Учиться» без шага говорения
     public bool MaleVoice { get; set; }

@@ -102,9 +102,11 @@ public sealed class SpeechPage : UserControl, IPage
 }
 
 /// <summary>Урок говорения: образец → запись → распознавание → оценка, волны «образец / ты».</summary>
-public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget
+public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget, IResumable
 {
     readonly SpeechLesson _l;
+    public string ResumeKey => $"speech:{_l.Id}";
+    public string ResumeTitle => $"Говорение · {_l.Title}";
     int _i;
     CancellationTokenSource? _cts;
     Recorder? _rec;

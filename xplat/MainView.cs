@@ -268,6 +268,7 @@ public partial class MainView : UserControl
 
     public void Push(Control page)
     {
+        Resume.Remember(page);
         if (PendingExpand is { } src) { PendingExpand = null; ExpandFrom(src, page); return; }
         _stack.Add(page);
         Show(page, 1);

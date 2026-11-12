@@ -73,6 +73,9 @@ public sealed class HomePage : UserControl, IPage
         acts.Children.Add(go.M(0, 0, 10, 6));
         acts.Children.Add(U.Btn($"Путь: юнит {u.Id}", () => { Shell.Go("path"); Shell.Open(new UnitPage(u)); }, "", "").M(0, 0, 10, 6).Tip($"{u.Title} · {d}/{t}"));
         if (due > 0) acts.Children.Add(U.Btn($"Повторить ({due})", () => Shell.Go("review"), "", "").M(0, 0, 10, 6));
+        // «Продолжить, где остановился» — последний открытый урок, текст или диалог
+        if (Resume.Opener() is { } reopen)
+            acts.Children.Add(U.Btn("Продолжить: " + p.LastPlaceTitle, () => Shell.Open(reopen()), "Ghost", "").M(0, 0, 10, 6).Tip("Вернуться туда, где остановился"));
         left.Children.Add(acts);
 
         var hero = U.Cols("*", "auto");

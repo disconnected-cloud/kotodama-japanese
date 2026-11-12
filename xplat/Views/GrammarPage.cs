@@ -84,9 +84,11 @@ public sealed class GrammarPage : UserControl, IPage
     }
 }
 
-public sealed class GrammarLessonPage : UserControl, IPage
+public sealed class GrammarLessonPage : UserControl, IPage, IResumable
 {
     readonly GrammarLesson _l;
+    public string ResumeKey => $"grammar:{_l.Id}";
+    public string ResumeTitle => $"Грамматика · {_l.Title}";
     public string Title => $"Урок {GrammarPage.Num(_l)}";
     public GrammarLessonPage(GrammarLesson l) { _l = l; Build(); }
 

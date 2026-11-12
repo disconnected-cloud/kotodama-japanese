@@ -25,8 +25,10 @@ public partial class MainView
         if (rr > 0 && rr + 1 < args.Length) DispatcherTimer.RunOnce(() => DebugRerender(args[rr + 1]), TimeSpan.FromSeconds(1));
         int oi = Array.IndexOf(args, "--open");
         if (oi > 0 && oi + 1 < args.Length) DebugOpen(args[oi + 1]);
+#if !MOBILE
         int pt = Array.IndexOf(args, "--playtest");
         if (pt > 0 && pt + 1 < args.Length) DebugPlay(args[pt + 1]);
+#endif
         if (args.Contains("--ctrlk")) // проверка Ctrl+K без фокуса: событие приходит прямо в окно
             DispatcherTimer.RunOnce(() => TopLevel.GetTopLevel(this)?.RaiseEvent(new KeyEventArgs
             {

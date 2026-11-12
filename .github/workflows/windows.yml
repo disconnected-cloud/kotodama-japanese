@@ -63,7 +63,7 @@ jobs:
         run: |
           pip install --quiet pillow
           mkdir -p tests/snapshots
-          python tools/snapdiff.py snaps tests/snapshots 2.0
+          python -X utf8 tools/snapdiff.py snaps tests/snapshots 2.0
 
       - uses: actions/upload-artifact@v4
         if: always()

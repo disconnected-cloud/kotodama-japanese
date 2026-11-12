@@ -199,9 +199,11 @@ public sealed class PathPage : UserControl, IPage
 }
 
 /// <summary>Юнит: теория → шаги практики (каждый следующий открывается после предыдущего).</summary>
-public sealed class UnitPage : UserControl, IPage
+public sealed class UnitPage : UserControl, IPage, IResumable
 {
     readonly CourseUnit _u;
+    public string ResumeKey => $"unit:{_u.Id}";
+    public string ResumeTitle => $"Юнит {_u.Id} · {_u.Title}";
     public string Title => $"Юнит {_u.Id}";
     public UnitPage(CourseUnit u) => _u = u;
 

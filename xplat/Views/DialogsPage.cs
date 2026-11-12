@@ -51,9 +51,11 @@ public sealed class DialogsPage : UserControl, IPage
 }
 
 /// <summary>Сценка по ролям: чат-пузыри, озвучка собеседника, запись и оценка своих реплик.</summary>
-public sealed class DialogPage : UserControl, IPage, IKeyTarget
+public sealed class DialogPage : UserControl, IPage, IKeyTarget, IResumable
 {
     readonly Dialog _d;
+    public string ResumeKey => $"dialog:{_d.Id}";
+    public string ResumeTitle => $"Диалог · {_d.Title}";
     int _role = 1;
     public string Title => _d.Title;
     readonly StackPanel _chat = new() { Margin = new Thickness(0, 0, 14, 0) }; // место под полосу прокрутки — реплики справа не обрезаются

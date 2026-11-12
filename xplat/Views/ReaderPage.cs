@@ -25,6 +25,37 @@ public sealed record RText(string Title, string Level, RSentence[] Sentences, (s
 /// <summary>Читалка: тексты с фуриганой, озвучкой, переводом и словарём по клику; можно вставить свой текст.</summary>
 public sealed class ReaderPage : UserControl, IPage
 {
+    // ─────────── Сколько слов текста уже знакомо ───────────
+    static readonly HashSet<string> Grammar = new() { "助詞", "助動詞", "補助記号", "記号", "空白" };
+    static (int ver, HashSet<string> set) _known = (-1, new());
+
+    /// <summary>Слова, которые уже в изучении (карточка повторялась хотя бы раз) — по написанию и чтению.</summary>
+    static HashSet<string> Known()
+    {
+        if (_known.ver == ProgressStore.Version) return _known.set;
+        var s = new HashSet<string>();
+        foreach (var w in Db.Words)
+            if (ProgressStore.Card(w.Id)?.Reps > 0) { s.Add(w.Jp); s.Add(Kana.ToHiragana(w.Kana)); }
+        foreach (var c in ProgressStore.P.CustomWords) { s.Add(c[0]); s.Add(Kana.ToHiragana(c[1])); }
+        _known = (ProgressStore.Version, s);
+        return s;
+    }
+
+    /// <summary>Процент знакомых слов в тексте (частицы и знаки не считаются).</summary>
+    public static int KnownPercent(RText t)
+    {
+        var known = Known();
+        if (known.Count == 0) return 0;
+        int all = 0, ok = 0;
+        foreach (var tok in t.Sentences.SelectMany(s => s.Tokens))
+        {
+            if (Grammar.Contains(tok.Pos)) continue;
+            all++;
+            if (known.Contains(tok.Lemma) || known.Contains(tok.Surface) || (tok.Reading.Length > 0 && known.Contains(Kana.ToHiragana(tok.Reading)))) ok++;
+        }
+        return all == 0 ? 0 : ok * 100 / all;
+    }
+
     public string Title => "Книги и тексты";
     static readonly Lazy<RText[]> _texts = new(Load);
 
@@ -160,10 +191,14 @@ public sealed class ReaderPage : UserControl, IPage
         // ─────────── Рассказы ───────────
         root.Children.Add(U.T("Короткие рассказы", "H2").M(0, 26, 0, 12));
         var grid = new UniformGrid { Columns = U.Columns(3), Margin = new Thickness(-6, 0, -6, 0) };
-        foreach (var t in Texts.Where(t => t.Book == null))
+        // сначала то, что легче прочитать: больше знакомых слов, затем уровень попроще
+        foreach (var t in Texts.Where(t => t.Book == null).OrderByDescending(KnownPercent).ThenBy(t => t.Level, StringComparer.Ordinal).ThenBy(t => t.Title))
         {
             bool done = ProgressStore.P.Flags.Contains("read:" + t.Title);
-            var sp = U.Stack(Emoji.Img(Emoji.For(t.Title, "open_book"), 44).Also(i => { i.HorizontalAlignment = HorizontalAlignment.Left; i.Margin = new Thickness(0, 0, 0, 8); }), U.Row(8, U.Pill(t.Level), done ? U.Pill("✓ прочитано", U.B("GoodSoft"), U.B("Good")) : new Border()),
+            int known = KnownPercent(t);
+            var sp = U.Stack(Emoji.Img(Emoji.For(t.Title, "open_book"), 44).Also(i => { i.HorizontalAlignment = HorizontalAlignment.Left; i.Margin = new Thickness(0, 0, 0, 8); }),
+                U.Row(8, U.Pill(t.Level), done ? U.Pill("✓ прочитано", U.B("GoodSoft"), U.B("Good")) : new Border(),
+                    known > 0 ? U.Pill($"знаешь {known}% слов", known >= 80 ? U.B("GoodSoft") : U.B("Surface2"), known >= 80 ? U.B("Good") : U.B("Muted")) : new Border()),
                 U.T(t.Title, "H3", 15).M(0, 10, 0, 4), U.Jp(t.Sentences[0].Jp, 14, U.B("Muted")).Also(U.Preview));
             var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
             HomePage.Hover(card);
@@ -211,9 +246,11 @@ public sealed class ReaderPage : UserControl, IPage
     }
 }
 
-public sealed class TextPage : UserControl, IPage
+public sealed class TextPage : UserControl, IPage, IResumable
 {
     readonly RText _t;
+    public string ResumeKey => $"text:{_t.Title}";
+    public string ResumeTitle => $"Чтение · {_t.Title}";
     public string Title => _t.Title;
     bool _furi = true, _ru, _romaji, _listen;
     readonly HashSet<RSentence> _revealed = new();
