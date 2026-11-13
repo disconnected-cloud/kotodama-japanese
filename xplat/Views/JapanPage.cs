@@ -99,8 +99,11 @@ public sealed class ArticlePage : UserControl, IPage
         foreach (var (jp, kana, ru) in _a.Words)
         {
             var g = U.Cols("*", "auto");
-            g.Children.Add(U.Row(14, U.Jp(jp, 22).CenterV(), U.Stack(U.Jp(kana != jp ? kana : "", 13, U.B("Accent")), U.T(Kana.ToRomaji(kana), "Muted", 12)).CenterV(),
-                U.T(ru, "Body", 14).Also(t => t.TextWrapping = TextWrapping.Wrap).CenterV()));
+            Control Jw() => U.Jp(jp, 22).CenterV();
+            Control Jk() => U.Stack(U.Jp(kana != jp ? kana : "", 13, U.B("Accent")), U.T(Kana.ToRomaji(kana), "Muted", 12)).CenterV();
+            var tr = U.T(ru, "Body", 14).Also(t => t.TextWrapping = TextWrapping.Wrap).CenterV();
+            // телефон: перевод под словом — рядом он сжимался в узкий столбик
+            g.Children.Add(Shell.Compact ? U.Stack(U.Row(14, Jw(), Jk()), tr.M(0, 2, 0, 0)) : U.Row(14, Jw(), Jk(), tr));
             var entry = new DictEntry(0, true, jp == kana ? "" : jp, kana, ru);
             var add = new Button { Content = JDict.InStudy(entry) ? "" : "", Width = 34, Height = 34, Classes = { "IconButton" } }.Tip("Добавить в мои карточки");
             add.Click += (_, _) =>

@@ -27,7 +27,7 @@ public sealed class TypingPage : Grid, IPage, IKeyTarget
     int _i, _done, _typos, _typedChars;
     long _start;
     string _lastKana = "";
-    readonly TextBox _input = new() { FontSize = 22, Width = 460, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = TextAlignment.Center, Watermark = "печатай латиницей: ka, shi, kko, n…" };
+    readonly TextBox _input = new() { FontSize = Shell.Compact ? 18 : 22, MaxWidth = 460, HorizontalAlignment = HorizontalAlignment.Stretch, TextAlignment = TextAlignment.Center, Watermark = Shell.Compact ? "латиницей: ka, shi, kko…" : "печатай латиницей: ka, shi, kko, n…" };
     readonly TextBlock _target = new() { FontSize = 40, TextAlignment = TextAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, TextWrapping = TextWrapping.Wrap };
     readonly TextBlock _show = new() { FontSize = 18, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = TextAlignment.Center };
     readonly TextBlock _ru = U.T("", "Muted", 14).Center();

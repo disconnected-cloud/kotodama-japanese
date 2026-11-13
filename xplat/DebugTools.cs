@@ -264,6 +264,13 @@ public partial class MainView
                     if (i.Width > 2 && i.Height > 2 && i.Width * i.Height > small * 0.25)
                         issues.Add($"    [наложение] «{Short(boxes[a].t)}» и «{Short(boxes[b].t)}»");
                 }
+            // поля ввода и кнопки шире экрана (у них свой TextBlock внутри может и не вылезать)
+            foreach (var c in this.GetVisualDescendants().OfType<Control>().Where(c => c is TextBox or Button && c.IsEffectivelyVisible && c.Bounds.Width > 0))
+            {
+                if (c.GetVisualAncestors().OfType<ScrollViewer>().Any(s => s.HorizontalScrollBarVisibility != ScrollBarVisibility.Disabled)) continue;
+                if (c.TranslatePoint(default, this) is { } cp && (cp.X < -1.5 || cp.X + c.Bounds.Width > Bounds.Width + 1.5))
+                    issues.Add($"    [{(c is TextBox ? "поле" : "кнопка")} за краем экрана (x={cp.X:0}, w={c.Bounds.Width:0})] «{Short((c as TextBox)?.Watermark ?? (c as Button)?.Content?.ToString() ?? "")}»");
+            }
             static string Short(string s) => (s.Length > 30 ? s[..30] + "…" : s).Replace('\n', ' ');
             log.Add($"{name}: {(issues.Count == 0 ? "ok" : issues.Count + " проблем")}");
             // снимок экрана с проблемами (KOTODAMA_CLIPSNAP=папка) — чтобы глазами отличить настоящую обрезку

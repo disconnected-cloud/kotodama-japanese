@@ -10,7 +10,18 @@ namespace Matsubakira.Views;
 /// <summary>«Что нового» — один раз после обновления до новой версии (не новичкам: им хватает знакомства).</summary>
 public static class WhatsNew
 {
-    const string Flag = "whatsnew-3.0";
+    const string Flag = "whatsnew-3.1";
+
+    /// <summary>Телефон: прошлый APK был 2.1 — рассказываем обо всём, что пришло с тех пор, без функций компьютера.</summary>
+    static readonly (string icon, string title, string text, Func<Control>? open)[] PhoneItems =
+    {
+        ("kana", "Кана больше не квадратики", "Японский шрифт теперь внутри приложения: хирагана и катакана видны на любом телефоне.", null),
+        ("crown", "Уровень N1", "10 уроков грамматики, 591 слово, 100 кандзи с порядком черт и 5 новых юнитов пути — всего 41.", () => new PathPage()),
+        ("headphones", "Аудиоплеер", "Слушай без экрана: японский — пауза — перевод голосом. Подходит для дороги.", () => new PlayerPage()),
+        ("clock", "Числа и набор", "Тренажёры «Числа, время, цены» (さんびゃく, はっせん) и «Набор на японском» — латиница превращается в кану.", () => new NumbersPage()),
+        ("dialogs", "Новые диалоги и тексты", "12 диалогов (конбини, вокзал, аптека, онсэн), 8 уроков разговорника, статьи о Японии, новые книги.", null),
+        ("check", "Выверенный словарь", "Исправлены ~300 переводов и латиница; на странице слова — таблица спряжения и личные заметки.", null),
+    };
 
     static readonly (string icon, string title, string text, Func<Control>? open)[] Items =
     {
@@ -40,13 +51,16 @@ public static class WhatsNew
         head.Children.Add(U.Stack(U.Jp("新しくなりました！", 15, U.B("Accent")), U.T($"Что нового в Kotodama {Updater.Current.ToString(2)}", "H2", 22).Also(t => t.TextWrapping = TextWrapping.Wrap),
             U.T("Коротко о главном — всё уже внутри.", "Muted")).CenterV().M(16, 0, 30, 0).Col(1));
         sp.Children.Add(head.M(0, 0, 0, 14));
-        foreach (var (icon, title, text, open) in Items)
+        foreach (var (icon, title, text, open) in Shell.Compact ? PhoneItems : Items)
         {
             var g = U.Cols("auto", "*", "auto");
             g.Children.Add(Art.Icon(icon, 36).Also(i => i.VerticalAlignment = VerticalAlignment.Top));
-            g.Children.Add(U.Stack(U.T(title, "H3", 14.5), U.T(text, "Muted", 12.5).Also(t => t.TextWrapping = TextWrapping.Wrap)).M(12, 0, 8, 0).Col(1));
-            if (open != null)
-                g.Children.Add(U.Btn("Открыть", () => { Shell.Main.CloseOverlay(); Shell.Open(open()); }, "Ghost").CenterV().Col(2));
+            var body = U.Stack(U.T(title, "H3", 14.5), U.T(text, "Muted", 12.5).Also(t => t.TextWrapping = TextWrapping.Wrap));
+            g.Children.Add(body.M(12, 0, 8, 0).Col(1));
+            // на узком экране кнопка под текстом, иначе текст сжимается в столбик
+            var btn = open == null ? null : U.Btn("Открыть", () => { Shell.Main.CloseOverlay(); Shell.Open(open()); }, "Ghost");
+            if (btn != null && Shell.Compact) body.Children.Add(btn.Also(b => b.HorizontalAlignment = HorizontalAlignment.Left).M(-12, 2, 0, 0));
+            else if (btn != null) g.Children.Add(btn.CenterV().Col(2));
             sp.Children.Add(g.M(0, 0, 0, 10));
         }
         sp.Children.Add(U.Btn("Отлично!", Shell.Main.CloseOverlay, "Primary").Also(b => b.HorizontalAlignment = HorizontalAlignment.Right).M(0, 8, 0, 0));
