@@ -46,6 +46,17 @@ public static class Speech
     public static async void Say(string text, bool slow = false) { if (Platform.AudioPlayer.Muted) return; try { await SayAsync(text, slow); } catch (Exception e) { CrashReport.Warn("Озвучка", e); } }
 
     /// <summary>Произнести и дождаться окончания (нужно для диалогов).</summary>
+    /// <summary>
+    /// Отдельный знак хираганы синтезатор читает как частицу: は — «ва», へ — «э», を — «о».
+    /// Одиночный слог (в т.ч. しゃ) отдаём катаканой — ハ, ヘ читаются как «ха», «хэ».
+    /// </summary>
+    public static string Spoken(string text)
+    {
+        var t = text.Trim();
+        bool single = t.Length == 1 || t.Length == 2 && "ゃゅょぁぃぅぇぉ".Contains(t[1]);
+        return single && t.All(c => c >= 'ぁ' && c <= 'ゖ') ? Kana.ToKatakana(t) : text;
+    }
+
     public static async Task<bool> SayAsync(string text, bool slow = false, bool? male = null)
     {
         if (string.IsNullOrWhiteSpace(text)) return false;

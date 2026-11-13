@@ -41,6 +41,23 @@ public partial class MainView
                 Environment.Exit(0);
             });
         }
+        int id = Array.IndexOf(args, "--idle");
+        if (id > 0 && id + 1 < args.Length)
+        {
+            // простой: через 8 с после запуска 6 с ничего не делаем и смотрим, что продолжает тикать
+            var outIdle = args[id + 1];
+            DispatcherTimer.RunOnce(() =>
+            {
+                int t0 = Anim.Ticks;
+                var cpu0 = System.Diagnostics.Process.GetCurrentProcess().TotalProcessorTime;
+                DispatcherTimer.RunOnce(() =>
+                {
+                    var cpu = System.Diagnostics.Process.GetCurrentProcess().TotalProcessorTime - cpu0;
+                    System.IO.File.WriteAllText(outIdle, $"anim ticks {Anim.Ticks - t0} / 6 s, active: {Anim.ActiveKeys} | cpu {cpu.TotalMilliseconds:0} ms / 6 s");
+                    Environment.Exit(0);
+                }, TimeSpan.FromSeconds(6));
+            }, TimeSpan.FromSeconds(double.TryParse(Environment.GetEnvironmentVariable("KOTODAMA_IDLE_AT"), out var ia) ? ia : 8));
+        }
         int pt = Array.IndexOf(args, "--playtest");
         if (pt > 0 && pt + 1 < args.Length) DebugPlay(args[pt + 1]);
 #endif
@@ -130,10 +147,16 @@ public partial class MainView
         {
             try
             {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
                 var page = make();
                 Push(page);
-                for (int i = 0; i < 3; i++) (page as IPage)?.OnShown();
-                log.Add("ok   " + name);
+                UpdateLayout();
+                long first = sw.ElapsedMilliseconds;
+                sw.Restart();
+                long build = 0;
+                for (int i = 0; i < 3; i++) { var b0 = sw.ElapsedMilliseconds; (page as IPage)?.OnShown(); build += sw.ElapsedMilliseconds - b0; UpdateLayout(); }
+                // время первого показа и среднее перестроение (из него — построение дерева в OnShown) — медленные страницы видны в отчёте
+                log.Add($"ok   {name,-16} {first,5} мс  перестроение {sw.ElapsedMilliseconds / 3,4} мс (код {build / 3} мс)");
             }
             catch (Exception ex) { log.Add($"FAIL {name}: {ex.GetType().Name}: {ex.Message}"); }
         }

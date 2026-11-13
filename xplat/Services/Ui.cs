@@ -33,10 +33,15 @@ public static class Shell
 /// <summary>Утилиты построения UI из кода — для генерируемых списков и сеток.</summary>
 public static class U
 {
+    // Ресурсы темы меняются только перезапуском (смена темы, акцента, шрифта просит перезапуск),
+    // поэтому найденное значение кэшируем: поиск по словарям темы шёл тысячи раз при построении длинных страниц.
+    static readonly Dictionary<string, object> _res = new();
+
     public static T R<T>(string key)
     {
+        if (_res.TryGetValue(key, out var c) && c is T ct) return ct;
         var app = Application.Current!;
-        if (app.TryGetResource(key, app.ActualThemeVariant, out var v) && v is T t) return t;
+        if (app.TryGetResource(key, app.ActualThemeVariant, out var v) && v is T t) { _res[key] = t; return t; }
         throw new KeyNotFoundException("Ресурс не найден: " + key);
     }
     public static Brush B(string key) => R<Brush>(key);

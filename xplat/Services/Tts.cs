@@ -45,11 +45,12 @@ public static class Tts
     }
 
     public static bool IsCached(string text, bool slow = false, bool? male = null) =>
-        File.Exists(CachePath(text, slow, male ?? ProgressStore.P.MaleVoice));
+        File.Exists(CachePath(Speech.Spoken(text), slow, male ?? ProgressStore.P.MaleVoice));
 
     /// <summary>Возвращает путь к mp3 (из кэша или синтезирует). null — нет сети и нет кэша.</summary>
     public static Task<string?> GetAsync(string text, bool slow = false, bool? male = null)
     {
+        text = Speech.Spoken(text); // отдельный は — «ха», а не частица «ва»
         bool m = male ?? ProgressStore.P.MaleVoice;
         var path = CachePath(text, slow, m);
         if (File.Exists(path)) return Task.FromResult<string?>(path);

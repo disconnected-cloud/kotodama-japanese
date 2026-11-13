@@ -160,12 +160,17 @@ public sealed class WordPage : UserControl, IPage
             Text = ProgressStore.P.Notes.GetValueOrDefault(_e.Id, ""), AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 64,
             Watermark = "Своя подсказка, ассоциация или пример — увидишь её здесь и на карточке",
         };
-        note.TextChanged += (_, _) =>
+        // сохраняем, когда поле теряет фокус или страница закрывается (не на каждую букву)
+        void SaveNote()
         {
             var t = (note.Text ?? "").Trim();
+            var old = ProgressStore.P.Notes.GetValueOrDefault(_e.Id, "");
+            if (t == old) return;
             if (t.Length == 0) ProgressStore.P.Notes.Remove(_e.Id); else ProgressStore.P.Notes[_e.Id] = t;
             ProgressStore.Notify();
-        };
+        }
+        note.LostFocus += (_, _) => SaveNote();
+        note.DetachedFromVisualTree += (_, _) => SaveNote();
         root.Children.Add(U.Card(U.Stack(U.Row(8, Art.Icon("note", 26), U.T("Моя заметка", "H2", 19).CenterV()).M(0, 0, 0, 10), note)).M(0, 14, 0, 0));
 
         // ─────────── Иероглифы ───────────

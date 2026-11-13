@@ -63,8 +63,13 @@ public static class Anim
         if (!_timer.IsEnabled) _timer.Start();
     }
 
+    /// <summary>Для замера простоя: сколько кадров анимаций было и какие сейчас активны.</summary>
+    public static int Ticks;
+    public static string ActiveKeys => string.Join("; ", Active.Keys.Take(12).Select(k => k.ToString()));
+
     static void Tick()
     {
+        Ticks++;
         long now = Now;
         List<(object, Tween)>? finished = null;
         foreach (var (key, tw) in Active.ToArray())

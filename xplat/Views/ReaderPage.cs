@@ -353,17 +353,23 @@ public sealed class TextPage : UserControl, IPage, IResumable
             return hc;
         }
         var wrap = new WrapPanel();
+        // ресурсы — один раз на предложение, а не на каждый токен (их в главе сотни)
+        var jp = U.R<FontFamily>("JpFont");
+        IBrush accent = U.B("Accent"), text = U.B("Text");
+        bool unknownOnly = ProgressStore.P.FuriUnknownOnly;
         foreach (var t in s.Tokens)
         {
             var tok = t;
             var stack = new StackPanel { Margin = new Thickness(0, 0, 1, 4), Cursor = Cursors.Hand, Background = Brushes.Transparent };
-            stack.Children.Add(new TextBlock { Text = _furi && t.Reading.Length > 0 && !(ProgressStore.P.FuriUnknownOnly && AllKanjiKnown(t.Surface)) ? t.Reading : " ", FontSize = 11, Foreground = U.B("Accent"), HorizontalAlignment = HorizontalAlignment.Center, FontFamily = U.R<FontFamily>("JpFont") });
-            var surf = new TextBlock { Text = t.Surface, FontSize = 24, FontFamily = U.R<FontFamily>("JpFont"), Foreground = U.B("Text"), HorizontalAlignment = HorizontalAlignment.Center };
+            bool furi = _furi && t.Reading.Length > 0 && !(unknownOnly && AllKanjiKnown(t.Surface));
+            // без фуриганы — не пустая надпись, а отступ той же высоты (меньше элементов: в главе сотни токенов)
+            if (furi) stack.Children.Add(new TextBlock { Text = t.Reading, FontSize = 11, Height = FuriH, Foreground = accent, HorizontalAlignment = HorizontalAlignment.Center, FontFamily = jp });
+            var surf = new TextBlock { Text = t.Surface, FontSize = 24, FontFamily = jp, Foreground = text, HorizontalAlignment = HorizontalAlignment.Center, Margin = furi ? default : new Thickness(0, FuriH, 0, 0) };
             stack.Children.Add(surf);
             if (t.Pos != "補助記号" && t.Pos != "記号")
             {
-                stack.PointerEntered += (_, _) => surf.Foreground = U.B("Accent");
-                stack.PointerExited += (_, _) => surf.Foreground = U.B("Text");
+                stack.PointerEntered += (_, _) => surf.Foreground = accent;
+                stack.PointerExited += (_, _) => surf.Foreground = text;
                 stack.PointerReleased += (_, _) => ShowWord(tok);
             }
             wrap.Children.Add(stack);
@@ -378,6 +384,8 @@ public sealed class TextPage : UserControl, IPage, IResumable
         _cards.Add((s, card));
         return card;
     }
+
+    const double FuriH = 16;
 
     static string Romaji(RSentence s) => Kana.ToRomaji(string.Join(" ", s.Tokens.Where(t => t.Pos != "補助記号").Select(t =>
         t.Pos == "助詞" && t.Surface is "は" or "へ" or "を" ? (t.Surface == "は" ? "わ" : t.Surface == "へ" ? "え" : "お")

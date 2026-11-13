@@ -167,6 +167,7 @@ public sealed class PlayerPage : UserControl, IPage, IKeyTarget
 
     void Toggle()
     {
+        if (_list.Count == 0) return;
         if (_playing) Stop(); else { _playing = true; StartLoop(); }
         Show();
     }
@@ -177,6 +178,7 @@ public sealed class PlayerPage : UserControl, IPage, IKeyTarget
         _run++;
         Speech.Stop();
         _phase.Text = "";
+        _jp.Opacity = _kana.Opacity = _ru.Opacity = 1; // в режиме «сначала перевод» японский мог остаться скрытым
         Show();
     }
 

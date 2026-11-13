@@ -24,7 +24,7 @@ public sealed class TypingPage : Grid, IPage, IKeyTarget
     sealed record Item(string Target, string Show, string Ru);
 
     List<Item> _items = new();
-    int _i, _done, _typos;
+    int _i, _done, _typos, _typedChars;
     long _start;
     string _lastKana = "";
     readonly TextBox _input = new() { FontSize = 22, Width = 460, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = TextAlignment.Center, Watermark = "печатай латиницей: ka, shi, kko, n…" };
@@ -96,7 +96,7 @@ public sealed class TypingPage : Grid, IPage, IKeyTarget
     void Restart()
     {
         _items = Pool();
-        _i = _done = _typos = 0;
+        _i = _done = _typos = _typedChars = 0;
         _start = 0;
         if (_card.Child is not StackPanel) return;
         _bar.Maximum = _items.Count;
@@ -121,7 +121,7 @@ public sealed class TypingPage : Grid, IPage, IKeyTarget
     }
 
     /// <summary>Ввод → кана. Последняя «n» и неполный слог ещё не превращены — они «в работе».</summary>
-    static (string kana, string pending) Convert(string raw)
+    public static (string kana, string pending) Convert(string raw)
     {
         raw = raw.ToLowerInvariant();
         var conv = Kana.FromRomaji(raw);
@@ -133,12 +133,24 @@ public sealed class TypingPage : Grid, IPage, IKeyTarget
         return (kana, conv[^tail..]);
     }
 
+    /// <summary>
+    /// Как в японской раскладке Windows «nn» — всегда ん (kinnen → きんえん), а по Хэпбёрну konnichiwa — こんにちわ.
+    /// Пробуем оба прочтения и берём то, что дальше совпадает с образцом.
+    /// </summary>
+    public static (string kana, string pending) Best(string raw, string target)
+    {
+        var a = Convert(raw);
+        var b = Convert(raw.ToLowerInvariant().Replace("nn", "n'"));
+        int Match((string kana, string pending) x) { int i = 0; while (i < x.kana.Length && i < target.Length && x.kana[i] == target[i]) i++; return i * 2 - (x.kana.Length - i); }
+        return Match(b) > Match(a) ? b : a;
+    }
+
     void OnType()
     {
         if (_items.Count == 0 || !_input.IsEnabled) return;
         if (_start == 0) _start = Environment.TickCount64;
-        var (kana, pending) = Convert(_input.Text ?? "");
         var target = Kana.ToHiragana(Cur.Target);
+        var (kana, pending) = Best(_input.Text ?? "", target);
         int ok = 0;
         while (ok < kana.Length && ok < target.Length && kana[ok] == target[ok]) ok++;
         int bad = kana.Length > ok ? ok : -1;
@@ -172,7 +184,7 @@ public sealed class TypingPage : Grid, IPage, IKeyTarget
     void Finish(bool typed)
     {
         _input.IsEnabled = false;
-        if (typed) { _done++; Sfx.Ok(); ProgressStore.AddXp(1); Challenges.Bump("correct"); Anim.Pop(_card, 0.97); }
+        if (typed) { _done++; _typedChars += Cur.Target.Length; Sfx.Ok(); ProgressStore.AddXp(1); Challenges.Bump("correct"); Anim.Pop(_card, 0.97); }
         Speech.Say(Cur.Show.Length > 0 ? Cur.Show : Cur.Target);
         DispatcherTimer.RunOnce(Next, TimeSpan.FromMilliseconds(typed ? 650 : 900));
     }
@@ -187,8 +199,7 @@ public sealed class TypingPage : Grid, IPage, IKeyTarget
     {
         if (_start == 0) return 0;
         double min = Math.Max(0.1, (Environment.TickCount64 - _start) / 60000.0);
-        int chars = _items.Take(_i).Sum(x => x.Target.Length);
-        return (int)(chars / min);
+        return (int)(_typedChars / min); // пропущенные (Enter) слова скорость не завышают
     }
 
     int Accuracy()

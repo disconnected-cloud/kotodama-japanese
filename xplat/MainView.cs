@@ -158,7 +158,13 @@ public partial class MainView : UserControl
             ? new LayoutTransformControl { LayoutTransform = new ScaleTransform(uiScale, uiScale), Child = _root }
             : _root;
 
-        ProgressStore.Changed += () => Dispatcher.UIThread.Post(UpdateStats);
+        // серия изменений подряд (ответы, ввод) — одно обновление сводки, а не по одному на каждое
+        ProgressStore.Changed += () =>
+        {
+            if (_statsPending) return;
+            _statsPending = true;
+            Dispatcher.UIThread.Post(() => { _statsPending = false; UpdateStats(); }, DispatcherPriority.Background);
+        };
         if (!Shell.Compact) SizeChanged += (_, e) => OnWidthChanged(e.NewSize.Width);
         // Клавиши ловим на уровне окна: если фокус ни на чём (клик по пустому месту), событие не доходит до MainView
         AttachedToVisualTree += (_, _) =>
@@ -309,6 +315,7 @@ public partial class MainView : UserControl
     }
 
     TopLevel? _keysOn;
+    bool _statsPending;
 
     void OnPreviewKey(object? sender, KeyEventArgs e)
     {

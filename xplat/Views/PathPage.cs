@@ -88,6 +88,26 @@ public static class Course
     public static QuizSession? Exam(CourseUnit u)
     {
         var rnd = new Random(u.Id * 7919 + DateTime.Today.DayOfYear);
+        var qs = ExamQuestions(u, rnd);
+        if (qs.Count < 4) return null;
+        return new QuizSession($"Экзамен: юнит {u.Id}", qs.OrderBy(_ => rnd.Next()).Take(16), (ok, total) =>
+        {
+            if (total > 0 && ok * 100 / total >= 80)
+            {
+                bool first = F.Add(ExamKey(u));
+                ProgressStore.AddXp(first ? 30 : 5);
+                Shell.Toast(first ? "Экзамен сдан! Новая открытка в коллекции" : "Экзамен снова сдан — отлично!", "合格");
+            }
+            else Shell.Toast($"Нужно 80% — у тебя {(total == 0 ? 0 : ok * 100 / total)}%. Повтори шаги и попробуй снова", "頑張って");
+        });
+    }
+
+    /// <summary>
+    /// Вопросы экзамена: по 3 из каждого шага. В юнитах из одних шагов каны (или с аудированием в тихом режиме)
+    /// вопросов не хватало — экзамен не открывался вовсе; теперь добираем словами и грамматикой уровня.
+    /// </summary>
+    public static List<QuizQ> ExamQuestions(CourseUnit u, Random rnd)
+    {
         var qs = new List<QuizQ>();
         var ruPool = Db.Words.Select(w => w.Ru).ToArray();
         foreach (var s in u.Steps)
@@ -97,7 +117,8 @@ public static class Course
                 {
                     bool kata = s.Script == "k";
                     var cells = (s.Rows != null ? s.Rows.SelectMany(r => Kana.BasicGrid[r]).OfType<KanaCell>() : Kana.All.Where(c => c.Group == (s.Group ?? Kana.Basic))).ToList();
-                    var romaji = cells.Select(c => c.Romaji).ToArray();
+                    var romaji = cells.Select(c => c.Romaji).Distinct().ToArray();
+                    if (romaji.Length < 4) romaji = Kana.All.Select(c => c.Romaji).Distinct().ToArray();
                     foreach (var c in cells.OrderBy(_ => rnd.Next()).Take(3))
                         qs.Add(new QuizQ { Prompt = kata ? c.Kata : c.Hira, PromptSize = 90, Sub = "Как читается?", Answer = c.Romaji, Options = QuizSession.MakeOptions(c.Romaji, romaji), Speak = c.Hira });
                     break;
@@ -123,17 +144,32 @@ public static class Course
                     break;
                 }
             }
-        if (qs.Count < 4) return null;
-        return new QuizSession($"Экзамен: юнит {u.Id}", qs.OrderBy(_ => rnd.Next()).Take(16), (ok, total) =>
+        // мало вопросов — добираем: кана юнита (до 6), слова и грамматика того же уровня
+        if (qs.Count < 8)
         {
-            if (total > 0 && ok * 100 / total >= 80)
+            foreach (var s in u.Steps.Where(x => x.T == "kana"))
             {
-                bool first = F.Add(ExamKey(u));
-                ProgressStore.AddXp(first ? 30 : 5);
-                Shell.Toast(first ? "Экзамен сдан! Новая открытка в коллекции" : "Экзамен снова сдан — отлично!", "合格");
+                bool kata = s.Script == "k";
+                var cells = (s.Rows != null ? s.Rows.SelectMany(r => Kana.BasicGrid[r]).OfType<KanaCell>() : Kana.All.Where(c => c.Group == (s.Group ?? Kana.Basic))).ToList();
+                var romaji = cells.Select(c => c.Romaji).Distinct().ToArray();
+                if (romaji.Length < 4) romaji = Kana.All.Select(c => c.Romaji).Distinct().ToArray();
+                foreach (var c in cells.OrderBy(_ => rnd.Next()).Skip(3).Take(5))
+                    qs.Add(new QuizQ { Prompt = kata ? c.Kata : c.Hira, PromptSize = 90, Sub = "Как читается?", Answer = c.Romaji, Options = QuizSession.MakeOptions(c.Romaji, romaji), Speak = c.Hira });
             }
-            else Shell.Toast($"Нужно 80% — у тебя {(total == 0 ? 0 : ok * 100 / total)}%. Повтори шаги и попробуй снова", "頑張って");
-        });
+            // фразы юнита ещё и текстом (прочитай и выбери перевод) — в тихом режиме это единственный вариант
+                foreach (var s in u.Steps.Where(x => x.T is "speech" or "dialog"))
+                {
+                    var lines = (s.T == "speech" ? Db.SpeechLessons[s.Id - 1].Items.Select(i => (i.Jp, i.Ru)) : Db.Dialogs[s.Id - 1].Lines.Select(l => (l.Jp, l.Ru))).ToList();
+                    var pool = lines.Select(x => x.Ru).Concat(Db.SpeechLessons.SelectMany(l => l.Items).Select(i => i.Ru)).Distinct().ToArray();
+                    foreach (var (jp, ru) in lines.OrderBy(_ => rnd.Next()).Take(3))
+                        qs.Add(new QuizQ { Prompt = jp, PromptSize = 34, Sub = "Что это значит?", Answer = ru, Options = QuizSession.MakeOptions(ru, pool), Speak = jp });
+                }
+            // в крайнем случае — слова уровня (только если иначе экзамена не собрать)
+            var level = u.Level is "N5" or "N4" or "N3" or "N2" or "N1" ? u.Level : "N5";
+            foreach (var w in Db.WordsOf(level).OrderBy(_ => rnd.Next()).Take(Math.Max(0, 4 - qs.Count)))
+                qs.Add(new QuizQ { Prompt = w.Jp, Sub = w.Kana != w.Jp ? w.Kana : "Что это значит?", Answer = w.Ru, Options = QuizSession.MakeOptions(w.Ru, ruPool), Speak = w.Kana, Key = w.Id });
+        }
+        return qs;
     }
 
     public static void Launch(CourseUnit u, int i)
@@ -319,7 +355,11 @@ public sealed class UnitPage : UserControl, IPage, IResumable
             });
             eg.Children.Add(U.Stack(U.T("Итоговый тест юнита", "H3", 14.5),
                 U.T(passed ? "Сдан — открытка уже в коллекции (Прогресс → Открытки)" : ready ? "Вопросы из всех шагов · нужно 80% · открывает открытку о Японии" : "Можно сдать сразу — или после всех шагов", "Muted", 12.5)).CenterV().M(14, 0, 10, 0).Col(1));
-            eg.Children.Add(U.Btn(passed ? "Пересдать" : "Сдать", () => { if (Course.Exam(u) is { } q) Shell.Open(q); }, ready && !passed ? "Primary" : "").CenterV().Col(2));
+            eg.Children.Add(U.Btn(passed ? "Пересдать" : "Сдать", () =>
+            {
+                if (Course.Exam(u) is { } q) Shell.Open(q);
+                else Shell.Toast("Для этого юнита пока мало вопросов — пройди шаги, и тест откроется", "試"); // раньше кнопка просто молчала
+            }, ready && !passed ? "Primary" : "").CenterV().Col(2));
             var ec = new Border { Classes = { "Card" }, Padding = new Thickness(14, 12, 12, 12), Margin = new Thickness(0, 8, 0, 8), Child = eg };
             if (ready && !passed) ec.BorderBrush = U.B("Accent");
             root.Children.Add(ec);
