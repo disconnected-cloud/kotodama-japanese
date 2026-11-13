@@ -57,6 +57,16 @@ public static class Speech
         return await PlayFileAsync(path, my, slow && !synthSlow ? 0.72 : 1.0);
     }
 
+    /// <summary>Произнести по-русски (перевод в аудиоплеере). false — нет сети или прервано.</summary>
+    public static async Task<bool> SayRuAsync(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text) || Platform.AudioPlayer.Muted) return false;
+        int my = ++_gen;
+        var path = await Tts.GetRuAsync(text);
+        if (my != _gen || path == null) return false;
+        return await PlayFileAsync(path, my, 1.0);
+    }
+
     public static Task<bool> PlayFileAsync(string path, int? gen = null) => PlayFileAsync(path, gen ?? ++_gen, 1.0);
 
     static async Task<bool> PlayFileAsync(string path, int gen, double speed)

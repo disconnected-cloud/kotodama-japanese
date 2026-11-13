@@ -26,6 +26,21 @@ public partial class MainView
         int oi = Array.IndexOf(args, "--open");
         if (oi > 0 && oi + 1 < args.Length) DebugOpen(args[oi + 1]);
 #if !MOBILE
+        int ru = Array.IndexOf(args, "--rutts");
+        if (ru > 0 && ru + 1 < args.Length)
+        {
+            var outRu = args[ru + 1];
+            ProgressStore.ReadOnly = true;
+            ProgressStore.P.TtsEngine = "online"; // проверяем именно Edge, не VOICEVOX
+            Task.Run(async () =>
+            {
+                var r = await Tts.GetRuAsync("Проверка русского голоса");
+                var e1 = Tts.LastError;
+                var j = await Tts.GetAsync("テスト" + DateTime.Now.Ticks % 1000);
+                System.IO.File.WriteAllText(outRu, $"ru={r ?? "null"} {e1} | ja={j ?? "null"} {Tts.LastError}");
+                Environment.Exit(0);
+            });
+        }
         int pt = Array.IndexOf(args, "--playtest");
         if (pt > 0 && pt + 1 < args.Length) DebugPlay(args[pt + 1]);
 #endif
@@ -343,6 +358,7 @@ public partial class MainView
             case "word": JDict.LoadAsync().ContinueWith(_ => Dispatcher.UIThread.Post(() => Push(new WordPage(JDict.Lookup("勉強")!)))); break;
             case "article": Push(new ArticlePage(JapanPage.All[0])); break;
             case "match": Push(new MatchRushGame()); break;
+            case "player": Push(new PlayerPage()); break;
             case "typing": Push(new TypingPage()); break;
             case "numbers": Push(new NumbersPage()); break;
             case "numq": Push(NumbersPage.ReadNumbers()); break;

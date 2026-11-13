@@ -271,6 +271,7 @@ public sealed class TrainersPage : UserControl, IPage
         var grid = new UniformGrid { Columns = U.Columns(3), Margin = new Thickness(-6, 18, -6, 0) };
         grid.Children.Add(Tile("誤", "Тетрадь ошибок", Mistakes.Count > 0 ? $"{Mistakes.Count} ошибок ждут исправления" : "Ошибок нет — отлично!", () => { var q = MistakesQuiz(); if (q != null) Shell.Open(q); else Shell.Toast("Ошибок пока нет", "完璧"); }));
         grid.Children.Add(Tile("活", "Спряжение глаголов", "11 форм: ます, て, ない, потенциальная…", () => Shell.Open(Conj.Quiz())));
+        grid.Children.Add(Tile("播", "Аудиоплеер", "Слушай слова и фразы без экрана: японский — пауза — перевод", () => Shell.Open(new PlayerPage())));
         grid.Children.Add(Tile("打", "Набор на японском", "Печатай латиницей — получай кану. Скорость и точность", () => Shell.Open(new TypingPage())));
         grid.Children.Add(Tile("時", "Числа, время, цены", "Цифры на слух, よじ, はっせん, ついたち", () => Shell.Open(new NumbersPage())));
         grid.Children.Add(Tile("数", "Счётные суффиксы", "本・枚・匹・人… с особыми чтениями", () => Shell.Open(new CountersPage())));
@@ -299,7 +300,7 @@ public sealed class TrainersPage : UserControl, IPage
 
     static readonly Dictionary<string, string> TileArt = new()
     {
-        ["誤"] = "memo", ["時"] = "alarm_clock", ["打"] = "keyboard", ["活"] = "gear", ["数"] = "input_numbers", ["聞"] = "headphone", ["組"] = "puzzle_piece", ["試"] = "graduation_cap",
+        ["誤"] = "memo", ["時"] = "alarm_clock", ["打"] = "keyboard", ["播"] = "radio", ["活"] = "gear", ["数"] = "input_numbers", ["聞"] = "headphone", ["組"] = "puzzle_piece", ["試"] = "graduation_cap",
         ["書"] = "writing_hand", ["雨"] = "cloud_with_rain", ["対"] = "game_die", ["速"] = "stopwatch",
     };
 

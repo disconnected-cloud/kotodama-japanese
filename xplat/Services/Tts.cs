@@ -17,9 +17,8 @@ public static class Tts
 {
     public static readonly string CacheDir = Path.Combine(ProgressStore.Folder, "audio");
     static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
-    const string Token = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
-    const string ChromiumVer = "130.0.2849.68";
-    const string UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0";
+    const string Token = EdgeToken.ClientToken;
+    const string UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0";
 
     // Не даём параллельно синтезировать одну и ту же фразу дважды
     static readonly Dictionary<string, Task<string?>> Inflight = new();
@@ -123,17 +122,22 @@ public static class Tts
     }
 
     // ─────────── Microsoft Edge Neural (тот же движок, что «Читать вслух» в Edge) ───────────
-    static string Gec()
+    static async Task<byte[]?> EdgeAsync(string text, string voice, string rate, string lang = "ja-JP")
     {
-        long ticks = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 11644473600L;
-        ticks -= ticks % 300;
-        var s = (ticks * 10_000_000L).ToString(CultureInfo.InvariantCulture) + Token;
-        return Convert.ToHexString(SHA256.HashData(Encoding.ASCII.GetBytes(s)));
+        try { return await EdgeOnceAsync(text, voice, rate, lang); }
+        catch (WebSocketException) when (_skewFixed is { } d && d > DateTime.UtcNow.AddSeconds(-5))
+        {
+            // 403 из-за неточных часов: поправка по дате сервера уже взята — пробуем ещё раз
+            return await EdgeOnceAsync(text, voice, rate, lang);
+        }
     }
 
-    static async Task<byte[]?> EdgeAsync(string text, string voice, string rate)
+    static DateTime? _skewFixed;
+
+    static async Task<byte[]?> EdgeOnceAsync(string text, string voice, string rate, string lang)
     {
         using var ws = new ClientWebSocket();
+        ws.Options.CollectHttpResponseDetails = true;
         ws.Options.SetRequestHeader("Pragma", "no-cache");
         ws.Options.SetRequestHeader("Cache-Control", "no-cache");
         ws.Options.SetRequestHeader("Origin", "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold");
@@ -141,16 +145,24 @@ public static class Tts
         ws.Options.SetRequestHeader("Accept-Language", "en-US,en;q=0.9");
         ws.Options.SetRequestHeader("Cookie", "muid=" + Guid.NewGuid().ToString("N").ToUpperInvariant() + ";");
         var url = $"wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken={Token}" +
-                  $"&Sec-MS-GEC={Gec()}&Sec-MS-GEC-Version=1-{ChromiumVer}&ConnectionId={Guid.NewGuid():N}";
+                  $"&Sec-MS-GEC={EdgeToken.Gec()}&Sec-MS-GEC-Version={EdgeToken.GecVersion}&ConnectionId={Guid.NewGuid():N}";
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(7));
-        await ws.ConnectAsync(new Uri(url), cts.Token);
+        try { await ws.ConnectAsync(new Uri(url), cts.Token); }
+        catch (WebSocketException) when (ws.HttpStatusCode == System.Net.HttpStatusCode.Forbidden
+                                         && ws.HttpResponseHeaders?.TryGetValue("Date", out var dates) == true
+                                         && DateTimeOffset.TryParse(dates.FirstOrDefault(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var server))
+        {
+            var skew = (server - DateTimeOffset.UtcNow).TotalSeconds;
+            if (Math.Abs(skew - EdgeToken.SkewSeconds) > 60) { EdgeToken.SkewSeconds = skew; _skewFixed = DateTime.UtcNow; }
+            throw;
+        }
 
         string date = DateTime.UtcNow.ToString("ddd MMM dd yyyy HH:mm:ss", CultureInfo.InvariantCulture) + " GMT+0000 (Coordinated Universal Time)";
         string config = $"X-Timestamp:{date}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n" +
                         "{\"context\":{\"synthesis\":{\"audio\":{\"metadataoptions\":{\"sentenceBoundaryEnabled\":\"false\",\"wordBoundaryEnabled\":\"false\"},\"outputFormat\":\"audio-24khz-48kbitrate-mono-mp3\"}}}}\r\n";
         await ws.SendAsync(Encoding.UTF8.GetBytes(config), WebSocketMessageType.Text, true, cts.Token);
 
-        string ssml = "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='ja-JP'>" +
+        string ssml = $"<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='{lang}'>" +
                       $"<voice name='Microsoft Server Speech Text to Speech Voice ({voice})'><prosody pitch='+0Hz' rate='{rate}' volume='+0%'>" +
                       SecurityElement.Escape(text) + "</prosody></voice></speak>";
         string req = $"X-RequestId:{Guid.NewGuid():N}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:{date}Z\r\nPath:ssml\r\n\r\n{ssml}";
@@ -191,6 +203,30 @@ public static class Tts
         using var resp = await Http.SendAsync(req);
         resp.EnsureSuccessStatusCode();
         return await resp.Content.ReadAsByteArrayAsync();
+    }
+
+    /// <summary>
+    /// Русская озвучка перевода (аудиоплеер «слушай без экрана»): нейроголос Edge, только онлайн.
+    /// null — нет сети; тогда плеер просто показывает перевод.
+    /// </summary>
+    public static async Task<string?> GetRuAsync(string text)
+    {
+        var key = "ru|" + text.Trim();
+        var path = Path.Combine(CacheDir, Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes(key)))[..20] + ".mp3");
+        if (File.Exists(path)) return path;
+        if (DateTime.Now < _edgeDownUntil) return null;
+        try
+        {
+            // в SSML язык голоса задаёт xml:lang — подменяем его вместе с голосом
+            var data = await EdgeAsync(text.Trim(), "ru-RU, SvetlanaNeural", "+0%", "ru-RU");
+            if (data is not { Length: > 600 }) return null;
+            Directory.CreateDirectory(CacheDir);
+            var tmp = path + "." + Guid.NewGuid().ToString("N")[..6] + ".tmp";
+            await File.WriteAllBytesAsync(tmp, data);
+            File.Move(tmp, path, true);
+            return path;
+        }
+        catch (Exception ex) { LastError = "Neural RU: " + ex.Message; return null; }
     }
 
     /// <summary>Скачать озвучку всего курса заранее — дальше всё работает без интернета.</summary>

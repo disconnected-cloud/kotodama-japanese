@@ -37,3 +37,13 @@ public class V25Tests
         Assert.Equal("3450", Numbers.DigitsOnly("３,450 円"));
     }
 }
+
+public class EdgeTokenTests
+{
+    // эталон — edge-tts 7.x (drm.generate_sec_ms_gec_v2)
+    [Theory]
+    [InlineData(1700000000, "2CD23A2CA0B2595A-F3C846C370E05F9CC83ACC5F995C5F5D87A4D0F14CE8936A0F902E64099E38A2")]
+    [InlineData(1763030000, "C0C0E439525AD052-71FF575FD29D9D560D0D4A8A23F688CCFB64515DB6A875E49A93FAD8E7F35B6D")]
+    [InlineData(1800000123.5, "99E54519B490BE5C-E162DB0977FBDCB9B86DD8148BF1BCDC3C0303176CE39852A42B415935C20654")]
+    public void MatchesReference(double t, string expected) => Assert.Equal(expected, EdgeToken.Gec(t));
+}

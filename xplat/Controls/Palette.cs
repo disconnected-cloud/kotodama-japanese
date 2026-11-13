@@ -81,6 +81,9 @@ public sealed class Palette : Grid
         yield return new Item("活", "Спряжение глаголов", "Тренажёр", () => Shell.Open(Conj.Quiz()));
         yield return new Item("数", "Счётные суффиксы", "Тренажёр", () => Shell.Open(new CountersPage()));
         yield return new Item("書", "Прописи", "Тренажёр", () => Shell.Open(new WritingPage()));
+        yield return new Item("耳", "Аудиоплеер", "Слушать слова и фразы без экрана", () => Shell.Open(new PlayerPage()));
+        yield return new Item("時", "Числа, время, цены", "Тренажёр", () => Shell.Open(new NumbersPage()));
+        yield return new Item("打", "Набор на японском", "Тренажёр · ромадзи → кана", () => Shell.Open(new TypingPage()));
         yield return new Item("雨", "Кана-дождь", "Игра", () => Shell.Open(new KanaRainGame(false)));
         yield return new Item("対", "Найди пару", "Игра", () => Shell.Open(new MemoryGame()));
         yield return new Item("速", "Спринт 60 секунд", "Игра", () => Shell.Open(new SprintGame()));
