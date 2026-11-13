@@ -410,6 +410,15 @@ public partial class MainView
             case "article": Push(new ArticlePage(JapanPage.All[0])); break;
             case "match": Push(new MatchRushGame()); break;
             case "memory": Push(new MemoryGame()); break;
+            case "scrollback": // «Назад» возвращает прокрутку: путь → вниз → юнит → назад
+                NavigateRoot("path");
+                DispatcherTimer.RunOnce(() =>
+                {
+                    if (_host.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault() is { } sv0) sv0.Offset = new Vector(0, 1500);
+                    Push(new UnitPage(Db.Course[0]));
+                    DispatcherTimer.RunOnce(Pop, TimeSpan.FromMilliseconds(600));
+                }, TimeSpan.FromSeconds(1.2));
+                break;
             case "rain": Push(new KanaRainGame(false)); break;
             case "sprint": Push(new SprintGame()); break;
             case "player": Push(new PlayerPage()); break;

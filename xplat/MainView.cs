@@ -8,6 +8,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Matsubakira.Services;
 using Matsubakira.Views;
 using RadioButton = Matsubakira.Compat.RadioButton;
@@ -278,14 +279,35 @@ public partial class MainView : UserControl
         _rootKey = key;
         HighlightTab();
         _stack.Clear();
+        _scrollY.Clear();
         _stack.Add(page);
         Show(page, 1);
     }
 
     public Control? PendingExpand;
 
+    // позиция прокрутки страниц под открытой сверху: «Назад» возвращает туда же, а не в начало длинного списка
+    readonly Dictionary<Control, double> _scrollY = new();
+
+    static ScrollViewer? PageScroll(Control page) => page.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+
+    void RestoreScroll(Control page)
+    {
+        if (!_scrollY.Remove(page, out var y) || y < 1) return;
+        int tries = 0;
+        void Try()
+        {
+            // страница достраивается после первого кадра (U.Deferred) — ждём, пока высоты хватит
+            if (_host.Content != page || PageScroll(page) is not { } sv) return;
+            if (sv.Extent.Height - sv.Viewport.Height >= y || ++tries > 30) { sv.Offset = new Vector(sv.Offset.X, y); return; }
+            Dispatcher.UIThread.Post(Try, DispatcherPriority.Background);
+        }
+        Dispatcher.UIThread.Post(Try, DispatcherPriority.Loaded);
+    }
+
     public void Push(Control page)
     {
+        if (_stack.Count > 0 && PageScroll(_stack[^1]) is { } cur) _scrollY[_stack[^1]] = cur.Offset.Y;
         Resume.Remember(page);
         if (PendingExpand is { } src) { PendingExpand = null; ExpandFrom(src, page); return; }
         _stack.Add(page);
@@ -295,8 +317,10 @@ public partial class MainView : UserControl
     public void Pop()
     {
         if (_stack.Count <= 1) { NavigateRoot("home"); return; }
+        _scrollY.Remove(_stack[^1]);
         _stack.RemoveAt(_stack.Count - 1);
         Show(_stack[^1], -1);
+        RestoreScroll(_stack[^1]);
     }
 
     void Show(Control page, int dir)
