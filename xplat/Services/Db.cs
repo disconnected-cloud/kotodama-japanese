@@ -18,7 +18,11 @@ public sealed record Word(string Id, string Jp, string Kana, string Ru, string T
 public sealed record KanjiInfo(string Id, string Char, string On, string Kun, string Ru, int Strokes, Example[] Examples, string Level);
 
 public sealed record GrammarPoint(string Pattern, string Explain, Example[] Examples);
-public sealed record GrammarQuiz(string Question, string Answer, string[] Options, string Ru);
+public sealed record GrammarQuiz(string Question, string Answer, string[] Options, string Ru)
+{
+    /// <summary>Предложение с ответом на месте пропуска (пропуск бывает «＿», «＿＿» или «＿＿＿» — раньше ответ задваивался).</summary>
+    public string Filled => System.Text.RegularExpressions.Regex.Replace(Question, "＿+", Answer.Replace("$", "$$"));
+}
 public sealed record GrammarLesson(int Id, string Title, string Level, string Intro, GrammarPoint[] Points, GrammarQuiz[] Quiz);
 
 public sealed record Phrase(string Id, string Jp, string Kana, string Ru, string? Tip)

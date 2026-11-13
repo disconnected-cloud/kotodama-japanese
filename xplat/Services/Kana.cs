@@ -160,11 +160,14 @@ public static class Kana
             if (sb.Length > 0) sb.Append(' ');
             // Частица может стоять вплотную к знаку препинания: «は？»
             var core = p.TrimEnd('。', '、', '！', '？', '!', '?', '…');
-            sb.Append(core switch { "は" => "wa", "を" => "o", "へ" => "e", _ => WordToRomaji(core) });
+            sb.Append(core switch { "は" => "wa", "を" => "o", "へ" => "e", _ => WordToRomaji(ParticleWa.Contains(core) ? core[..^1] + "わ" : core) });
             if (core.Length < p.Length) sb.Append(p[core.Length..].Replace('。', '.').Replace('、', ',').Replace('！', '!').Replace('？', '?'));
         }
         return sb.ToString();
     }
+
+    /// <summary>Слитные частицы, где は читается «ва» (には — niwa, ならでは — naradewa).</summary>
+    static readonly HashSet<string> ParticleWa = new() { "には", "では", "とは", "へは", "からは", "までは", "よりは", "ならでは", "のは", "とでは", "にとっては" };
 
     static string WordToRomaji(string kana)
     {

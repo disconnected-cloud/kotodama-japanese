@@ -22,7 +22,7 @@ public sealed record DictRow(DictEntry E)
     public string Kana => E.Kanji.Length > 0 ? E.Kana : "";
     public string Romaji => E.Romaji;
     // Убираем служебную разметку JMdict: «: {～な} ясный» → «(～な) ясный»
-    public string Ru { get; } = System.Text.RegularExpressions.Regex.Replace(E.Ru.TrimStart(':', ' '), @"(\d\)):\s*", "$1 ").Replace('{', '(').Replace('}', ')');
+    public string Ru { get; } = E.Pretty;
     public bool CommonVis => E.Common;
     public string AddGlyph => JDict.InStudy(E) ? "" : "";
     Control? _accent;

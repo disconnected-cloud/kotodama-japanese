@@ -6,6 +6,16 @@ namespace Matsubakira.Services;
 
 public sealed record DictEntry(int Index, bool Common, string Kanji, string Kana, string Ru)
 {
+    static readonly System.Text.RegularExpressions.Regex RxBrace = new(@"\{([^}]*)\}", System.Text.RegularExpressions.RegexOptions.Compiled),
+        RxLead = new(@"(^|;|\d\))\s*:\s*", System.Text.RegularExpressions.RegexOptions.Compiled),
+        RxJunk = new(@"◇|\(\s*\)|,\s*\d+(,\s*\d+)*\s*$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>
+    /// Перевод для показа: без служебного «:» в начале и «◇», грамматические пометки JMdict {～な} — в скобках («(～な) ясный»).
+    /// Считается при показе, а не при загрузке: статей 219 тысяч.
+    /// </summary>
+    public string Pretty => RxJunk.Replace(RxLead.Replace(RxBrace.Replace(Ru, "($1)"), "$1 "), "").Replace("  ", " ").Trim(' ', ',', ';');
+
     public string Jp => Kanji.Length > 0 ? Kanji.Split('、')[0] : Kana;
     public string Romaji => Services.Kana.ToRomaji(Kana);
     public string Id => "w:" + Jp + "|" + Kana;

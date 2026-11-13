@@ -198,8 +198,8 @@ public sealed class GrammarLessonPage : UserControl, IPage, IResumable
         {
             Key = $"g:{_l.Id}:{qi++}",
             Prompt = q.Question, PromptSize = 34, Sub = q.Ru, Answer = q.Answer, Options = q.Options.Shuffled().ToArray(),
-            OptionsJp = true, Speak = q.Question.Replace("＿＿", q.Answer).Replace("＿", q.Answer),
-            Explain = q.Question.Replace("＿", q.Answer) + "  ·  " + Db.RomajiFor(q.Question.Replace("＿", q.Answer), ""),
+            OptionsJp = true, Speak = q.Filled,
+            Explain = q.Filled + "  ·  " + Db.RomajiFor(q.Filled, ""),
         });
         var id = _l.Id;
         Shell.Open(new QuizSession($"Урок {id}: упражнения", qs, (ok, total) =>

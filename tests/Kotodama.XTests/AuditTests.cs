@@ -114,7 +114,25 @@ public class AuditTests
     [InlineData("ハ", "ハ")]
     public void LoneKanaIsSpokenAsSound(string text, string spoken) => Assert.Equal(spoken, Speech.Spoken(text));
 
+    [Theory]
+    [InlineData("わけ には いかない", "wake niwa ikanai")]
+    [InlineData("きょうと ならでは の", "kyouto naradewa no")]
+    [InlineData("それ では、", "sore dewa,")]
+    [InlineData("こんにちは", "konnichiwa")]
+    public void JoinedParticleWaIsRead(string kana, string romaji) => Assert.Equal(romaji, Kana.ToRomaji(kana));
+
     [Fact]
     public void WordLevelsAreKnown() =>
         Assert.All(Db.Words, w => Assert.Contains(w.Level, new[] { "N5", "N4", "N3", "N2", "N1", "1000", "Мои" }));
+}
+
+public class DictPrettyTests
+{
+    [Fact]
+    public void PrettyGloss()
+    {
+        var e = new DictEntry(0, true, "明白", "めいはく", ": {～な} ясный, очевидный, {～にする} разъяснять");
+        Assert.Equal("(～な) ясный, очевидный, (～にする) разъяснять", e.Pretty);
+        Assert.Equal("там", new DictEntry(0, true, "", "あそこ", ": там, 4, 5").Pretty);
+    }
 }

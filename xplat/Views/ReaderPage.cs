@@ -402,7 +402,7 @@ public sealed class TextPage : UserControl, IPage, IResumable
             U.Row(10, U.Jp(t.Lemma, 26), U.Jp(reading, 15, U.B("Accent")).CenterV()),
             U.T(Kana.ToRomaji(reading), "Muted", 13),
             Pitch.Pattern(e?.Jp ?? t.Lemma, reading) is { } pat ? new Controls.AccentView(pat) { HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 4, 0, 0) } : new Border(),
-            U.T(e != null ? System.Text.RegularExpressions.Regex.Replace(e.Ru.TrimStart(':', ' '), @"\{[^}]*\}", "") : "Нет в словаре (служебное слово или имя)", "Body", 14).M(0, 6, 0, 0)));
+            U.T(e != null ? e.Pretty : "Нет в словаре (служебное слово или имя)", "Body", 14).M(0, 6, 0, 0)));
         var acts = new WrapPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Top };
         acts.Children.Add(U.SpeakBtn(() => reading));
         if (e != null)

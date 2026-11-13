@@ -119,9 +119,10 @@ public sealed class WordPage : UserControl, IPage
 
         // ─────────── Значения ───────────
         // в JMdict значения нумеруются «1) … 2) …», иначе разделены «;»
-        var senses = (System.Text.RegularExpressions.Regex.IsMatch(_e.Ru, @"(^|\s)1\)")
-                ? System.Text.RegularExpressions.Regex.Split(_e.Ru, @"(?:^|[\s,;]+)\d+\)\s*")
-                : _e.Ru.Split(';')).Select(x => x.Trim(' ', ',', ';')).Where(x => x.Length > 0).ToArray();
+        var pretty = _e.Pretty;
+        var senses = (System.Text.RegularExpressions.Regex.IsMatch(pretty, @"(^|\s)1\)")
+                ? System.Text.RegularExpressions.Regex.Split(pretty, @"(?:^|[\s,;]+)\d+\)\s*")
+                : pretty.Split(';')).Select(x => x.Trim(' ', ',', ';')).Where(x => x.Length > 0).ToArray();
         var ms = new StackPanel();
         ms.Children.Add(U.T("Значения", "H2", 19).M(0, 0, 0, 8));
         for (int i = 0; i < senses.Length; i++)

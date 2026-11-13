@@ -452,7 +452,7 @@ public sealed class TrainersPage : UserControl, IPage
                 if (parts.Length == 3 && int.TryParse(parts[1], out var lid) && int.TryParse(parts[2], out var qi) && lid >= 1 && lid <= Db.Grammar.Length && qi < Db.Grammar[lid - 1].Quiz.Length)
                 {
                     var q = Db.Grammar[lid - 1].Quiz[qi];
-                    qs.Add(new QuizQ { Prompt = q.Question, PromptSize = 32, Sub = q.Ru, Answer = q.Answer, Options = q.Options.Shuffled().ToArray(), OptionsJp = true, Key = k, Speak = q.Question.Replace("＿", q.Answer) });
+                    qs.Add(new QuizQ { Prompt = q.Question, PromptSize = 32, Sub = q.Ru, Answer = q.Answer, Options = q.Options.Shuffled().ToArray(), OptionsJp = true, Key = k, Speak = q.Filled });
                 }
             }
         }
@@ -510,7 +510,7 @@ public sealed class TrainersPage : UserControl, IPage
         var kanaPool = exs.Select(e => e.Kana).ToArray();
         qs.AddRange(exs.Shuffled().Take(6).Select(e => new QuizQ { OnResult = Tally("Кандзи"), Prompt = e.Jp, PromptSize = 60, Sub = "Кандзи: выбери чтение", Answer = e.Kana, OptionsJp = true, Options = QuizSession.MakeOptions(e.Kana, kanaPool), Speak = e.Kana }));
         var gq = Db.Grammar.Where(g => g.Level == level).SelectMany(g => g.Quiz.Select((q, i) => (g, q, i))).Shuffled().Take(8);
-        qs.AddRange(gq.Select(x => new QuizQ { OnResult = Tally("Грамматика"), Prompt = x.q.Question, PromptSize = 30, Sub = "Грамматика: " + x.q.Ru, Answer = x.q.Answer, OptionsJp = true, Options = x.q.Options.Shuffled().ToArray(), Key = $"g:{x.g.Id}:{x.i}", Speak = x.q.Question.Replace("＿", x.q.Answer) }));
+        qs.AddRange(gq.Select(x => new QuizQ { OnResult = Tally("Грамматика"), Prompt = x.q.Question, PromptSize = 30, Sub = "Грамматика: " + x.q.Ru, Answer = x.q.Answer, OptionsJp = true, Options = x.q.Options.Shuffled().ToArray(), Key = $"g:{x.g.Id}:{x.i}", Speak = x.q.Filled }));
         if (!ProgressStore.P.QuietMode)
             qs.AddRange(words.Shuffled().Take(6).Select(w => new QuizQ { OnResult = Tally("Аудирование"), Prompt = "聞いて", PromptSize = 52, Sub = "Аудирование: что прозвучало? · 🔊 повторить", SpeakOnShow = true, Answer = w.Ru, Options = QuizSession.MakeOptions(w.Ru, ruPool), Speak = w.Kana, Key = w.Id }));
         // как на экзамене: ~40 секунд на вопрос, ошибки в конце не повторяются, итог — по разделам
