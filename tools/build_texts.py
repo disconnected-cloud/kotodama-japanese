@@ -18,8 +18,9 @@ for t in src:
             lemma = f.orthBase if f.orthBase and f.orthBase != "*" else w.surface
             if not t.get("orig"):  # для оригиналов (классика) словарные исключения не нужны: 何とも — なん, а не なに
              reading = {"私": "わたし", "何": "なに", "日本": "にほん", "明日": "あした", "宮城": "ぐうじょう", "下": "した", "箱": "はこ",
-                       "宝物": "たからもの", "むし暑い": "むしあつい", "七": "しち", "四": "よ", "都": "みやこ"}.get(w.surface, reading)
+                       "宝物": "たからもの", "むし暑い": "むしあつい", "七": "しち", "四": "よ", "都": "みやこ", "言う": "いう"}.get(w.surface, reading)
             elif w.surface in ("御釈迦様",): reading = "おしゃかさま"
+            reading = t.get("fix", {}).get(w.surface, reading)   # чтения, которые MeCab ошибается угадать в этом тексте
             toks.append([w.surface, reading if has_kanji(w.surface) else "", lemma, f.pos1])
         sents.append({"jp": jp, "ru": ru, "tokens": toks})
     item = {"title": t["title"], "level": t["level"], "sentences": sents, "questions": t["questions"]}
