@@ -14,6 +14,10 @@ on:
       tag:
         description: "Тег релиза, к которому прикрепить APK (например, v1.2.0). Пусто — только собрать."
         required: false
+      vvtest:
+        description: "Проверить VOICEVOX в эмуляторе (скачивание ≈100 МБ)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -89,7 +93,7 @@ jobs:
           target: google_apis
           disable-animations: true
           # каждая строка script выполняется отдельной командой — вся логика в одном файле
-          script: bash tools/android_screens.sh
+          script: VVTEST=${{ inputs.vvtest && '1' || '0' }} bash tools/android_screens.sh
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -97,7 +101,7 @@ jobs:
           name: android-check
           path: |
             android-*.png
-            android-log.txt
+            android-*.txt
 
       - name: Прикрепить к релизу
         if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.tag != '')

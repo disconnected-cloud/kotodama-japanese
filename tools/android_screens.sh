@@ -21,9 +21,21 @@ for s in "--page home" "--page path" "--page kana" "--page kanji" "--page words"
   adb exec-out screencap -p > "android-$name.png"
   echo "снимок: $s"
 done
-adb logcat -d | grep -iE "kotodama|mono|dotnet|avalonia|FATAL|AndroidRuntime" | tail -300 > android-log.txt || true
+# по запросу (VVTEST=1): VOICEVOX — скачать, установить, синтезировать (≈100 МБ загрузки)
+if [ "${VVTEST:-}" = "1" ]; then
+  adb logcat -c
+  adb shell am start -S -n "$ACT" --es args "'--vvtest'" > /dev/null
+  for i in $(seq 1 60); do
+    sleep 5
+    if adb logcat -d | grep -q "VVTEST: \(OK\|FAIL\)"; then break; fi
+  done
+  adb logcat -d | grep "VVTEST:" | tee android-vvtest.txt
+  grep -q "VVTEST: OK" android-vvtest.txt || { echo "::error::VOICEVOX на Android не заработал"; VVFAIL=1; }
+fi
+adb logcat -d | grep -iE "kotodama|mono|dotnet|avalonia|FATAL|AndroidRuntime|VVTEST" | tail -300 > android-log.txt || true
 if grep -q "FATAL EXCEPTION" android-log.txt; then
   echo "::error::приложение упало в эмуляторе"
   grep -A20 "FATAL EXCEPTION" android-log.txt | head -40
   exit 1
 fi
+[ "${VVFAIL:-}" = "1" ] && exit 1 || true

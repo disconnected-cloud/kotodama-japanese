@@ -49,10 +49,31 @@ public partial class MainView
         if (bi > 0 && bi + 2 < args.Length) DebugAsrBench(args[bi + 1], args[bi + 2]);
         int ct = Array.IndexOf(args, "--cliptest");
         if (ct > 0 && ct + 1 < args.Length) DebugClipTest(args[ct + 1]);
+        if (args.Contains("--vvtest")) DebugVoicevoxTest();
         int pf = Array.IndexOf(args, "--perf");
         if (pf > 0 && pf + 1 < args.Length) DebugPerf(args[pf + 1]);
         int si = Array.IndexOf(args, "--snap");
         if (si > 0 && si + 1 < args.Length) DebugSnap(args[si + 1]);
+    }
+
+    /// <summary>
+    /// Проверка VOICEVOX от начала до конца (для эмулятора Android в CI): скачать ядро, ONNX Runtime, словарь и самый
+    /// маленький пакет голосов, синтезировать фразу. Итог — строкой «VVTEST: …» в журнал (logcat) и в файл.
+    /// </summary>
+    async void DebugVoicevoxTest()
+    {
+        void Log(string s) { Console.WriteLine("VVTEST: " + s); try { System.IO.File.AppendAllText(System.IO.Path.Combine(ProgressStore.Folder, "vvtest.txt"), s + "\n"); } catch { } }
+        Platform.AudioPlayer.Muted = false; // синтез нужен по-настоящему (звук не играем)
+        try
+        {
+            Log($"платформа: {System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier}");
+            var smallest = Voicevox.Catalog.OrderBy(p => p.Size).First().File;
+            await Voicevox.InstallAsync(new[] { smallest }, new Progress<(double v, string what)>(x => { }), CancellationToken.None);
+            Log($"скачано: база {Voicevox.BaseInstalled}, пакеты {string.Join(",", Voicevox.InstalledPacks)}");
+            var (ok, msg) = await Voicevox.SelfCheckAsync();
+            Log($"{(ok ? "OK" : "FAIL")} {msg}");
+        }
+        catch (Exception ex) { Log("FAIL " + ex.GetType().Name + ": " + ex.Message); }
     }
 
     /// <summary>Замер запуска: ждёт фоновые загрузки, пишет метки времени и память, выходит.</summary>
