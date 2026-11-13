@@ -152,7 +152,7 @@ public static class Db
     {
         int id = 0;
         var list = new List<GrammarLesson>();
-        foreach (var file in new[] { "grammar.json", "grammar_n4.json", "grammar_n3.json", "grammar_n3b.json", "grammar_more.json" })
+        foreach (var file in new[] { "grammar.json", "grammar_n4.json", "grammar_n3.json", "grammar_n3b.json", "grammar_more.json", "grammar_n2.json" })
         {
             using var doc = Open(file);
             list.AddRange(doc.RootElement.EnumerateArray().Select(l => new GrammarLesson(

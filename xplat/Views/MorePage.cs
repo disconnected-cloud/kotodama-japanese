@@ -21,7 +21,7 @@ public sealed class MorePage : UserControl, IPage
             new("kana", "Кана", "Хирагана и катакана", () => Shell.Go("kana")),
             new("words", "Слова", "Карточки и квизы", () => Shell.Go("words")),
             new("kanji", "Кандзи", "Черты и чтения", () => Shell.Go("kanji")),
-            new("grammar", "Грамматика", $"{Db.Grammar.Length} уроков N5–N3", () => Shell.Go("grammar")),
+            new("grammar", "Грамматика", $"{Db.Grammar.Length} уроков N5–N2", () => Shell.Go("grammar")),
         }),
         ("ГОВОРИТЬ И ЧИТАТЬ", new Entry[]
         {

@@ -12,6 +12,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+
+# новый push в ту же ветку отменяет ещё идущую проверку старого коммита
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   windows:
     runs-on: windows-latest

@@ -18,6 +18,12 @@ on:
 permissions:
   contents: write
 
+
+# новый push в ту же ветку отменяет ещё идущую проверку старого коммита
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   android:
     runs-on: ubuntu-24.04

@@ -292,6 +292,8 @@ public partial class MainView : UserControl
             or Controls.LearnSession or StudyPage or MatchRushGame or WordBuilderGame or ListenCatchGame;
         _sideCol.Width = new GridLength(focus || Shell.Compact ? 0 : 232);
         _sidebar.IsVisible = !focus && !Shell.Compact;
+        // меню снова видно (например, после упражнения) — индикатор к текущему разделу
+        if (_sidebar.IsVisible && _navItems.TryGetValue(_rootKey, out var curItem)) Dispatcher.UIThread.Post(() => MoveNavIndicator(curItem), DispatcherPriority.Loaded);
         _tabs.IsVisible = Shell.Compact && !focus;
         _backBtn.IsVisible = _stack.Count > 1;
         if (_brand != null) _brand.IsVisible = _stack.Count <= 1;

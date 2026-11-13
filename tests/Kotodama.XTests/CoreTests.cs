@@ -267,7 +267,7 @@ public class DataIntegrityTests
     {
         Assert.True(Db.Words.Length > 2000);
         Assert.True(Db.Kanji.Length >= 370);
-        Assert.Equal(55, Db.Grammar.Length);
+        Assert.Equal(65, Db.Grammar.Length);
         Assert.NotEmpty(Db.Dialogs);
         Assert.NotEmpty(Db.Course);
     }

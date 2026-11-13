@@ -98,9 +98,16 @@ public partial class MainView : UserControl
     }
 
     /// <summary>Подложка выбранного пункта плавно «переезжает» к новому пункту.</summary>
-    void MoveNavIndicator(Control item)
+    void MoveNavIndicator(Control item, int tries = 0)
     {
-        if (!item.IsArrangeValid || item.Bounds.Height == 0) { Dispatcher.UIThread.Post(() => MoveNavIndicator(item), DispatcherPriority.Loaded); return; }
+        // скрытое меню (телефон, режим фокуса) никогда не получит размер — без этой проверки вызов
+        // бесконечно перепланировал сам себя и занимал поток интерфейса
+        if (Shell.Compact || !_sidebar.IsVisible) return;
+        if (!item.IsArrangeValid || item.Bounds.Height == 0)
+        {
+            if (tries < 20) Dispatcher.UIThread.Post(() => MoveNavIndicator(item, tries + 1), DispatcherPriority.Loaded);
+            return;
+        }
         var p = item.TranslatePoint(new Point(0, 0), _nav);
         if (p == null) return;
         double y = p.Value.Y;
