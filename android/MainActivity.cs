@@ -64,6 +64,7 @@ public class MainActivity : AvaloniaMainActivity<App>
     protected override void OnPause()
     {
         ProgressStore.Save(); // телефон может закрыть приложение в фоне — прогресс сохраняем сразу
+        ReminderReceiver.Schedule();
         base.OnPause();
     }
 }
