@@ -228,7 +228,8 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
         });
         g.Children.Add(new TextBlock
         {
-            Text = text, FontSize = jp ? 26 : 18, FontFamily = U.R<FontFamily>(jp ? "JpFont" : "UiFont"),
+            // телефон: длинное чтение (はっぴゃくさんじゅうに) — кегль по длине, чтобы не оставался один слог на второй строке
+            Text = text, FontSize = jp ? (Shell.Compact && text.Length > 8 ? Math.Max(17, 230.0 / text.Length) : 26) : 18, FontFamily = U.R<FontFamily>(jp ? "JpFont" : "UiFont"),
             HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
             TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, Margin = Shell.Compact ? new Thickness(46, 6, 14, 6) : new Thickness(48, 8, 48, 8),
         });
