@@ -306,6 +306,7 @@ public partial class MainView : UserControl
         if (_sidebar.IsVisible && _navItems.TryGetValue(_rootKey, out var curItem)) Dispatcher.UIThread.Post(() => MoveNavIndicator(curItem), DispatcherPriority.Loaded);
         _tabs.IsVisible = Shell.Compact && !focus;
         _mini.OnPlayerPage = page is PlayerPage;
+        if (Shell.Compact && page is not PlayerPage && Player.Active) Player.Close(); // на телефоне уход со страницы останавливает плеер
         _mini.Render();
         _backBtn.IsVisible = _stack.Count > 1;
         if (_brand != null) _brand.IsVisible = _stack.Count <= 1;

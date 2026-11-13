@@ -130,6 +130,13 @@ public partial class MainView
                 sv.Offset = new Vector(0, scroll);
                 sv.UpdateLayout();
             }
+            // в повышенном DPI Avalonia масштабирует содержимое под «пустой» анимационной трансформацией дважды — убираем такие
+            if (Math.Abs(k - 1) > 0.01)
+                foreach (var v in this.GetVisualDescendants().OfType<Visual>().ToList())
+                {
+                    if (v.RenderTransform is { } rt && rt.Value.IsIdentity) v.RenderTransform = null;
+                    if (v is Border bd && bd.BoxShadow.Count > 0) bd.BoxShadow = default; // тень в повышенном DPI сдвигает содержимое
+                }
             var size = new PixelSize((int)(Bounds.Width * k), (int)(Bounds.Height * k));
             using var rtb = new RenderTargetBitmap(size, new Vector(96 * k, 96 * k));
             rtb.Render(this);
@@ -400,6 +407,9 @@ public partial class MainView
             case "whatsnew": WhatsNew.Show(); break;
             case "mini": Player.Load(); Player.Toggle(); FocusTimer.Start(25); NavigateRoot("words"); break;
             case "focusdone": FocusTimer.Start(25); FocusFinished(true); break;
+            case "typingdemo": { var tp = new TypingPage(); Push(tp); DispatcherTimer.RunOnce(tp.DebugTypeHalf, TimeSpan.FromMilliseconds(900)); break; }
+            case "playerdemo": Player.Source = "phrases"; Player.Load(); Player.Toggle(); Push(new PlayerPage()); break;
+            case "grammarn1": typeof(GrammarPage).GetField("_filter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!.SetValue(null, "N1"); NavigateRoot("grammar"); break;
             case "keys": ShowHotkeys(); break;
             case "rail": ProgressStore.P.SidebarRail = true; ApplyRail(false); break;
             case "typing": Push(new TypingPage()); break;

@@ -330,7 +330,7 @@ public sealed class MiniPlayer : Border
 
     public void Render()
     {
-        bool show = Player.Active && !OnPlayerPage;
+        bool show = Player.Active && !OnPlayerPage && !Shell.Compact; // телефон: прежнее поведение, без мини-плеера
         if (show != IsVisible)
         {
             IsVisible = show;

@@ -219,6 +219,11 @@ public sealed class TypingPage : Grid, IPage, IKeyTarget
         Children.Add(over);
     }
 
+#if DEBUG
+    /// <summary>Для снимков: набрать первую половину текущего слова.</summary>
+    public void DebugTypeHalf() { var r = Kana.ToRomaji(Kana.ToHiragana(Cur.Target)); _input.Text = r[..Math.Max(1, r.Length / 2 + 1)]; }
+#endif
+
     public bool HandleKey(Key key)
     {
         if (key == Key.Enter && _input.IsEnabled) { Finish(false); return true; }
