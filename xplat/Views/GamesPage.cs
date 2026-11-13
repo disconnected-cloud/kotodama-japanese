@@ -170,7 +170,7 @@ public sealed class KanaRainGame : Grid, IPage
 public sealed class MemoryGame : Grid, IPage
 {
     public string Title => "Найди пару";
-    readonly UniformGrid _grid = new() { Columns = 4, MaxWidth = 860 };
+    readonly UniformGrid _grid = new() { Columns = Shell.Compact ? 3 : 4, MaxWidth = 860 };
     readonly TextBlock _hud = U.T("", "H3", 15);
     Border? _open;
     int _moves, _pairs;
@@ -203,10 +203,14 @@ public sealed class MemoryGame : Grid, IPage
 
     Border Card(Word w, bool jp)
     {
-        var face = jp ? U.Stack(U.Jp(w.Jp, w.Jp.Length > 3 ? 26 : 34).Center(), U.T(w.Romaji, "Muted", 12).Center()) : U.Stack(U.T(w.Ru, "H3", 15).Center());
+        // телефон: три колонки и кегль поменьше — иначе слово вставало столбиком
+        double big = Shell.Compact ? (w.Jp.Length > 3 ? 18 : w.Jp.Length > 2 ? 22 : 28) : w.Jp.Length > 3 ? 26 : 34;
+        var face = jp ? U.Stack(U.Jp(w.Jp, big).Also(t => t.TextWrapping = TextWrapping.NoWrap).Center(), U.T(w.Romaji, "Muted", 12).Center())
+                      : U.Stack(U.T(w.Ru, "H3", Shell.Compact ? 13 : 15).Also(t => t.TextAlignment = TextAlignment.Center).Center());
         face.VerticalAlignment = VerticalAlignment.Center;
         var back = U.Jp("?", 34, U.B("Faint"), true).Center().CenterV();
-        var b = new Border { Classes = { "Card" }, Height = 120, Margin = new Thickness(6), Cursor = Cursors.Hand, Child = back, Tag = (w, jp, face, back) };
+        var b = new Border { Classes = { "Card" }, Height = Shell.Compact ? 104 : 120, Margin = new Thickness(Shell.Compact ? 4 : 6), Cursor = Cursors.Hand, Child = back, Tag = (w, jp, face, back) };
+        if (Shell.Compact) b.Padding = new Thickness(6);
         b.PointerReleased += (_, _) => Click(b);
         return b;
     }
@@ -274,8 +278,8 @@ public sealed class SprintGame : Grid, IPage, IKeyTarget
         sp.Children.Add(_card);
         var btns = U.Cols("*", "16", "*");
         btns.Margin = new Thickness(0, 20, 0, 0);
-        btns.Children.Add(U.Btn("Неверно  ←", () => Answer(false), "", "").Also(b => b.Padding = new Thickness(16, 16, 16, 16)));
-        btns.Children.Add(U.Btn("Верно  →", () => Answer(true), "Primary", "").Also(b => b.Padding = new Thickness(16, 16, 16, 16)).Col(2));
+        btns.Children.Add(U.Btn(Shell.Compact ? "Неверно" : "Неверно  ←", () => Answer(false), "", "").Also(b => b.Padding = new Thickness(16, 16, 16, 16)));
+        btns.Children.Add(U.Btn(Shell.Compact ? "Верно" : "Верно  →", () => Answer(true), "Primary", "").Also(b => b.Padding = new Thickness(16, 16, 16, 16)).Col(2));
         sp.Children.Add(btns);
         Children.Add(sp);
         _tick.Tick += (_, _) => { _left -= 0.1; _timer.Value = Math.Max(0, _left); if (_left <= 0) End(); };

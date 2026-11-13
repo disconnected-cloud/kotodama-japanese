@@ -202,7 +202,7 @@ public partial class MainView
             screens.Add(("settings:" + t, () => { SettingsPage._tab = t; NavigateRoot("settings"); if (Shell.Compact) Push(new SettingsPage(t)); }));
         foreach (var o in new[] { "flash", "kanjiflash", "grammar", "grammar1", "onboard", "speech", "dialog", "dialogr", "unit", "reader", "writing", "mic", "pairs", "study", "report",
                                   "radicals", "textl", "word", "article", "match", "build", "listen", "gon", "book", "learn", "learnw", "learn1", "learnk", "learnq", "quiz",
-                                  "numbers", "numq", "numl", "typing", "player", "similar", "wordv", "worda", "keys", "whatsnew", "grammarn2", "mini", "focusdone" })
+                                  "numbers", "numq", "numl", "typing", "player", "memory", "rain", "sprint", "similar", "wordv", "worda", "keys", "whatsnew", "grammarn2", "mini", "focusdone" })
             screens.Add(("open:" + o, () => { NavigateRoot("home"); DebugOpen(o); }));
         await JDict.LoadAsync();
         foreach (var (name, open) in screens)
@@ -409,6 +409,9 @@ public partial class MainView
             case "worda": JDict.LoadAsync().ContinueWith(_ => Dispatcher.UIThread.Post(() => Push(new WordPage(JDict.Lookup("高い")!)))); break;
             case "article": Push(new ArticlePage(JapanPage.All[0])); break;
             case "match": Push(new MatchRushGame()); break;
+            case "memory": Push(new MemoryGame()); break;
+            case "rain": Push(new KanaRainGame(false)); break;
+            case "sprint": Push(new SprintGame()); break;
             case "player": Push(new PlayerPage()); break;
             case "similar": Push(SimilarKanji.Quiz()); break;
             case "whatsnew": WhatsNew.Show(); break;

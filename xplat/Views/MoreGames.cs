@@ -73,7 +73,7 @@ public sealed class MatchRushGame : Grid, IPage
         var root = new StackPanel();
         root.Children.Add(GamePool.Hud(Title, _score, _timer));
         root.Children.Add(U.T("Нажми японское слово, затем его перевод. Ошибка — минус 3 секунды.", "Muted").Center().M(0, 0, 0, 16));
-        root.Children.Add(_board.Center());
+        root.Children.Add(Shell.Compact ? _board : _board.Center()); // телефон: колонки во всю ширину, иначе перевод сжимался в столбик
         Children.Add(root);
         Hud();
         _tick.Start();
@@ -85,7 +85,7 @@ public sealed class MatchRushGame : Grid, IPage
     {
         var b = new Button
         {
-            Content = jp ? (object)U.Jp(w.Jp, w.Jp.Length > 4 ? 20 : 24) : U.T(w.Ru, "Body", 15).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.TextAlignment = TextAlignment.Center; }),
+            Content = jp ? (object)U.Jp(w.Jp, w.Jp.Length > 4 ? 20 : 24) : U.T(w.Ru, "Body", Shell.Compact ? 14 : 15).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.TextAlignment = TextAlignment.Center; }),
             HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center,
             MinHeight = 70, Margin = new Thickness(0, 0, 0, 12), Padding = new Thickness(12, 8),
         };
@@ -178,7 +178,7 @@ public sealed class WordBuilderGame : Grid, IPage, IKeyTarget
 
     void Next()
     {
-        if (!this.IsAttached()) return; // игру закрыли, пока шла пауза после ответа — не продолжаем и не озвучиваем
+        if (_round > 0 && !this.IsAttached()) return; // игру закрыли, пока шла пауза после ответа — не продолжаем и не озвучиваем (первый раунд строится ещё до показа)
         if (_round >= _words.Count) { Children.Clear(); Children.Add(GameUi.Over($"Ошибок: {_mistakes}", _points, Key, Start)); return; }
         _locked = false;
         _bar.Value = _round;
@@ -285,7 +285,7 @@ public sealed class ListenCatchGame : Grid, IPage, IKeyTarget
     const int Rounds = 12;
     readonly TextBlock _score = U.T("", "H3", 16);
     readonly ProgressBar _timer = new() { Maximum = 8 };
-    readonly UniformGrid _grid = new() { Columns = 3, MaxWidth = 720 };
+    readonly UniformGrid _grid = new() { Columns = Shell.Compact ? 2 : 3, MaxWidth = 720 }; // телефон: в три колонки слова вставали столбиком
     readonly DispatcherTimer _tick = new() { Interval = TimeSpan.FromMilliseconds(100) };
     readonly ContentControl _mascot = new();
     List<Word> _pool = new();
@@ -314,10 +314,10 @@ public sealed class ListenCatchGame : Grid, IPage, IKeyTarget
         Children.Clear();
         var root = new StackPanel();
         root.Children.Add(GamePool.Hud(Title, _score, _timer));
-        var top = U.Row(14, _mascot, U.Stack(U.T("Слушай и лови слово!", "H3", 16), U.T("R — повторить звук. Чем быстрее ответ, тем больше очков.", "Muted")).CenterV());
+        var top = U.Row(14, _mascot, U.Stack(U.T("Слушай и лови слово!", "H3", 16), U.T(Shell.Compact ? "Чем быстрее ответ, тем больше очков." : "R — повторить звук. Чем быстрее ответ, тем больше очков.", "Muted")).CenterV());
         top.HorizontalAlignment = HorizontalAlignment.Center; top.Margin = new Thickness(0, 0, 0, 16);
         root.Children.Add(top);
-        root.Children.Add(_grid.Center());
+        root.Children.Add(Shell.Compact ? _grid : _grid.Center());
         var again = U.Btn("Повторить звук", () => { if (_target != null) Speech.Say(_target.Kana); }, "", "");
         again.HorizontalAlignment = HorizontalAlignment.Center; again.Margin = new Thickness(0, 14, 0, 0);
         root.Children.Add(again);
@@ -328,7 +328,7 @@ public sealed class ListenCatchGame : Grid, IPage, IKeyTarget
 
     void Next()
     {
-        if (!this.IsAttached()) return;
+        if (_round > 0 && !this.IsAttached()) return; // первый раунд — в конструкторе, до показа
         if (_round >= Rounds) { _tick.Stop(); Children.Clear(); Children.Add(GameUi.Over($"Поймано {_hits} из {Rounds}", _points, Key, Start)); return; }
         _mascot.Content = Art.Chibi(64, Mood.Think);
         var opts = _pool.Skip(_round * 3 % Math.Max(1, _pool.Count - 6)).Take(6).ToList();
@@ -339,7 +339,7 @@ public sealed class ListenCatchGame : Grid, IPage, IKeyTarget
         {
             var b = new Button
             {
-                Content = U.Stack(U.Jp(w.Jp, w.Jp.Length > 3 ? 26 : 34).Center(), U.T(w.Ru, "Muted", 12).Center().Also(t => t.TextTrimming = TextTrimming.CharacterEllipsis)),
+                Content = U.Stack(U.Jp(w.Jp, Shell.Compact ? (w.Jp.Length > 3 ? 22 : 28) : w.Jp.Length > 3 ? 26 : 34).Also(t => t.TextWrapping = TextWrapping.NoWrap).Center(), U.T(w.Ru, "Muted", 12).Center().Also(t => t.TextTrimming = TextTrimming.CharacterEllipsis)),
                 HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center, MinHeight = 104, Margin = new Thickness(6), Tag = w,
             };
             b.Click += (_, _) => Answer(b);
