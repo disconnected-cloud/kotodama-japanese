@@ -211,7 +211,8 @@ public partial class MainView : UserControl
         {
             Updater.AutoCheck();
             // итоги прошлой недели — один раз в начале новой (не поверх знакомства с приложением)
-            if (ProgressStore.P.Flags.Contains("onboarded")) DispatcherTimer.RunOnce(WeekSummary.MaybeShow, TimeSpan.FromSeconds(2.5));
+            // после обновления — «Что нового» (тогда итоги недели подождут до следующего запуска)
+            if (ProgressStore.P.Flags.Contains("onboarded")) DispatcherTimer.RunOnce(() => { if (!WhatsNew.MaybeShow()) WeekSummary.MaybeShow(); }, TimeSpan.FromSeconds(2.5));
             if (CrashReport.HasNew()) { CrashReport.MarkSeen(); Shell.Toast("В прошлый раз была ошибка — отправить отчёт можно в Настройках → «Обратная связь»", "!"); }
         }
         var remind = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };

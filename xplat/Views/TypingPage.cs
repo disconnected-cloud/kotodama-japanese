@@ -41,29 +41,30 @@ public sealed class TypingPage : Grid, IPage, IKeyTarget
     {
         Margin = Shell.Compact ? new Thickness(12, 8, 12, 20) : new Thickness(40, 8, 40, 30);
         MaxWidth = 980;
-        RowDefinitions = new RowDefinitions("auto,auto,*");
+        RowDefinitions = new RowDefinitions("auto,auto,auto,*");
         _target.FontFamily = U.R<FontFamily>("JpFont");
         _show.FontFamily = U.R<FontFamily>("JpFont"); _show.Foreground = U.B("Muted");
         _input.TextChanged += (_, _) => OnType();
 
-        var modes = new StackPanel { Orientation = Orientation.Horizontal };
+        var modes = new WrapPanel();
         foreach (var (key, name) in new[] { ("hira", "Слова"), ("kata", "Катакана"), ("phrase", "Фразы"), ("mine", "Мои слова") })
         {
             var rb = new RadioButton { Classes = { "ChipRadio" }, Content = name, GroupName = "tmode", IsChecked = _mode == key };
             rb.Checked += (_, _) => { _mode = key; Restart(); };
             modes.Children.Add(rb);
         }
-        Children.Add(U.Header("打", "Набор на японском", "Печатай латиницей — текст станет каной, как в японской раскладке. Двойная согласная — っ, «nn» — ん, дефис — ー.", modes));
+        Children.Add(U.Header("打", "Набор на японском", "Печатай латиницей — текст станет каной, как в японской раскладке. Двойная согласная — っ, «nn» — ん, дефис — ー."));
 
+        Children.Add(modes.RowAt(1).M(0, 0, 0, 12));
         var top = U.Cols("*", "auto");
         top.Children.Add(_bar.CenterV().M(0, 0, 16, 0));
-        top.Children.Add(U.Row(14, _stats.CenterV(), U.Switch("Подсказка ромадзи", _hint, v => { _hint = v; _romaji.IsVisible = v; }).Also(s => s.Width = 230)).Col(1));
-        Children.Add(top.RowAt(1).M(0, 0, 0, 14));
+        top.Children.Add(U.Row(14, _stats.CenterV(), U.Switch("Подсказка ромадзи", _hint, v => { _hint = v; _romaji.IsVisible = v; }).Also(s => s.Width = 220)).Col(1));
+        Children.Add(top.RowAt(2).M(0, 0, 0, 14));
 
         _card.Padding = new Thickness(30, 34);
         _card.Child = U.Stack(_target, _show.M(0, 10, 0, 0), _ru.M(0, 4, 0, 0), _romaji.M(0, 4, 0, 18), _input,
             U.T("Enter — пропустить слово", "Muted", 12).Center().M(0, 12, 0, 0).DesktopOnly());
-        Children.Add(new StackPanel { Children = { _card } }.RowAt(2));
+        Children.Add(new StackPanel { Children = { _card } }.RowAt(3));
         Restart();
     }
 
@@ -203,7 +204,7 @@ public sealed class TypingPage : Grid, IPage, IKeyTarget
         int cpm = Cpm(), acc = Accuracy();
         int score = cpm * acc / 100;
         var over = new Grid { Background = new SolidColorBrush(Color.FromArgb(0xB0, 0, 0, 0)), Children = { GameUi.Over($"{cpm} зн/мин · точность {acc}%", score, "typing-" + _mode, () => { Children.RemoveAt(Children.Count - 1); Restart(); }) } };
-        SetRowSpan(over, 3);
+        SetRowSpan(over, 4);
         Children.Add(over);
     }
 

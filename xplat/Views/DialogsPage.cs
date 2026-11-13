@@ -25,9 +25,10 @@ public sealed class DialogsPage : UserControl, IPage
         var root = new StackPanel();
         root.Children.Add(U.Header("対", "Диалоги", "Живые сценки: собеседника озвучивает нейро-голос, свою роль ты говоришь вслух."));
         if (!Asr.Ready) root.Children.Add(SpeechUi.ModelCard(OnShown).M(0, 0, 0, 20));
-        foreach (var level in new[] { "N5", "N4" })
+        foreach (var level in new[] { "N5", "N4", "N3", "N2", "N1" })
         {
-            root.Children.Add(U.T(level == "N5" ? "Начальный уровень · N5" : "Продолжающий уровень · N4", "H2").M(0, 6, 0, 12));
+            if (!Db.Dialogs.Any(x => x.Level == level)) continue;
+            root.Children.Add(U.T(level switch { "N5" => "Начальный уровень · N5", "N4" => "Продолжающий уровень · N4", "N3" => "Средний уровень · N3", "N2" => "Деловое общение · N2", _ => "Свободное владение · N1" }, "H2").M(0, 6, 0, 12));
             var grid = new UniformGrid { Columns = U.Columns(2), Margin = new Thickness(-6, 0, -6, 14) };
             foreach (var d in Db.Dialogs.Where(x => x.Level == level)) grid.Children.Add(Card(d));
             root.Children.Add(grid);

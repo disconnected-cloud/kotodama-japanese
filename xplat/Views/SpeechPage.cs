@@ -92,7 +92,7 @@ public sealed class SpeechPage : UserControl, IPage
         head.Children.Add(Emoji.Img(Emoji.For(l.Title, "speaking_head"), 40));
         head.Children.Add(U.T($"{done}/{l.Items.Length}", "Muted", 12).CenterV().Col(2));
         sp.Children.Add(head);
-        sp.Children.Add(U.T(l.Title, "H3", 15).M(0, 12, 0, 3));
+        sp.Children.Add(U.T(l.Title, "H3", 15).Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 12, 0, 3));
         sp.Children.Add(U.T(l.Desc, "Muted").Also(t => t.MinHeight = 36));
         sp.Children.Add(new ProgressBar { Maximum = 100, Value = avg, Height = 4, Margin = new Thickness(0, 12, 0, 0) });
         var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };

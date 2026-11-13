@@ -338,6 +338,8 @@ public sealed class TrainersPage : UserControl, IPage
     {
         var g = new UniformGrid { Columns = U.Columns(4), Margin = new Thickness(-6, 0, -6, 0) };
         foreach (var t in tiles) g.Children.Add(t);
+        // в узком окне — по две-три плитки в ряд (по четыре подписи не помещались)
+        if (!Shell.Compact) g.SizeChanged += (_, e) => g.Columns = Math.Clamp((int)(e.NewSize.Width / 230), 2, 4);
         return g;
     }
 
@@ -345,7 +347,7 @@ public sealed class TrainersPage : UserControl, IPage
     {
         Control icon = TileArt.TryGetValue(jp, out var art) ? Emoji.Img(art, 44) : U.Jp(jp, 24, U.B("Accent"), true);
         icon.HorizontalAlignment = HorizontalAlignment.Left;
-        var sp = U.Stack(icon, U.T(title, "H3", 15).M(0, 10, 0, 3), U.T(sub, "Muted").Also(t => t.MinHeight = 34));
+        var sp = U.Stack(icon, U.T(title, "H3", 15).Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 10, 0, 3), U.T(sub, "Muted").Also(t => { t.MinHeight = 34; t.TextWrapping = TextWrapping.Wrap; }));
         var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
         HomePage.Hover(card);
         card.PointerReleased += (_, _) => { Shell.Main.PendingExpand = card; go(); };

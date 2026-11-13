@@ -85,10 +85,10 @@ public sealed class PlayerPage : UserControl, IPage, IKeyTarget
         }
         root.Children.Add(src);
 
-        var opts = new WrapPanel { Margin = new Thickness(0, 6, 0, 14) };
-        opts.Children.Add(U.Switch("Сначала перевод (вспомни по-японски)", _ruFirst, v => _ruFirst = v).Also(s => s.Width = 340).M(0, 0, 24, 0));
-        opts.Children.Add(U.Switch("Перевод голосом", _ruVoice, v => _ruVoice = v).Also(s => s.Width = 220).M(0, 0, 24, 0));
-        opts.Children.Add(U.Switch("Японский дважды", _twice, v => _twice = v).Also(s => s.Width = 210).M(0, 0, 24, 0));
+        Panel opts = Shell.Compact ? new StackPanel { Margin = new Thickness(0, 6, 0, 14) } : new WrapPanel { Margin = new Thickness(0, 6, 0, 14) };
+        opts.Children.Add(U.Switch("Сначала перевод (вспомни по-японски)", _ruFirst, v => _ruFirst = v).Also(s => { if (!Shell.Compact) s.Width = 340; else s.HorizontalAlignment = HorizontalAlignment.Stretch; }).M(0, 0, 24, 0));
+        opts.Children.Add(U.Switch("Перевод голосом", _ruVoice, v => _ruVoice = v).Also(s => { if (!Shell.Compact) s.Width = 220; else s.HorizontalAlignment = HorizontalAlignment.Stretch; }).M(0, 0, 24, 0));
+        opts.Children.Add(U.Switch("Японский дважды", _twice, v => _twice = v).Also(s => { if (!Shell.Compact) s.Width = 210; else s.HorizontalAlignment = HorizontalAlignment.Stretch; }).M(0, 0, 24, 0));
         var pauses = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         pauses.Children.Add(U.T("Пауза:", "Muted").CenterV().M(0, 0, 8, 0));
         foreach (var sec in new[] { 1, 3, 5 })

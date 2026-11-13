@@ -51,12 +51,17 @@ public static class Emoji
         // диалоги
         ["Знакомство"] = "speech_balloon", ["В кафе"] = "hot_beverage", ["В магазине одежды"] = "tshirt", ["Как пройти?"] = "round_pushpin",
         ["В гостинице"] = "hotel", ["У врача"] = "stethoscope", ["Приглашение"] = "clapper_board", ["По телефону"] = "mobile_phone",
+        ["В конбини"] = "convenience_store", ["На вокзале"] = "station", ["В такси"] = "taxi", ["В аптеке"] = "pill", ["На почте"] = "post_office",
+        ["В онсэне"] = "hot_springs", ["Бюро находок"] = "umbrella_with_rain_drops", ["Собеседование"] = "man_office_worker", ["У соседей"] = "house",
+        ["Совещание"] = "office_building", ["Вежливый отказ"] = "briefcase",
         // говорение
         ["Первые звуки"] = "musical_note", ["Приветствия"] = "sunrise", ["Вежливость"] = "wrapped_gift", ["В кафе и магазине"] = "shortcake",
         ["Дорога и транспорт"] = "station", ["Выручалочки"] = "light_bulb", ["Повседневные фразы"] = "calendar",
         ["В ресторане"] = "sushi", ["Покупки"] = "department_store", ["Отель"] = "hotel", ["Вокзал и транспорт"] = "bullet_train",
         ["У врача и в аптеке"] = "pill", ["Реакции и эмоции"] = "smiling_face_with_hearts", ["Светская беседа"] = "speech_balloon",
-        ["Экстренные ситуации"] = "alarm_clock",
+        ["Экстренные ситуации"] = "alarm_clock", ["Время и планы"] = "spiral_calendar", ["Семья и о себе"] = "house_with_garden",
+        ["Погода и сезоны"] = "umbrella_with_rain_drops", ["Телефон и сообщения"] = "mobile_phone", ["На работе"] = "briefcase",
+        ["Мнение и споры"] = "thought_balloon", ["В гостях"] = "teacup_without_handle", ["Комплименты и поддержка"] = "party_popper",
         // чтение
         ["Мой день"] = "sun_with_face", ["Моя семья"] = "house", ["Весна в Японии"] = "cherry_blossom", ["Первый день в Токио"] = "tokyo_tower",
         ["Японский язык"] = "books",

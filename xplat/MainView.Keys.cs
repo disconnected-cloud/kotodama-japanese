@@ -58,7 +58,7 @@ public partial class MainView
 
         Control Table(IEnumerable<(string keys, string what)> items)
         {
-            var g = new Grid { ColumnDefinitions = new ColumnDefinitions("auto,*") };
+            var g = new Grid { ColumnDefinitions = new ColumnDefinitions(Shell.Compact ? "110,*" : "auto,*") };
             int r = 0;
             foreach (var (keys, what) in items)
             {
@@ -76,16 +76,17 @@ public partial class MainView
                 }
                 Grid.SetRow(chips, r);
                 g.Children.Add(chips);
-                g.Children.Add(U.T(what, "Body", 13.5).CenterV().RowAt(r).Col(1));
+                g.Children.Add(U.T(what, "Body", 13.5).Also(t => t.TextWrapping = TextWrapping.Wrap).CenterV().RowAt(r).Col(1));
                 r++;
             }
             return g;
         }
 
-        var cols = new Grid { ColumnDefinitions = new ColumnDefinitions("*,32,*") };
+        var cols = U.Cols("*", "32", "*");
         cols.Children.Add(U.Stack(U.T("Везде", "Overline").M(0, 0, 0, 6), Table(rows)));
         cols.Children.Add(U.Stack(U.T("В упражнениях", "Overline").M(0, 0, 0, 6), Table(exercises),
             U.T("Буквенные сочетания работают и в русской раскладке.", "Muted", 12).Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 16, 0, 0)).Col(2));
+        U.Stackify(cols);
         var sp = U.Stack(
             U.Row(12, Controls.Art.Icon("keyboard", 40), U.Stack(U.T("Горячие клавиши", "H2"), U.T("F1 — открыть эту шпаргалку снова", "Muted"))).M(0, 0, 0, 18),
             cols,

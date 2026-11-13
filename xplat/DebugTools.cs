@@ -150,6 +150,11 @@ public partial class MainView
         Try("radicals", () => new RadicalsPage());
         Try("writing", () => new WritingPage());
         Try("article", () => new ArticlePage(JapanPage.All[0]));
+        Try("numbers", () => new NumbersPage());
+        Try("typing", () => new TypingPage());
+        Try("player", () => new PlayerPage());
+        Try("similar", () => SimilarKanji.Quiz());
+        Try("wordverb", () => new WordPage(JDict.Lookup("食べる")!));
         System.IO.File.WriteAllLines(outPath, log);
         Environment.Exit(0);
     }
@@ -166,7 +171,8 @@ public partial class MainView
         foreach (var t in new[] { "learn", "voice", "mic", "look", "notify", "data", "awards", "about" })
             screens.Add(("settings:" + t, () => { SettingsPage._tab = t; NavigateRoot("settings"); if (Shell.Compact) Push(new SettingsPage(t)); }));
         foreach (var o in new[] { "flash", "kanjiflash", "grammar", "grammar1", "onboard", "speech", "dialog", "dialogr", "unit", "reader", "writing", "mic", "pairs", "study", "report",
-                                  "radicals", "textl", "word", "article", "match", "build", "listen", "gon", "book", "learn", "learnw", "learn1", "learnk", "learnq", "quiz" })
+                                  "radicals", "textl", "word", "article", "match", "build", "listen", "gon", "book", "learn", "learnw", "learn1", "learnk", "learnq", "quiz",
+                                  "numbers", "numq", "numl", "typing", "player", "similar", "wordv", "worda", "keys", "whatsnew", "grammarn2" })
             screens.Add(("open:" + o, () => { NavigateRoot("home"); DebugOpen(o); }));
         await JDict.LoadAsync();
         foreach (var (name, open) in screens)
@@ -368,6 +374,7 @@ public partial class MainView
             case "match": Push(new MatchRushGame()); break;
             case "player": Push(new PlayerPage()); break;
             case "similar": Push(SimilarKanji.Quiz()); break;
+            case "whatsnew": WhatsNew.Show(); break;
             case "keys": ShowHotkeys(); break;
             case "rail": ProgressStore.P.SidebarRail = true; ApplyRail(false); break;
             case "typing": Push(new TypingPage()); break;

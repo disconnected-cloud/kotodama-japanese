@@ -81,6 +81,7 @@ public sealed class Palette : Grid
         yield return new Item("活", "Спряжение глаголов", "Тренажёр", () => Shell.Open(Conj.Quiz()));
         yield return new Item("数", "Счётные суффиксы", "Тренажёр", () => Shell.Open(new CountersPage()));
         yield return new Item("書", "Прописи", "Тренажёр", () => Shell.Open(new WritingPage()));
+        yield return new Item("新", "Что нового", "О версии", () => WhatsNew.Show());
         yield return new Item("鍵", "Горячие клавиши", "Шпаргалка · F1", () => Shell.Main.ShowHotkeys());
         yield return new Item("≡", "Свернуть / развернуть меню", "Вид · Ctrl+B", () => Shell.Main.ToggleRail());
         yield return new Item("耳", "Аудиоплеер", "Слушать слова и фразы без экрана", () => Shell.Open(new PlayerPage()));

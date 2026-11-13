@@ -9,7 +9,7 @@
     <AssemblyName>Kotodama</AssemblyName>
     <Product>Kotodama</Product>
     <RootNamespace>Matsubakira</RootNamespace>
-    <Version>2.1.0</Version>
+    <Version>2.5.0</Version>
     <ApplicationIcon>../Assets/app.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <TieredPGO>true</TieredPGO>
