@@ -151,7 +151,7 @@ public sealed partial class SettingsPage : UserControl, IPage
 
             case "notify":
                 yield return Section("Напоминания", null, U.Stack(
-                    Toggle("Системные напоминания (повторение, серия)", p.Reminders, v => p.Reminders = v),
+                    Toggle(Shell.Compact ? "Напоминание в 19:00, если сегодня ещё не занимался" : "Системные напоминания (повторение, серия)", p.Reminders, v => p.Reminders = v),
                     Toggle("Мягкий звук уведомлений", p.NotifySound, v => { p.NotifySound = v; if (v) Sfx.Reminder(); }),
                     Toggle("Закрытие окна сворачивает в трей (напоминания продолжают приходить)", p.MinimizeToTray, v => p.MinimizeToTray = v).DesktopOnly()));
                 yield return Section("Звук уведомлений", "Нажми, чтобы выбрать и послушать. Все звуки тихие и короткие.",
