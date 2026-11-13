@@ -30,6 +30,7 @@ public partial class App : Application
         bool night = !light && (ProgressStore.P.NightTheme || Environment.GetCommandLineArgs().Contains("--night"));
         ApplyPalette(Resources, light, ProgressStore.P.AccentColor, night);
         ApplyJpFont(Resources, ProgressStore.P.JpFontName);
+        Anim.ApplyMotion(ProgressStore.P.Motion);
         // Телефон: любая надпись переносится на следующую строку, а не обрезается краем узкого экрана.
         // Где перенос не нужен (иконки, цифры), он ничего не меняет; явный TextWrapping в коде сильнее стиля.
         if (Shell.Compact)

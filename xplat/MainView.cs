@@ -314,8 +314,12 @@ public partial class MainView : UserControl
         _crumb.Text = Shell.Compact ? (_stack.Count > 1 ? (_stack[^1] as IPage)?.Title ?? "" : "Kotodama")
             : string.Join("  ›  ", _stack.OfType<IPage>().Select(p => p.Title));
         (page as IPage)?.OnShown();
-        Anim.Opacity(_host, 0, 1, 220);
-        Anim.Run((_hostShift, "y"), dir > 0 ? 10 : -10, 0, 380, v => _hostShift.Y = v, Ease.QuinticOut);
+        if (Anim.Lite) { Anim.Stop((_host, "op")); Anim.Stop((_hostShift, "y")); _host.Opacity = 1; _hostShift.Y = 0; }
+        else
+        {
+            Anim.Opacity(_host, 0, 1, 220);
+            Anim.Run((_hostShift, "y"), dir > 0 ? 10 : -10, 0, 380, v => _hostShift.Y = v, Ease.QuinticOut);
+        }
         UpdateStats();
     }
 

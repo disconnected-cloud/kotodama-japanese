@@ -34,9 +34,10 @@ public sealed class SpeechPage : UserControl, IPage
         Avalonia.Controls.Primitives.UniformGrid grid = Shell.Compact ? new TileGrid { MinTile = 160, MaxColumns = 2, Margin = new Thickness(-6, 0, -6, 0) } : new UniformGrid { Columns = 3, Margin = new Thickness(-6, 0, -6, 0) };
         grid.Children.Add(PersonalCard());
         grid.Children.Add(PairsCard());
-        foreach (var l in Db.SpeechLessons) grid.Children.Add(LessonCard(l));
+        foreach (var l in Db.SpeechLessons.Take(6)) grid.Children.Add(LessonCard(l));
         root.Children.Add(grid);
         Anim.Stagger(grid, 35, 80);
+        U.Deferred(grid, Db.SpeechLessons.Skip(6).Select(l => (Func<Control>)(() => LessonCard(l))));
         Content = U.Page(root);
     }
 

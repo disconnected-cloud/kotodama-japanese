@@ -109,8 +109,20 @@ public static class Anim
     public static void Opacity(Visual el, double from, double to, int ms, int delay = 0, Action? done = null, Func<double, double>? ease = null) =>
         Run((el, "op"), from, to, ms, v => el.Opacity = v, ease, delay, done);
 
+    /// <summary>
+    /// Облегчённый режим: без каскадов и плавных появлений — каждое из них перерисовывает экран ~25 раз.
+    /// Сам включается на слабом телефоне (≤ 4 ядер или < 3 ГБ памяти), в настройках можно выбрать вручную.
+    /// </summary>
+    public static bool Lite;
+
+    public static bool LowEndDevice =>
+        OperatingSystem.IsAndroid() && (Environment.ProcessorCount <= 4 || GC.GetGCMemoryInfo().TotalAvailableMemoryBytes is > 0 and < 3L << 30);
+
+    public static void ApplyMotion(int motion) => Lite = motion == 2 || (motion == 0 && LowEndDevice);
+
     public static void FadeUp(Visual el, int delay = 0, double dy = 16, int ms = 380)
     {
+        if (Lite) return;
         var (_, t) = Transforms(el);
         el.Opacity = 0;
         t.Y = dy;
@@ -132,6 +144,7 @@ public static class Anim
 
     public static void Pop(Visual el, double from = 0.85)
     {
+        if (Lite) return;
         var (s, _) = Transforms(el);
         Run((s, "sc"), from, 1, 380, v => { s.ScaleX = v; s.ScaleY = v; }, Ease.BackOut());
     }
@@ -158,6 +171,9 @@ public static class Anim
         });
     }
 
-    public static void CountUp(TextBlock tb, int to, string suffix = "", int ms = 700) =>
+    public static void CountUp(TextBlock tb, int to, string suffix = "", int ms = 700)
+    {
+        if (Lite || to == 0) { tb.Text = to + suffix; return; }
         Run((tb, "count"), 0, to, ms, v => tb.Text = ((int)Math.Round(v)).ToString() + suffix);
+    }
 }

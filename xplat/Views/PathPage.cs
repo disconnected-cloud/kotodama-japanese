@@ -229,18 +229,25 @@ public sealed class PathPage : UserControl, IPage
         root.Children.Add(U.Header("道", "Путь обучения", $"Пройдено {done} из {units.Length} юнитов. В каждом — сначала теория, потом практика."));
 
         var current = Course.Current;
+        // сразу — юниты до текущего и чуть дальше, остальное достраивается после первого кадра
+        int now = Math.Max(8, Array.IndexOf(units, current) + 4);
+        var later = new List<Func<Control>>();
         string? lastLevel = null;
         for (int i = 0; i < units.Length; i++)
         {
             var u = units[i];
+            int k = i;
             if (u.Level != lastLevel)
             {
-                root.Children.Add(U.T(GrammarPage.LevelName(u.Level).ToUpperInvariant(), "Overline").M(54, i == 0 ? 0 : 18, 0, 10));
+                Control Head() => U.T(GrammarPage.LevelName(u.Level).ToUpperInvariant(), "Overline").M(54, k == 0 ? 0 : 18, 0, 10);
+                if (i < now) root.Children.Add(Head()); else later.Add(Head);
                 lastLevel = u.Level;
             }
-            root.Children.Add(UnitRow(u, u == current, i == units.Length - 1));
+            Control Row() => UnitRow(u, u == current, k == units.Length - 1);
+            if (i < now) root.Children.Add(Row()); else later.Add(Row);
         }
         Anim.Stagger(root, 30, 0, 30);
+        U.Deferred(root, later);
         Content = U.Page(new Grid { Children = { root } }.Also(g => root.HorizontalAlignment = HorizontalAlignment.Center));
     }
 

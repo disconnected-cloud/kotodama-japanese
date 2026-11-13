@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 namespace Matsubakira.Services;
 
@@ -292,6 +293,46 @@ public static class U
         t.TextTrimming = TextTrimming.CharacterEllipsis;
         t.TextWrapping = Shell.Compact ? TextWrapping.Wrap : TextWrapping.NoWrap;
         if (Shell.Compact) t.MaxLines = 2;
+    }
+
+    /// <summary>
+    /// Длинная страница без задержки открытия: то, что ниже первого экрана, строится и добавляется уже после
+    /// первого кадра, по нескольку элементов за раз (на слабом телефоне 40 карточек юнитов — это секунда стоп-кадра).
+    /// Если страница успела закрыться или перестроиться, недостроенный хвост отбрасывается.
+    /// </summary>
+    public static void Deferred(Panel host, IEnumerable<Func<Control>> rest, int perBatch = 4, Func<bool>? alive = null)
+    {
+        var e = rest.GetEnumerator();
+        bool seen = false;
+        void Step()
+        {
+            if (host.GetVisualRoot() == null)
+            {
+                // ещё не показана — достроим, когда появится; уже убрана — бросаем
+                if (!seen) { seen = true; host.AttachedToVisualTree += Once; }
+                return;
+            }
+            seen = true;
+            if (alive != null && !alive()) return; // панель переиспользована (список перерисован заново)
+            for (int i = 0; i < perBatch; i++)
+            {
+                if (!e.MoveNext()) return;
+                host.Children.Add(e.Current());
+            }
+            Dispatcher.UIThread.Post(Step, DispatcherPriority.Background);
+        }
+        void Once(object? s, VisualTreeAttachmentEventArgs a) { host.AttachedToVisualTree -= Once; Dispatcher.UIThread.Post(Step, DispatcherPriority.Background); }
+        // первый шаг — после того как страница показана (Loaded), иначе панель ещё не в дереве
+        Dispatcher.UIThread.Post(() => Dispatcher.UIThread.Post(Step, DispatcherPriority.Background), DispatcherPriority.Loaded);
+    }
+
+    /// <summary>Уже построенные элементы панели после первых keep — в разметку после первого кадра.</summary>
+    public static void DeferTail(Panel host, int keep)
+    {
+        if (host.Children.Count <= keep) return;
+        var tail = host.Children.Skip(keep).ToList();
+        host.Children.RemoveRange(keep, tail.Count);
+        Deferred(host, tail.Select(c => (Func<Control>)(() => c)), 1);
     }
 
     /// <summary>

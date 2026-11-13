@@ -313,9 +313,13 @@ public sealed class TextPage : UserControl, IPage, IResumable
         if (_listen)
             root.Children.Add(Art.Say("Режим аудирования: текст спрятан. Слушай главу целиком, потом отвечай на вопросы. Нажми на строку, чтобы подсмотреть.", Mood.Think, 90).M(0, 0, 0, 12));
         _cards.Clear();
-        foreach (var s in _t.Sentences) root.Children.Add(SentenceView(s));
-        root.Children.Add(_popup.Detach().M(0, 6, 0, 0)); // при перестройке (переключатели) старая страница ещё держит подсказку
-        if (_t.Questions.Length > 0) root.Children.Add(Questions());
+        // первые предложения — сразу, остальная глава достраивается после первого кадра (длинная глава — это сотни слов-кнопок)
+        var later = new List<Func<Control>>();
+        foreach (var (s, i) in _t.Sentences.Select((s, i) => (s, i)))
+            if (i < 8) root.Children.Add(SentenceView(s)); else later.Add(() => SentenceView(s));
+        later.Add(() => _popup.Detach().M(0, 6, 0, 0)); // при перестройке (переключатели) старая страница ещё держит подсказку
+        if (_t.Questions.Length > 0) later.Add(Questions);
+        U.Deferred(root, later, 3);
         Content = U.Page(new Grid { Children = { root } });
     }
 

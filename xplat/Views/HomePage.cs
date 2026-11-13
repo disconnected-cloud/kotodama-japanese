@@ -187,6 +187,8 @@ public sealed class HomePage : UserControl, IPage
 
         Anim.FadeUp(row, 40, 12, 380);
         Anim.FadeUp(stats, 90, 12, 380);
+        // телефон: испытания, активность, слово и факт дня — ниже первого экрана, их разметка после первого кадра
+        if (Shell.Compact) U.DeferTail(root, root.Children.IndexOf(stats) + 1);
         return root;
     }
 

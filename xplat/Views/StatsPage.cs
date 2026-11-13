@@ -37,41 +37,53 @@ public sealed class StatsPage : UserControl, IPage
         root.Children.Add(kpi);
         Anim.Stagger(kpi, 50, 60);
 
+        // ниже первого экрана — после первого кадра (U.Deferred)
+        var later = new List<Func<Control>>();
         // ─────────── Активность за год ───────────
-        root.Children.Add(U.Card(Heatmap(), new Thickness(22, 18, 22, 18)).M(0, 16, 0, 0));
+        later.Add(() => U.Card(Heatmap(), new Thickness(22, 18, 22, 18)).M(0, 16, 0, 0));
 
         // ─────────── Опыт за 30 дней + прогноз повторений на 14 ───────────
-        var d30 = Enumerable.Range(0, 30).Select(i => DateTime.Today.AddDays(i - 29)).ToArray();
-        var xp = d30.Select(d => p.History.GetValueOrDefault(d.ToString("yyyy-MM-dd"))).ToArray();
-        var xpChart = Report.Bars("ОПЫТ ЗА 30 ДНЕЙ", $"{xp.Sum()} XP · в среднем {xp.Sum() / 30} в день", xp,
-            d30.Select((d, i) => i % 7 == 1 ? d.ToString("dd.MM") : "").ToArray(), "Accent", true, Shell.Compact ? 5 : 9,
-            d30.Select((d, i) => $"{d:d MMM}: {xp[i]} XP").ToArray());
-        var fc = Fsrs.Forecast(cards, 14);
-        var fcChart = Report.Bars("ПРОГНОЗ ПОВТОРЕНИЙ", $"{fc.Sum()} карточек за 2 недели", fc,
-            fc.Select((_, i) => i == 0 ? "сег" : i % 4 == 0 ? DateTime.Today.AddDays(i).ToString("dd.MM") : "").ToArray(), "Info", false, Shell.Compact ? 8 : 12,
-            fc.Select((v, i) => $"{(i == 0 ? "Сегодня" : DateTime.Today.AddDays(i).ToString("ddd, d MMM"))}: {v}").ToArray());
-        var two = U.Cols("3*", "16", "2*");
-        two.Children.Add(U.Card(xpChart, new Thickness(22)));
-        two.Children.Add(U.Card(fcChart, new Thickness(22)).Col(2));
-        root.Children.Add(U.Stackify(two).M(0, 16, 0, 0));
+        later.Add(() =>
+        {
+            var d30 = Enumerable.Range(0, 30).Select(i => DateTime.Today.AddDays(i - 29)).ToArray();
+            var xp = d30.Select(d => p.History.GetValueOrDefault(d.ToString("yyyy-MM-dd"))).ToArray();
+            var xpChart = Report.Bars("ОПЫТ ЗА 30 ДНЕЙ", $"{xp.Sum()} XP · в среднем {xp.Sum() / 30} в день", xp,
+                d30.Select((d, i) => i % 7 == 1 ? d.ToString("dd.MM") : "").ToArray(), "Accent", true, Shell.Compact ? 5 : 9,
+                d30.Select((d, i) => $"{d:d MMM}: {xp[i]} XP").ToArray());
+            var fc = Fsrs.Forecast(cards, 14);
+            var fcChart = Report.Bars("ПРОГНОЗ ПОВТОРЕНИЙ", $"{fc.Sum()} карточек за 2 недели", fc,
+                fc.Select((_, i) => i == 0 ? "сег" : i % 4 == 0 ? DateTime.Today.AddDays(i).ToString("dd.MM") : "").ToArray(), "Info", false, Shell.Compact ? 8 : 12,
+                fc.Select((v, i) => $"{(i == 0 ? "Сегодня" : DateTime.Today.AddDays(i).ToString("ddd, d MMM"))}: {v}").ToArray());
+            var two = U.Cols("3*", "16", "2*");
+            two.Children.Add(U.Card(xpChart, new Thickness(22)));
+            two.Children.Add(U.Card(fcChart, new Thickness(22)).Col(2));
+            return U.Stackify(two).M(0, 16, 0, 0);
+        });
 
         // ─────────── Память и навыки ───────────
-        var mem = U.Cols("*", "16", "*");
-        mem.Children.Add(U.Card(Memory(cards), new Thickness(22)));
-        mem.Children.Add(U.Card(Skills(), new Thickness(22)).Col(2));
-        root.Children.Add(U.Stackify(mem).M(0, 16, 0, 0));
+        later.Add(() =>
+        {
+            var mem = U.Cols("*", "16", "*");
+            mem.Children.Add(U.Card(Memory(cards), new Thickness(22)));
+            mem.Children.Add(U.Card(Skills(), new Thickness(22)).Col(2));
+            return U.Stackify(mem).M(0, 16, 0, 0);
+        });
 
-        root.Children.Add(U.Card(Report.Goal(), new Thickness(22)).M(0, 16, 0, 0));
+        later.Add(() => U.Card(Report.Goal(), new Thickness(22)).M(0, 16, 0, 0));
 
         // ─────────── Награды ───────────
-        Avalonia.Controls.Primitives.UniformGrid rw = Shell.Compact ? new TileGrid { MinTile = 165, MaxColumns = 2, Margin = new Thickness(-6, 16, -6, 0) } : new UniformGrid { Columns = 4, Margin = new Thickness(-6, 16, -6, 0) };
-        rw.Children.Add(Kpi("shield", "Щиты серии", p.Shields, $"из {Challenges.MaxShields}", "Щит спасает серию, если пропустить день. Даётся за недельную цель"));
-        rw.Children.Add(Kpi("medal", "Значки недель", p.Badges.Count, MainView.Plural(p.Badges.Count, "неделя", "недели", "недель"), "Недели, когда взята недельная цель по опыту"));
-        rw.Children.Add(Kpi("star", "Идеальные дни", p.PerfectDays, "все испытания", "Дни, когда выполнены все три испытания"));
-        rw.Children.Add(Kpi("trophy", "Достижения", p.Achievements.Count, $"из {Achievements.All.Length}", "Открытые достижения"));
-        root.Children.Add(rw);
-        root.Children.Add(U.Card(U.Stack(U.T("ДОСТИЖЕНИЯ", "Overline").M(0, 0, 0, 12), SettingsPage.AchievementsGrid()), new Thickness(22, 18, 22, 10)).M(0, 16, 0, 0));
-        root.Children.Add(U.Card(Postcards(), new Thickness(22, 18, 22, 14)).M(0, 16, 0, 0));
+        later.Add(() =>
+        {
+            Avalonia.Controls.Primitives.UniformGrid rw = Shell.Compact ? new TileGrid { MinTile = 165, MaxColumns = 2, Margin = new Thickness(-6, 16, -6, 0) } : new UniformGrid { Columns = 4, Margin = new Thickness(-6, 16, -6, 0) };
+            rw.Children.Add(Kpi("shield", "Щиты серии", p.Shields, $"из {Challenges.MaxShields}", "Щит спасает серию, если пропустить день. Даётся за недельную цель"));
+            rw.Children.Add(Kpi("medal", "Значки недель", p.Badges.Count, MainView.Plural(p.Badges.Count, "неделя", "недели", "недель"), "Недели, когда взята недельная цель по опыту"));
+            rw.Children.Add(Kpi("star", "Идеальные дни", p.PerfectDays, "все испытания", "Дни, когда выполнены все три испытания"));
+            rw.Children.Add(Kpi("trophy", "Достижения", p.Achievements.Count, $"из {Achievements.All.Length}", "Открытые достижения"));
+            return rw;
+        });
+        later.Add(() => U.Card(U.Stack(U.T("ДОСТИЖЕНИЯ", "Overline").M(0, 0, 0, 12), SettingsPage.AchievementsGrid()), new Thickness(22, 18, 22, 10)).M(0, 16, 0, 0));
+        later.Add(() => U.Card(Postcards(), new Thickness(22, 18, 22, 14)).M(0, 16, 0, 0));
+        U.Deferred(root, later, 1);
         return root;
     }
 

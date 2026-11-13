@@ -82,10 +82,14 @@ public sealed class KanaPage : UserControl, IPage
             basic.Children.Add(TeacherPanel().Also(p => { p.Width = 340; p.VerticalAlignment = VerticalAlignment.Top; }));
             root.Children.Add(basic);
         }
-        root.Children.Add(Table("Звонкие и полузвонкие · 濁音・半濁音", Kana.DakutenGrid, 5));
-        root.Children.Add(Table("Сочетания · 拗音", Kana.ComboGrid, 3));
-        root.Children.Add(U.T("Подсказка: нажми на знак, чтобы услышать произношение.", "Muted").Center().M(0, 18, 0, 0));
         Anim.Stagger(root, 60, 0, 6);
+        // нижние таблицы — после первого кадра
+        U.Deferred(root, new Func<Control>[]
+        {
+            () => Table("Звонкие и полузвонкие · 濁音・半濁音", Kana.DakutenGrid, 5),
+            () => Table("Сочетания · 拗音", Kana.ComboGrid, 3),
+            () => U.T("Подсказка: нажми на знак, чтобы услышать произношение.", "Muted").Center().M(0, 18, 0, 0),
+        }, 1);
         return root;
     }
 

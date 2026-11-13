@@ -31,7 +31,7 @@ public sealed class WordsPage : UserControl, IPage
     // Телефон: вся страница прокручивается, список — порциями (вложенный список в узком экране получал нулевую высоту)
     readonly StackPanel _plainList = new();
     List<WordRow> _rows = new();
-    int _shown = 40;
+    int _shown = 40, _gen;
     readonly TextBlock _countText = U.T("", "Muted");
 
     public WordsPage()
@@ -217,14 +217,21 @@ public sealed class WordsPage : UserControl, IPage
     void RenderPlain()
     {
         _plainList.Children.Clear();
-        foreach (var r in _rows.Take(_shown)) _plainList.Children.Add(RowView(r));
+        int gen = ++_gen, now = _shown - 40 + 12; // при «Показать ещё» верхние строки снова сразу, новые 28 — после кадра
+        var later = new List<Func<Control>>();
+        foreach (var (r, i) in _rows.Take(_shown).Select((r, i) => (r, i)))
+            if (i < now) _plainList.Children.Add(RowView(r)); else later.Add(() => RowView(r));
         if (_rows.Count > _shown)
         {
             int left = _rows.Count - _shown;
-            var more = U.Btn($"Показать ещё {Math.Min(40, left)} (осталось {left})", () => { _shown += 40; RenderPlain(); }, "", "");
-            more.HorizontalAlignment = HorizontalAlignment.Stretch;
-            _plainList.Children.Add(more.M(0, 4, 0, 12));
+            later.Add(() =>
+            {
+                var more = U.Btn($"Показать ещё {Math.Min(40, left)} (осталось {left})", () => { _shown += 40; RenderPlain(); }, "", "");
+                more.HorizontalAlignment = HorizontalAlignment.Stretch;
+                return more.M(0, 4, 0, 12);
+            });
         }
+        U.Deferred(_plainList, later, 6, () => gen == _gen);
         if (_rows.Count == 0) _plainList.Children.Add(U.T("Ничего не найдено", "Muted").M(4, 8, 0, 0));
     }
 

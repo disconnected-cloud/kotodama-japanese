@@ -35,7 +35,8 @@ public sealed class GrammarPage : UserControl, IPage
         }
         root.Children.Add(U.Header("文", "Грамматика", $"Пройдено {done.Count} из {Db.Grammar.Length} уроков. Каждый урок — объяснение, примеры с озвучкой и упражнения.", chips));
 
-        bool unlockedNext = true;
+        bool unlockedNext = true, shown = false;
+        var later = new List<Func<Control>>();
         foreach (var level in new[] { "N5", "N4", "N3", "N2", "N1" })
         {
             if (_filter != "" && level != _filter)
@@ -44,18 +45,28 @@ public sealed class GrammarPage : UserControl, IPage
                 if (Db.Grammar.Any(g => g.Level == level && !done.Contains(g.Id))) unlockedNext = false;
                 continue;
             }
-            root.Children.Add(U.T(LevelName(level), "H2").M(0, 6, 0, 10));
-            var grid = new UniformGrid { Columns = U.Columns(2), Margin = new Thickness(-6, 0, -6, 16) };
-            foreach (var l in Db.Grammar.Where(g => g.Level == level).OrderBy(Num))
+            // признак «следующий» считаем сразу (по порядку уровней), а карточки уровней ниже первого — после первого кадра
+            var items = Db.Grammar.Where(g => g.Level == level).OrderBy(Num).Select(l =>
             {
-                bool isDone = done.Contains(l.Id);
-                bool recommended = !isDone && unlockedNext;
+                bool isDone = done.Contains(l.Id), recommended = !isDone && unlockedNext;
                 if (recommended) unlockedNext = false;
-                grid.Children.Add(LessonCard(l, isDone, recommended));
+                return (l, isDone, recommended);
+            }).ToList();
+            var lv = level;
+            bool first = !shown;
+            shown = true;
+            Control Head() => U.T(LevelName(lv), "H2").M(0, 6, 0, 10);
+            Control Grid()
+            {
+                var grid = new UniformGrid { Columns = U.Columns(2), Margin = new Thickness(-6, 0, -6, 16) };
+                foreach (var (l, isDone, recommended) in items) grid.Children.Add(LessonCard(l, isDone, recommended));
+                if (first) Anim.Stagger(grid, 30, 60);
+                return grid;
             }
-            root.Children.Add(grid);
-            Anim.Stagger(grid, 30, 60);
+            if (first) { root.Children.Add(Head()); root.Children.Add(Grid()); }
+            else { later.Add(Head); later.Add(Grid); }
         }
+        U.Deferred(root, later, 1);
         Content = U.Page(root);
     }
 

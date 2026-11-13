@@ -142,6 +142,8 @@ public sealed partial class SettingsPage : UserControl, IPage
                 yield return Section("Акцентный цвет", null, Swatches());
                 yield return Section("Масштаб интерфейса", null,
                     Choice(new[] { 90, 100, 115, 130 }, (int)Math.Round(p.UiScale * 100), v => { p.UiScale = v / 100.0; AskRestart(); }, v => v + "%"));
+                yield return Section("Плавность", Anim.LowEndDevice ? "На этом телефоне анимации появления по умолчанию выключены — так быстрее." : "Без анимаций экраны открываются мгновенно — удобно на слабом телефоне.",
+                    Choice(new[] { 0, 1, 2 }, p.Motion, v => { p.Motion = v; Anim.ApplyMotion(v); ProgressStore.Notify(); }, v => v switch { 0 => "Авто", 1 => "С анимацией", _ => "Без анимаций" }));
                 yield return Section("Анимация и звук", null, U.Stack(
                     Toggle("Анимированное интро при запуске", p.Intro, v => p.Intro = v),
                     Toggle("Звуки ответов", p.Sounds, v => { p.Sounds = v; if (v) Sfx.Ok(); })));

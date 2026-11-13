@@ -38,6 +38,7 @@ public sealed class Progress
     public double UiScale { get; set; } = 1.0;
     public double JpScale { get; set; } = 1.0;                // размер японского текста отдельно от интерфейса
     public bool FuriUnknownOnly { get; set; }               // читалка: фуригана только над незнакомыми кандзи
+    public int Motion { get; set; }                          // анимации: 0 — сами (на слабом телефоне выключены), 1 — всегда, 2 — без анимаций
     public bool HighContrast { get; set; }                   // высокий контраст: ярче текст и границы
     public bool Sounds { get; set; } = true;
     public bool NotifySound { get; set; } = true;

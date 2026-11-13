@@ -33,7 +33,7 @@ public partial class MainView : UserControl
     bool _expanding;
     public void ExpandFrom(Control source, Control page)
     {
-        if (_expanding || !source.IsEffectivelyVisible) { Push(page); return; }
+        if (_expanding || Anim.Lite || !source.IsEffectivelyVisible) { Push(page); return; }
         var a = source.TranslatePoint(new Point(0, 0), _root);
         var b = _host.TranslatePoint(new Point(0, 0), _root);
         if (a == null || b == null || _host.Bounds.Width < 1) { Push(page); return; }
