@@ -134,7 +134,7 @@ public sealed class WordsPage : UserControl, IPage
         {
             // телефон: главное — в строку, четыре квиза — сеткой 2×2 (столбиком они занимали полэкрана)
             var all = acts.Children.ToList(); acts.Children.Clear();
-            var top = new WrapPanel(); var quiz = new UniformGrid { Columns = 2 };
+            var top = new WrapPanel(); var quiz = new TileGrid { MinTile = 140, MaxColumns = 2 };
             foreach (var c in all.Take(2)) top.Children.Add(c);
             foreach (var c in all.Skip(2)) { c.Margin = new Thickness(0, 0, 8, 8); c.HorizontalAlignment = HorizontalAlignment.Stretch; quiz.Children.Add(c); }
             actBody = U.Stack(top, quiz);

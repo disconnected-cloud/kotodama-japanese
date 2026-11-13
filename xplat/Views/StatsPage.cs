@@ -29,7 +29,7 @@ public sealed class StatsPage : UserControl, IPage
         int days = p.History.Count(kv => kv.Value > 0);
         double recall = cards.Count == 0 ? 0 : cards.Where(c => c.Stability > 0)
             .Select(c => Fsrs.Retrievability(Math.Max(0, (DateTime.Now - c.LastReview).TotalDays), c.Stability)).DefaultIfEmpty(0).Average();
-        var kpi = new UniformGrid { Columns = U.Columns(4, 2), Margin = new Thickness(-6, 0, -6, 0) };
+        Avalonia.Controls.Primitives.UniformGrid kpi = Shell.Compact ? new TileGrid { MinTile = 150, MaxColumns = 2, Margin = new Thickness(-6, 0, -6, 0) } : new UniformGrid { Columns = 4, Margin = new Thickness(-6, 0, -6, 0) };
         kpi.Children.Add(Kpi("flame", "Серия", p.Streak, MainView.Plural(p.Streak, "день", "дня", "дней"), $"Дней с занятиями всего: {days}"));
         kpi.Children.Add(Kpi("crown", "Уровень", ProgressStore.Level, $"{p.Xp} XP", "Опыт за всё время"));
         kpi.Children.Add(Kpi("words", "Карточек", learned, $"{mastered} прочно", "Прочно — интервал повторения от 3 недель"));

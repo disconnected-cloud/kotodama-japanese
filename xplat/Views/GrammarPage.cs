@@ -58,7 +58,7 @@ public sealed class GrammarPage : UserControl, IPage
         var g = U.Cols("auto", "*", "auto");
         g.Children.Add(new Border
         {
-            Width = 54, Height = 54, CornerRadius = new CornerRadius(16),
+            Width = Shell.Compact ? 42 : 54, Height = Shell.Compact ? 42 : 54, CornerRadius = new CornerRadius(Shell.Compact ? 13 : 16),
             Background = done ? U.B("GreenGradient") : next ? U.B("AccentGradient") : U.B("Surface2"),
             Child = new TextBlock
             {
@@ -76,9 +76,10 @@ public sealed class GrammarPage : UserControl, IPage
         // на компьютере — одна строка, на телефоне — до трёх (иначе от схемы урока видно два слова)
         ((TextBlock)info.Children[1]).TextWrapping = Shell.Compact ? TextWrapping.Wrap : TextWrapping.NoWrap;
         if (Shell.Compact) ((TextBlock)info.Children[1]).MaxLines = 3;
-        g.Children.Add(info.CenterV().M(16, 0, 10, 0).Col(1));
-        g.Children.Add(U.Pill(l.Level).CenterV().Col(2));
-        var card = new Border { Classes = { "Card" }, Child = g, Margin = new Thickness(8), Padding = new Thickness(18), Cursor = Cursors.Hand };
+        g.Children.Add(info.CenterV().M(Shell.Compact ? 12 : 16, 0, Shell.Compact ? 0 : 10, 0).Col(1));
+        // телефон: уровень уже в заголовке раздела — значок не нужен, а ширина нужна заголовку
+        if (!Shell.Compact) g.Children.Add(U.Pill(l.Level).CenterV().Col(2));
+        var card = new Border { Classes = { "Card" }, Child = g, Margin = new Thickness(Shell.Compact ? 4 : 8), Padding = new Thickness(Shell.Compact ? 14 : 18), Cursor = Cursors.Hand };
         HomePage.Hover(card);
         card.PointerReleased += (_, _) => Shell.OpenFrom(card, new GrammarLessonPage(l));
         return card;

@@ -24,7 +24,7 @@ namespace Matsubakira.Views;
 public sealed class WritingPage : UserControl, IPage, IKeyTarget
 {
     public string Title => "Прописи";
-    static readonly double Size = Shell.Compact ? 300 : 330;
+    static readonly double Size = Shell.Compact ? 270 : 330; // телефон 320 точек: с полями страницы поле 300 не помещалось
     readonly List<(string ch, string hint)> _deck;
     int _i, _stroke, _mistakes, _total, _score;
     bool _showGuide = true;
@@ -56,7 +56,7 @@ public sealed class WritingPage : UserControl, IPage, IKeyTarget
         board.Children.Add(new Viewbox { Child = _flash });
         board.Children.Add(_ink);
 
-        var side = new StackPanel { Margin = Shell.Compact ? new Thickness(0, 20, 0, 0) : new Thickness(28, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Width = 300 };
+        var side = new StackPanel { Margin = Shell.Compact ? new Thickness(0, 20, 0, 0) : new Thickness(28, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Width = Shell.Compact ? double.NaN : 300 };
         side.Children.Add(_counter);
         side.Children.Add(_title.M(0, 6, 0, 6));
         side.Children.Add(_status);

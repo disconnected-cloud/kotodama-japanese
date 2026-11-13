@@ -87,7 +87,7 @@ public sealed partial class SettingsPage : UserControl, IPage
         }
         sp.Children.Add(U.T(Voicevox.Installed ? "ДОБАВИТЬ ПАКЕТЫ" : "ВЫБЕРИ ПАКЕТЫ ГОЛОСОВ", "Overline").M(0, 14, 0, 6));
         var list = new WrapPanel();
-        int Cut = Shell.Compact ? 20 : 34; // на телефоне имена короче — полный список во всплывающей подсказке
+        int Cut = Shell.Compact ? 15 : 34; // на телефоне имена короче — полный список во всплывающей подсказке
         foreach (var pack in Voicevox.Catalog.Where(pk => !installed.Contains(pk.File)).OrderBy(pk => !Voicevox.Recommended.Contains(pk.File)))
         {
             bool rec = Voicevox.Recommended.Contains(pack.File);

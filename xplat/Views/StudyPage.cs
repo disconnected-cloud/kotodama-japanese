@@ -317,7 +317,7 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
         // Выбор длины — только до старта
         if (!started)
         {
-            var modes = new UniformGrid { Columns = 3, Margin = new Thickness(-5, 20, -5, 0) };
+            var modes = new TileGrid { MinTile = 96, MaxColumns = 3, Margin = new Thickness(-5, 20, -5, 0) }; // узкий экран — режимы в две строки, слова не рвутся
             for (int m = 0; m < Modes.Length; m++)
             {
                 int mm = m;

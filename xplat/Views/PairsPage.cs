@@ -159,7 +159,7 @@ public sealed class PairsPage : UserControl, IPage, IKeyTarget
 
     void RenderCard()
     {
-        var g = U.Cols("*", "16", "*");
+        var g = U.Cols("*", Shell.Compact ? "8" : "16", "*");
         g.Children.Add(WordTile(_p.A, _targetA));
         g.Children.Add(WordTile(_p.B, !_targetA).Col(2));
         _card.Content = g;
@@ -174,9 +174,9 @@ public sealed class PairsPage : UserControl, IPage, IKeyTarget
         sp.Children.Add(U.Jp(w.Kana, 38, null, true).Center().M(0, 6, 0, 0));
         if (w.Shown != w.Kana) sp.Children.Add(U.Jp(w.Shown, 15, U.B("Muted")).Center().M(0, 2, 0, 0));
         sp.Children.Add(U.T(Kana.ToRomaji(w.Kana), "Body", 14, U.B("Muted")).Center().M(0, 2, 0, 0));
-        sp.Children.Add(U.T(w.Ru, "H3", 15).Center().M(0, 8, 0, 0));
+        sp.Children.Add(U.T(w.Ru, "H3", Shell.Compact ? 13.5 : 15).Also(t => t.TextAlignment = TextAlignment.Center).Center().M(0, 8, 0, 0));
         sp.Children.Add(U.Row(4, U.SpeakBtn(() => w.Kana, true), U.SpeakBtn(() => w.Kana)).Center().M(0, 10, 0, 0));
-        var card = U.Card(sp, new Thickness(18, 16, 18, 16));
+        var card = U.Card(sp, Shell.Compact ? new Thickness(8, 14, 8, 14) : new Thickness(18, 16, 18, 16));
         card.BorderBrush = U.B(target ? "Accent" : "Stroke");
         card.BorderThickness = new Thickness(target ? 2 : 1);
         card.Opacity = target ? 1 : 0.8;
