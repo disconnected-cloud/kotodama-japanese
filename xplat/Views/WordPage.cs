@@ -174,7 +174,7 @@ public sealed class WordPage : UserControl, IPage
             info.Children.Add(U.T(d.Ru.Split(';')[0], "H3", 15).Also(t => t.TextWrapping = TextWrapping.Wrap));
             info.Children.Add(U.T("чтение: " + d.Kana, "Muted", 12.5).M(0, 4, 0, 0));
         }
-        else info.Children.Add(U.T("Вне программы N5–N2", "Muted"));
+        else info.Children.Add(U.T("Вне программы N5–N1", "Muted"));
         var row = U.Row(0, sv.HasData ? sv : U.Jp(ch.ToString(), 70, null, true), info);
         return new Border { Background = U.B("Surface2"), CornerRadius = new CornerRadius(14), Padding = new Thickness(10), Margin = new Thickness(0, 0, 10, 10), Child = row };
     }

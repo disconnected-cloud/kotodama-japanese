@@ -1,7 +1,7 @@
 import json, re, sys, os, urllib.request, concurrent.futures as cf
 proj, cache = sys.argv[1], sys.argv[2]
 chars = list(sys.argv[3]) if len(sys.argv) > 3 else []
-for f in ("kanji.json", "kanji_n4.json", "kanji_n3.json", "kanji_n2.json"):
+for f in ("kanji.json", "kanji_n4.json", "kanji_n3.json", "kanji_n2.json", "kanji_n1.json"):
     chars += [k[0] for k in json.load(open(os.path.join(proj, "Data", f), encoding="utf8"))]
 def fetch(c):
     name = "%05x.svg" % ord(c)

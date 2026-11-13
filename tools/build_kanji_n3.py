@@ -8,9 +8,9 @@ LV = sys.argv[4] if len(sys.argv) > 4 else "n3"   # n2: знаки из слов
 D = lambda f: os.path.join(proj, "Data", f)
 load = lambda f: json.load(open(D(f), encoding="utf8"))
 is_kanji = lambda c: 0x4e00 <= ord(c) <= 0x9fff
-known = {k[0] for f in ("kanji.json", "kanji_n4.json") + (("kanji_n3.json",) if LV == "n2" else ()) for k in load(f)}
+known = {k[0] for f in ("kanji.json", "kanji_n4.json") + (("kanji_n3.json",) if LV in ("n2", "n1") else ()) + (("kanji_n2.json",) if LV == "n1" else ()) for k in load(f)}
 words = []
-for f in (("vocab_n2.json",) if LV == "n2" else ("vocab_plus.json", "vocab_n3.json")):
+for f in (("vocab_n1.json",) if LV == "n1" else ("vocab_n2.json",) if LV == "n2" else ("vocab_plus.json", "vocab_n3.json")):
     for topic in load(f).values():
         for w in topic: words.append((w[0], w[1] or w[0], w[2]))
 count = collections.Counter(); ex = collections.defaultdict(list)
@@ -40,6 +40,8 @@ for c, _ in count.most_common():
     if len(res) >= LIMIT: break
     e = dic.get(c)
     if not e or not ex[c]: continue
+    # N1: только знаки старого 1-го уровня JLPT или вне списков (内, 原 и т.п. — это не N1)
+    if LV == "n1" and (e.get("misc") or {}).get("jlptLevel") not in (1, None): continue
     on = "、".join(readings(e, "ja_on")[:3]); kun = "、".join(r for r in readings(e, "ja_kun")[:3] if not r.startswith("-"))
     strokes = e["misc"]["strokeCounts"][0] if e["misc"].get("strokeCounts") else 0
     # значение: перевод самостоятельного слова из одного знака, иначе — первого слова-примера

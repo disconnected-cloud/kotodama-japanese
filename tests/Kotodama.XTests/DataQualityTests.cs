@@ -8,7 +8,7 @@ public class DataQualityTests
     static bool IsKana(char c) => c is >= 'ぁ' and <= 'ゖ' or >= 'ァ' and <= 'ヺ' or 'ー' or 'ゝ' or 'ゞ' or 'ヽ' or 'ヾ' or '・' or '〜' or ' ' or '、' or '。' or '？' or '！';
 
     [Theory]
-    [InlineData("N5")] [InlineData("N4")] [InlineData("N3")] [InlineData("N2")]
+    [InlineData("N5")] [InlineData("N4")] [InlineData("N3")] [InlineData("N2")] [InlineData("N1")]
     public void EveryLevelHasWordsAndKanji(string level)
     {
         Assert.True(Db.Words.Count(w => w.Level == level) >= 100, level);

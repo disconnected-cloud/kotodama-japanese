@@ -20,7 +20,7 @@ public sealed class KanjiPage : UserControl, IPage
 {
     public string Title => "Кандзи";
     KanjiInfo? _sel;
-    string _level = ProgressStore.P.Level is "N4" or "N3" or "N2" ? ProgressStore.P.Level : "N5";
+    string _level = ProgressStore.P.Level is "N4" or "N3" or "N2" or "N1" ? ProgressStore.P.Level : "N5";
     readonly ContentControl _detail = new();
     Border? _selTile;
 
@@ -36,7 +36,7 @@ public sealed class KanjiPage : UserControl, IPage
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition());
         var lv = new WrapPanel { Orientation = Orientation.Horizontal };
-        foreach (var l in new[] { "N5", "N4", "N3", "N2" })
+        foreach (var l in new[] { "N5", "N4", "N3", "N2", "N1" })
         {
             var rb = new RadioButton { Classes = { "ChipRadio" }, Content = l, GroupName = "klevel", IsChecked = _level == l };
             var ll = l;

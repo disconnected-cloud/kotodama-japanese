@@ -37,7 +37,7 @@ public sealed class WritingPage : UserControl, IPage, IKeyTarget
 
     public WritingPage(string? level = null)
     {
-        var kanji = Db.KanjiOf(level ?? (ProgressStore.P.Level is "N4" or "N3" or "N2" ? ProgressStore.P.Level : "N5")).Where(k => Db.Strokes(k.Char) != null).Select(k => (k.Char, k.Ru));
+        var kanji = Db.KanjiOf(level ?? (ProgressStore.P.Level is "N4" or "N3" or "N2" or "N1" ? ProgressStore.P.Level : "N5")).Where(k => Db.Strokes(k.Char) != null).Select(k => (k.Char, k.Ru));
         var kana = Kana.All.Where(c => c.Group == Kana.Basic && Db.Strokes(c.Hira) != null).Select(c => (c.Hira, c.Romaji));
         // Сначала знаки, которые уже изучаются, затем остальные
         _deck = kanji.OrderBy(k => ProgressStore.Card("k:" + k.Item1) == null ? 1 : 0).ThenBy(_ => U.Rng.Next()).Take(10).ToList();

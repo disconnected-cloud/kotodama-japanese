@@ -19,17 +19,32 @@ namespace Matsubakira.Views;
 public sealed class GrammarPage : UserControl, IPage
 {
     public string Title => "Грамматика";
+    static string _filter = "";   // "" — все уровни
 
     public void OnShown()
     {
         var root = new StackPanel();
         var done = ProgressStore.P.GrammarDone;
-        root.Children.Add(U.Header("文", "Грамматика", $"Пройдено {done.Count} из {Db.Grammar.Length} уроков. Каждый урок — объяснение, примеры с озвучкой и упражнения."));
+        var chips = new StackPanel { Orientation = Orientation.Horizontal };
+        foreach (var l in new[] { "", "N5", "N4", "N3", "N2", "N1" })
+        {
+            int n = Db.Grammar.Count(g => l == "" || g.Level == l), d = Db.Grammar.Count(g => (l == "" || g.Level == l) && done.Contains(g.Id));
+            var rb = new RadioButton { Classes = { "ChipRadio" }, Content = l == "" ? "Все" : l, GroupName = "glevel", IsChecked = _filter == l }.Tip(l == "" ? null : $"{d} из {n} пройдено");
+            rb.Checked += (_, _) => { _filter = l; OnShown(); };
+            chips.Children.Add(rb);
+        }
+        root.Children.Add(U.Header("文", "Грамматика", $"Пройдено {done.Count} из {Db.Grammar.Length} уроков. Каждый урок — объяснение, примеры с озвучкой и упражнения.", chips));
 
         bool unlockedNext = true;
-        foreach (var level in new[] { "N5", "N4", "N3" })
+        foreach (var level in new[] { "N5", "N4", "N3", "N2", "N1" })
         {
-            root.Children.Add(U.T(level switch { "N5" => "N5 · основы", "N4" => "N4 · продолжение", _ => "N3 · средний уровень" }, "H2").M(0, 6, 0, 10));
+            if (_filter != "" && level != _filter)
+            {
+                // рекомендуемый урок ищем по всем уровням, даже если они скрыты фильтром
+                if (Db.Grammar.Any(g => g.Level == level && !done.Contains(g.Id))) unlockedNext = false;
+                continue;
+            }
+            root.Children.Add(U.T(LevelName(level), "H2").M(0, 6, 0, 10));
             var grid = new UniformGrid { Columns = U.Columns(2), Margin = new Thickness(-6, 0, -6, 16) };
             foreach (var l in Db.Grammar.Where(g => g.Level == level).OrderBy(Num))
             {
@@ -43,6 +58,11 @@ public sealed class GrammarPage : UserControl, IPage
         }
         Content = U.Page(root);
     }
+
+    public static string LevelName(string level) => level switch
+    {
+        "N5" => "N5 · основы", "N4" => "N4 · продолжение", "N3" => "N3 · средний уровень", "N2" => "N2 · деловой и книжный язык", _ => "N1 · свободное владение",
+    };
 
     /// <summary>Номер урока — в порядке пути обучения (уроки, добавленные в 2.0, встают на свои места).</summary>
     public static int Num(GrammarLesson l) => _num.Value.TryGetValue(l.Id, out var n) ? n : l.Id;

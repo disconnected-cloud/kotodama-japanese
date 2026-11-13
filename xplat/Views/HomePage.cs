@@ -131,7 +131,7 @@ public sealed class HomePage : UserControl, IPage
                 ("УЧИТЬ", new[]
                 {
                     Section("kana", "Кана", $"{kanaKnown * 100 / (Kana.All.Count * 2)}% освоено", "kana"),
-                    Section("words", "Слова", $"{Db.Words.Length} для изучения · N5–N2", "words"),
+                    Section("words", "Слова", $"{Db.Words.Length} для изучения · N5–N1", "words"),
                     Section("kanji", "Кандзи", $"{Db.Kanji.Length} знаков", "kanji"),
                     Section("grammar", "Грамматика", $"{p.GrammarDone.Count}/{Db.Grammar.Length} уроков", "grammar"),
                 }),

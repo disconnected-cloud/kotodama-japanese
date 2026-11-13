@@ -78,9 +78,11 @@ for e in d["words"]:
         dic[form].append((kanas, gloss, common, uk))
 
 # режим n2: следующие по частоте слова после всех уже собранных (N5, N4, 1000, N3) → vocab_n2.json
-N2 = len(sys.argv) > 5 and sys.argv[5] == "n2"
+# режим n1: следующие после N2 (все уровни уже собраны) → vocab_n1.json
+N2 = len(sys.argv) > 5 and sys.argv[5] in ("n2", "n1")
+N1 = len(sys.argv) > 5 and sys.argv[5] == "n1"
 existing = set()
-for f in ("vocab.json", "vocab_n4.json") + (("vocab_plus.json", "vocab_n3.json") if N2 else ()):
+for f in ("vocab.json", "vocab_n4.json") + (("vocab_plus.json", "vocab_n3.json") if N2 else ()) + (("vocab_n2.json",) if N1 else ()):
     for topic in json.load(open(D(f), encoding="utf8")).values():
         for w in topic: existing.add(w[0]); existing.add(w[1] or w[0])
 
@@ -146,7 +148,9 @@ def write(items, fname, prefix=""):
             out[f"{prefix}{g} {i // 50 + 1}"] = [[lemma, kana if kana != lemma else "", ru_, exj, exr] for _, lemma, kana, ru_, exj, exr in its[i:i + 50]]
     json.dump(out, open(D(fname), "w", encoding="utf8"), ensure_ascii=False, indent=0)
     print(fname, "topics:", len(out), "words:", sum(len(v) for v in out.values()))
-if N2:
+if N1:
+    write(picked, "vocab_n1.json", "N1 · ")
+elif N2:
     write(picked, "vocab_n2.json", "N2 · ")
 else:
     write(picked[:1000], "vocab_plus.json")

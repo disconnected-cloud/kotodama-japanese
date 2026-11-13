@@ -473,7 +473,7 @@ public sealed class TrainersPage : UserControl, IPage
     // ─────────── Пробный тест ───────────
     public static QuizSession MockTest(string level)
     {
-        if (level is not ("N5" or "N4" or "N3" or "N2")) level = "N5";
+        if (level is not ("N5" or "N4" or "N3" or "N2" or "N1")) level = "N5";
         var words = Db.WordsOf(level).ToList();
         var ruPool = words.Select(w => w.Ru).ToArray();
         var qs = new List<QuizQ>();

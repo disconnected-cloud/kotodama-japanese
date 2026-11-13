@@ -199,7 +199,7 @@ public sealed class PathPage : UserControl, IPage
             var u = units[i];
             if (u.Level != lastLevel)
             {
-                root.Children.Add(U.T(u.Level == "N5" ? "N5 · ОСНОВЫ" : "N4 · ПРОДОЛЖЕНИЕ", "Overline").M(54, i == 0 ? 0 : 18, 0, 10));
+                root.Children.Add(U.T(GrammarPage.LevelName(u.Level).ToUpperInvariant(), "Overline").M(54, i == 0 ? 0 : 18, 0, 10));
                 lastLevel = u.Level;
             }
             root.Children.Add(UnitRow(u, u == current, i == units.Length - 1));
