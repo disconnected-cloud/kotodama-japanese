@@ -190,12 +190,13 @@
             </Border>
             <StackPanel Orientation="Horizontal" Margin="14,0" VerticalAlignment="Center">
               <ContentPresenter Name="ico" Content="{TemplateBinding Tag}" Width="24" Height="24" VerticalAlignment="Center" Opacity="0.82"/>
-              <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+              <ContentPresenter Name="txt" Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center" Margin="10,0,0,0"/>
             </StackPanel>
           </Grid>
         </ControlTemplate>
       </Setter>
     </Style>
+    <Style Selector="RadioButton.NavItem.Rail /template/ ContentPresenter#txt"><Setter Property="IsVisible" Value="False"/></Style>
     <Style Selector="RadioButton.NavItem:pointerover"><Setter Property="Foreground" Value="{DynamicResource Text}"/></Style>
     <Style Selector="RadioButton.NavItem:pointerover /template/ Border#hover"><Setter Property="Opacity" Value="0.035"/></Style>
     <Style Selector="RadioButton.NavItem:checked"><Setter Property="Foreground" Value="{DynamicResource Text}"/></Style>

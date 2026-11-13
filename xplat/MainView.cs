@@ -159,6 +159,7 @@ public partial class MainView : UserControl
             : _root;
 
         ProgressStore.Changed += () => Dispatcher.UIThread.Post(UpdateStats);
+        if (!Shell.Compact) SizeChanged += (_, e) => OnWidthChanged(e.NewSize.Width);
         // Клавиши ловим на уровне окна: если фокус ни на чём (клик по пустому месту), событие не доходит до MainView
         AttachedToVisualTree += (_, _) =>
         {
@@ -290,7 +291,7 @@ public partial class MainView : UserControl
         // Режим фокуса: во время упражнений боковое меню скрывается
         bool focus = page is Controls.QuizSession or Controls.FlashSession { IsEmpty: false } or BuilderSession or SpeechLessonPage or DialogPage or WritingPage or KanaRainGame or MemoryGame or SprintGame or OnboardingPage
             or Controls.LearnSession or StudyPage or MatchRushGame or WordBuilderGame or ListenCatchGame;
-        _sideCol.Width = new GridLength(focus || Shell.Compact ? 0 : 232);
+        _sideCol.Width = new GridLength(focus || Shell.Compact ? 0 : SideWidth);
         _sidebar.IsVisible = !focus && !Shell.Compact;
         // меню снова видно (например, после упражнения) — индикатор к текущему разделу
         if (_sidebar.IsVisible && _navItems.TryGetValue(_rootKey, out var curItem)) Dispatcher.UIThread.Post(() => MoveNavIndicator(curItem), DispatcherPriority.Loaded);
@@ -317,6 +318,7 @@ public partial class MainView : UserControl
         if (_intro.IsVisible) { CloseIntro(fast: true); e.Handled = true; return; }
         if (_overlay != null && e.Key == Key.Escape) { CloseOverlay(); e.Handled = true; return; }
         if (_palette != null) return;
+        if (!Shell.Compact && HandleHotkey(e)) { e.Handled = true; return; }
         var focused = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement();
         if (focused is TextBox && e.Key is not (Key.Enter or Key.Escape)) return;
         if (_host.Content is IKeyTarget kt && kt.HandleKey(e.Key)) { e.Handled = true; return; }
@@ -331,6 +333,7 @@ public partial class MainView : UserControl
         Challenges.Check();
         var p = ProgressStore.P;
         _streak.Text = $"{p.Streak} {Plural(p.Streak, "день", "дня", "дней")}";
+        _railStreak.Text = p.Streak.ToString();
         int lvl = ProgressStore.Level;
         _levelText.Text = $"Ур. {lvl}";
         int from = ProgressStore.XpForLevel(lvl), to = ProgressStore.XpForLevel(lvl + 1);

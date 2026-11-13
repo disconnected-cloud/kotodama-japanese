@@ -23,7 +23,7 @@ public partial class MainView : UserControl
         var dock = new DockPanel();
         var logo = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(26, 20, 0, 22) };
         logo.Children.Add(new TextBlock { Text = "言", FontFamily = U.R<FontFamily>("JpSerif"), FontSize = 24, Foreground = U.B("Accent"), VerticalAlignment = VerticalAlignment.Center });
-        logo.Children.Add(new StackPanel
+        logo.Children.Add(_logoText = new StackPanel
         {
             Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center,
             Children =
@@ -53,8 +53,20 @@ public partial class MainView : UserControl
             Background = U.B("Surface"), BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(1),
             Child = new StackPanel { Children = { top, goalRow, _goalBar, _xpBar } },
         };
-        DockPanel.SetDock(summary, Dock.Bottom);
-        dock.Children.Add(summary);
+        _summary = summary;
+        // свёрнутое меню: вместо сводки — огонёк серии с числом дней
+        _railStreak.FontSize = 12; _railStreak.FontWeight = FontWeight.SemiBold; _railStreak.HorizontalAlignment = HorizontalAlignment.Center;
+        _summaryRail = new StackPanel { IsVisible = false, Margin = new Thickness(0, 6, 0, 14), HorizontalAlignment = HorizontalAlignment.Center, Children = { Controls.Art.Icon("flame", 26).Center(), _railStreak.M(0, 4, 0, 0) } };
+        ToolTip.SetTip(_summaryRail, "Серия дней подряд");
+        var bottom = new StackPanel();
+        // кнопка «свернуть меню» (Ctrl+B)
+        _railBtn = new Button { Classes = { "Ghost" }, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left, Margin = new Thickness(12, 0, 12, 2), Padding = new Thickness(14, 6) };
+        _railBtn.Click += (_, _) => ToggleRail();
+        bottom.Children.Add(_railBtn);
+        bottom.Children.Add(summary);
+        bottom.Children.Add(_summaryRail);
+        DockPanel.SetDock(bottom, Dock.Bottom);
+        dock.Children.Add(bottom);
 
         // Меню со скользящей подложкой выбранного пункта
         _navIndicator.VerticalAlignment = VerticalAlignment.Top; _navIndicator.Height = 34; _navIndicator.Margin = new Thickness(12, 0);
@@ -64,12 +76,13 @@ public partial class MainView : UserControl
         void Item(string key, string icon, object content)
         {
             var rb = new RadioButton { Tag = Controls.Art.Icon(icon, 24), Content = content, GroupName = "nav" };
+            _navLabels[rb] = content as string ?? "Повторение";
             rb.Classes.Add("NavItem");
             rb.Checked += (_, _) => { MoveNavIndicator(rb); ShowRoot(key); };
             _navItems[key] = rb;
             _nav.Children.Add(rb);
         }
-        void Header(string t) => _nav.Children.Add(U.T(t, "Overline").M(28, 7, 0, 2));
+        void Header(string t) { var h = U.T(t, "Overline").M(28, 7, 0, 2); _navHeaders.Add(h); _nav.Children.Add(h); }
         _dueText.FontSize = 11; _dueText.FontWeight = FontWeight.SemiBold; _dueText.Foreground = U.B("OnAccent");
         _dueBadge.HorizontalAlignment = HorizontalAlignment.Right; _dueBadge.Background = U.B("Accent"); _dueBadge.CornerRadius = new CornerRadius(8);
         _dueBadge.Padding = new Thickness(6, 0); _dueBadge.IsVisible = false; _dueBadge.Child = _dueText;
@@ -94,7 +107,66 @@ public partial class MainView : UserControl
 
         var navGrid = new Grid { Children = { _navIndicator, _nav } };
         dock.Children.Add(new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Hidden, Content = navGrid });
+        ApplyRail(false);
         return dock;
+    }
+
+    // ─────────── Свёрнутое меню («рельс»): только иконки ───────────
+    StackPanel? _logoText, _summaryRail;
+    Border? _summary;
+    Button? _railBtn;
+    readonly TextBlock _railStreak = new();
+    readonly List<Control> _navHeaders = new();
+    readonly Dictionary<RadioButton, string> _navLabels = new();
+    bool _narrow;   // окно уже 980 px — меню сворачивается само
+    const double SideFull = 232, SideRail = 76;
+
+    bool Rail => ProgressStore.P.SidebarRail || _narrow;
+    double SideWidth => Rail ? SideRail : SideFull;
+
+    public void ToggleRail()
+    {
+        if (Shell.Compact) return;
+        if (_narrow && !ProgressStore.P.SidebarRail) { Shell.Toast("Окно узкое — меню свёрнуто автоматически. Расширь окно, чтобы развернуть.", "≡"); return; }
+        ProgressStore.P.SidebarRail = !ProgressStore.P.SidebarRail;
+        ProgressStore.Notify();
+        ApplyRail(true);
+    }
+
+    void OnWidthChanged(double w)
+    {
+        bool narrow = w < 980;
+        if (narrow == _narrow) return;
+        _narrow = narrow;
+        ApplyRail(true);
+    }
+
+    void ApplyRail(bool animate)
+    {
+        bool rail = Rail;
+        foreach (var (rb, label) in _navLabels)
+        {
+            if (rail) rb.Classes.Add("Rail"); else rb.Classes.Remove("Rail");
+            ToolTip.SetTip(rb, rail ? label : null);
+            ToolTip.SetPlacement(rb, PlacementMode.Right);
+        }
+        foreach (var h in _navHeaders) h.IsVisible = !rail;
+        if (_logoText != null) _logoText.IsVisible = !rail;
+        if (_summary != null) _summary.IsVisible = !rail;
+        if (_summaryRail != null) _summaryRail.IsVisible = rail;
+        if (_railBtn != null)
+        {
+            var g = new StackPanel { Orientation = Orientation.Horizontal };
+            g.Children.Add(Controls.Art.Glyph(rail ? "next" : "prev", 12, U.B("Faint")).Also(c => c.Margin = new Thickness(6, 0, 0, 0)));
+            if (!rail) g.Children.Add(new TextBlock { Text = "Свернуть меню", FontSize = 12, Foreground = U.B("Faint"), Margin = new Thickness(14, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center });
+            _railBtn.Content = g;
+            ToolTip.SetTip(_railBtn, rail ? "Развернуть меню (Ctrl+B)" : "Ctrl+B");
+        }
+        if (Shell.Compact || !_sidebar.IsVisible) return;
+        double from = _sideCol.Width.Value, to = SideWidth;
+        if (animate && Math.Abs(from - to) > 1) Anim.Run((_sideCol, "w"), from, to, 220, v => _sideCol.Width = new GridLength(v), Ease.QuinticOut);
+        else _sideCol.Width = new GridLength(to);
+        if (_navItems.TryGetValue(_rootKey, out var cur)) Dispatcher.UIThread.Post(() => MoveNavIndicator(cur), DispatcherPriority.Loaded);
     }
 
     /// <summary>Подложка выбранного пункта плавно «переезжает» к новому пункту.</summary>

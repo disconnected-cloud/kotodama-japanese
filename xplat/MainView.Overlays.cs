@@ -66,7 +66,7 @@ public partial class MainView : UserControl
 
     // ─────────── Карточка поверх окна (слово дня и т.п.) ───────────
     Grid? _overlay;
-    public void ShowOverlay(Control content)
+    public void ShowOverlay(Control content, double maxWidth = 620)
     {
         CloseOverlay();
         var overlay = new Grid { Background = new SolidColorBrush(Color.FromArgb(0x99, 0, 0, 0)) };
@@ -75,7 +75,7 @@ public partial class MainView : UserControl
         var card = new Border
         {
             // на телефоне — во всю ширину с полями (минимум 440 не помещался в экран 360)
-            Classes = { "Card" }, MinWidth = Shell.Compact ? 0 : 440, MaxWidth = 620, HorizontalAlignment = Shell.Compact ? HorizontalAlignment.Stretch : HorizontalAlignment.Center,
+            Classes = { "Card" }, MinWidth = Shell.Compact ? 0 : 440, MaxWidth = maxWidth, HorizontalAlignment = Shell.Compact ? HorizontalAlignment.Stretch : HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center, Margin = Shell.Compact ? new Thickness(12) : default,
             Padding = Shell.Compact ? new Thickness(18, 16) : new Thickness(30, 22), BoxShadow = BoxShadows.Parse("0 6 24 0 #59000000"),
             Child = new Grid { Children = { content, close } },

@@ -142,6 +142,13 @@ public sealed class FlashSession : Grid, IPage, IKeyTarget
         sp.Children.Add(new Border { Height = 1, Background = U.B("Stroke"), Margin = new Thickness(60, 18, 60, 16) });
         sp.Children.Add(U.T(c.Meaning, "H2", 24).Center());
         if (c.Extra != null) sp.Children.Add(U.T(c.Extra, "Muted", 13).Center().M(0, 8, 0, 0));
+        // своя заметка к слову (страница слова в словаре)
+        if (ProgressStore.P.Notes.TryGetValue(c.Id, out var note))
+            sp.Children.Add(new Border
+            {
+                Background = U.B("AccentSoft"), CornerRadius = new CornerRadius(10), Padding = new Thickness(12, 6), Margin = new Thickness(0, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Center, MaxWidth = 520,
+                Child = U.T("✎ " + note, "Body", 13).Also(t => t.TextWrapping = TextWrapping.Wrap),
+            });
         foreach (var ex in c.Examples.Take(2))
         {
             var row = new StackPanel { Margin = new Thickness(0, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Center };

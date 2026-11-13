@@ -356,9 +356,13 @@ public partial class MainView
             case "radicals": Push(new RadicalsPage()); break;
             case "textl": Push(new TextPage(ReaderPage.Texts.First(t => t.Book != null), true)); break;
             case "word": JDict.LoadAsync().ContinueWith(_ => Dispatcher.UIThread.Post(() => Push(new WordPage(JDict.Lookup("勉強")!)))); break;
+            case "wordv": JDict.LoadAsync().ContinueWith(_ => Dispatcher.UIThread.Post(() => Push(new WordPage(JDict.Lookup("食べる")!)))); break;
+            case "worda": JDict.LoadAsync().ContinueWith(_ => Dispatcher.UIThread.Post(() => Push(new WordPage(JDict.Lookup("高い")!)))); break;
             case "article": Push(new ArticlePage(JapanPage.All[0])); break;
             case "match": Push(new MatchRushGame()); break;
             case "player": Push(new PlayerPage()); break;
+            case "keys": ShowHotkeys(); break;
+            case "rail": ProgressStore.P.SidebarRail = true; ApplyRail(false); break;
             case "typing": Push(new TypingPage()); break;
             case "numbers": Push(new NumbersPage()); break;
             case "numq": Push(NumbersPage.ReadNumbers()); break;

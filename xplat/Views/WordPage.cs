@@ -17,6 +17,48 @@ public sealed class WordPage : UserControl, IPage
     public string Title => _e.Jp;
     public WordPage(DictEntry e) { _e = e; Remember(e.Jp); }
 
+    /// <summary>
+    /// Формы слова: глагол (перевод похож на глагол: «…ть», «…ться») — 11 форм спряжения,
+    /// い-прилагательное (перевод «…ый/…ий») — отрицание, прошедшее, て, наречие, условная.
+    /// </summary>
+    /// <summary>Чтение формы: у основы с кандзи берём чтение слова, окончание — как есть (来る — отдельно).</summary>
+    public static string FormKana(string jp, string kana, string form)
+    {
+        if (jp == "来る" && Conj.All("くる", "くる") is { } k && Conj.All(jp, kana) is { } f)
+            foreach (var (key, v) in f) if (v == form) return k[key];
+        int p = 0;
+        while (p < jp.Length && p < form.Length && jp[p] == form[p]) p++;
+        int tail = jp.Length - p;
+        return tail <= kana.Length ? kana[..(kana.Length - tail)] + form[p..] : form;
+    }
+
+    public static List<(string name, string form)> Forms(string jp, string kana, string ru)
+    {
+        var res = new List<(string, string)>();
+        var first = ru.Split(',', ';', '(')[0].Trim().Split(' ').LastOrDefault() ?? "";
+        bool verbRu = System.Text.RegularExpressions.Regex.IsMatch(ru, @"[а-яё]+(ть|ться|чь|чься|ти|тись)(\b|\s|,|;|$)");
+        if (verbRu && Conj.All(jp, kana) is { } all)
+        {
+            res.Add(("словарная", jp));
+            foreach (var (key, name) in Conj.Forms) if (all.TryGetValue(key, out var v)) res.Add((name, v));
+            return res;
+        }
+        bool adjRu = System.Text.RegularExpressions.Regex.IsMatch(first, @"(ый|ий|ой|ая|ое|ые)$");
+        if (adjRu && jp.EndsWith('い') && jp.Length >= 2 && !jp.EndsWith("きれい") && !jp.EndsWith("嫌い") && !jp.EndsWith("綺麗"))
+        {
+            var st = jp is "いい" or "良い" ? (jp == "いい" ? "よ" : "良") : jp[..^1];
+            res.Add(("отрицание", st + "くない"));
+            res.Add(("прошедшее", st + "かった"));
+            res.Add(("прош. отрицание", st + "くなかった"));
+            res.Add(("て-форма", st + "くて"));
+            res.Add(("наречие", st + "く"));
+            res.Add(("если", st + "ければ"));
+            res.Add(("вежливо", jp + "です"));
+            res.Add(("вежл. прошедшее", st + "かったです"));
+        }
+        return res;
+    }
+
     /// <summary>История просмотренных слов (для пустого экрана словаря).</summary>
     static void Remember(string jp)
     {
@@ -89,6 +131,42 @@ public sealed class WordPage : UserControl, IPage
                 Child = U.T((i + 1).ToString(), "H3", 12, U.B("Accent")).Center().CenterV(),
             }, U.T(senses[i], "Body", 15).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.MaxWidth = 820; })).M(0, 0, 0, 8));
         root.Children.Add(U.Card(ms).M(0, 14, 0, 0));
+
+        // ─────────── Формы слова: спряжение глагола или прилагательного ───────────
+        if (Forms(_e.Jp, _e.Kana, senses.FirstOrDefault() ?? "") is { Count: > 0 } forms)
+        {
+            var fp = new StackPanel();
+            fp.Children.Add(U.T(forms[0].name.StartsWith("отриц") ? "Формы прилагательного" : "Спряжение", "H2", 19).M(0, 0, 0, 4));
+            fp.Children.Add(U.T("Нажми на форму, чтобы послушать.", "Muted", 12.5).M(0, 0, 0, 10));
+            var grid = new Avalonia.Controls.Primitives.UniformGrid { Columns = U.Columns(4, 2) };
+            foreach (var (name, form) in forms)
+            {
+                var f = form;
+                var b = new Button
+                {
+                    HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 0, 8, 8), Padding = new Thickness(12, 8),
+                    Content = U.Stack(U.T(name, "Muted", 11.5), U.Jp(f, 18).Also(t => t.TextWrapping = TextWrapping.NoWrap), U.T(Kana.ToRomaji(FormKana(_e.Jp, _e.Kana, f)), "Muted", 11)),
+                };
+                b.Click += (_, _) => Speech.Say(f);
+                grid.Children.Add(b);
+            }
+            fp.Children.Add(grid);
+            root.Children.Add(U.Card(fp).M(0, 14, 0, 0));
+        }
+
+        // ─────────── Личная заметка ───────────
+        var note = new TextBox
+        {
+            Text = ProgressStore.P.Notes.GetValueOrDefault(_e.Id, ""), AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 64,
+            Watermark = "Своя подсказка, ассоциация или пример — увидишь её здесь и на карточке",
+        };
+        note.TextChanged += (_, _) =>
+        {
+            var t = (note.Text ?? "").Trim();
+            if (t.Length == 0) ProgressStore.P.Notes.Remove(_e.Id); else ProgressStore.P.Notes[_e.Id] = t;
+            ProgressStore.Notify();
+        };
+        root.Children.Add(U.Card(U.Stack(U.Row(8, Art.Icon("note", 26), U.T("Моя заметка", "H2", 19).CenterV()).M(0, 0, 0, 10), note)).M(0, 14, 0, 0));
 
         // ─────────── Иероглифы ───────────
         var chars = _e.Jp.Where(c => c >= '一' && c <= '鿿').Distinct().ToList();

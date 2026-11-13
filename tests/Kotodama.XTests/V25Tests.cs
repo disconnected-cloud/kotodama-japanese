@@ -38,6 +38,23 @@ public class V25Tests
     }
 }
 
+public class WordFormsTests
+{
+    [Fact]
+    public void VerbAndAdjectiveForms()
+    {
+        var v = Matsubakira.Views.WordPage.Forms("食べる", "たべる", "есть");
+        Assert.Contains(v, f => f.form == "食べます");
+        Assert.Equal("たべられる", Matsubakira.Views.WordPage.FormKana("食べる", "たべる", "食べられる"));
+        Assert.Equal("きます", Matsubakira.Views.WordPage.FormKana("来る", "くる", "来ます"));
+        var a = Matsubakira.Views.WordPage.Forms("高い", "たかい", "высокий");
+        Assert.Contains(a, f => f.form == "高くない");
+        Assert.Contains(Matsubakira.Views.WordPage.Forms("いい", "いい", "хороший"), f => f.form == "よかった");
+        Assert.Empty(Matsubakira.Views.WordPage.Forms("机", "つくえ", "стол"));
+        Assert.Empty(Matsubakira.Views.WordPage.Forms("きれい", "きれい", "красивый"));
+    }
+}
+
 public class EdgeTokenTests
 {
     // эталон — edge-tts 7.x (drm.generate_sec_ms_gec_v2)

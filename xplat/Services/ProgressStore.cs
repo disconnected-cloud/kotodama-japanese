@@ -72,6 +72,8 @@ public sealed class Progress
     public bool QuietMode { get; set; }                       // «тихо»: без автоозвучки, аудирования и говорения — только текст
     public bool StudyNoSpeech { get; set; }                   // сессия «Учиться» без шага говорения
     public bool MaleVoice { get; set; }
+    public bool SidebarRail { get; set; }
+    public Dictionary<string, string> Notes { get; set; } = new();   // личные заметки к словам (id слова → текст)                     // ПК: боковое меню свёрнуто до иконок (Ctrl+B)
     public string AsrModel { get; set; } = "small-q5_1";
     public string Level { get; set; } = "N5";
     public string DayDate { get; set; } = "";                     // счётчики испытаний дня
