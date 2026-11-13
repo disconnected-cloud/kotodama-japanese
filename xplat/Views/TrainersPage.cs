@@ -276,7 +276,7 @@ public sealed class TrainersPage : UserControl, IPage
             Tile("対", "Минимальные пары", "おばさん или おばあさん? Слух и произношение", () => Shell.Open(new PairsPage())));
         var write = Group(
             Tile("打", "Набор на японском", "Печатай латиницей — получай кану. Скорость и точность", () => Shell.Open(new TypingPage())),
-            Tile("書", "Прописи", "Пиши кандзи мышью или пером — проверка порядка черт", () => Shell.Open(new WritingPage())),
+            Tile("書", "Прописи", Shell.Compact ? "Пиши кандзи пальцем — проверка порядка черт" : "Пиши кандзи мышью или пером — проверка порядка черт", () => Shell.Open(new WritingPage())),
             Tile("似", "Похожие кандзи", "未 или 末? Вставь знак в слово — не путай похожие", () => Shell.Open(SimilarKanji.Quiz())),
             Tile("組", "Собери предложение", "Расставь слова по порядку", () => Shell.Open(new BuilderSession())));
         var grammar = Group(

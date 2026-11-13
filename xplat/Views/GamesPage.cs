@@ -51,7 +51,7 @@ public sealed class KanaRainGame : Grid, IPage
     public string Title => "Кана-дождь";
     readonly bool _kata;
     readonly Canvas _sky = new() { ClipToBounds = true };
-    readonly TextBox _input = new() { Width = 280, FontSize = 22, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = TextAlignment.Center };
+    readonly TextBox _input = new TextBox { Width = 280, FontSize = 22, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = TextAlignment.Center }.AnswerBox();
     readonly TextBlock _hud = U.T("", "H3", 15);
     readonly List<(TextBlock tb, KanaCell cell, double y, double speed)> _drops = new();
     int _score, _lives, _combo;

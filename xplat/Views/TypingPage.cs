@@ -61,9 +61,11 @@ public sealed class TypingPage : Grid, IPage, IKeyTarget
         top.Children.Add(U.Row(14, _stats.CenterV(), U.Switch("Подсказка ромадзи", _hint, v => { _hint = v; _romaji.IsVisible = v; }).Also(s => s.Width = 220)).Col(1));
         Children.Add(top.RowAt(2).M(0, 0, 0, 14));
 
-        _card.Padding = new Thickness(30, 34);
+        _card.Padding = Shell.Compact ? new Thickness(16, 24) : new Thickness(30, 34);
+        _input.AnswerBox(); // телефон: без «Ka» с заглавной и без подсказок клавиатуры
         _card.Child = U.Stack(_target, _show.M(0, 10, 0, 0), _ru.M(0, 4, 0, 0), _romaji.M(0, 4, 0, 18), _input,
-            U.T("Enter — пропустить слово", "Muted", 12).Center().M(0, 12, 0, 0).DesktopOnly());
+            Shell.Compact ? U.Btn("Пропустить слово", () => { if (_input.IsEnabled) Finish(false); }, "Ghost").Center().M(0, 10, 0, 0)
+                          : U.T("Enter — пропустить слово", "Muted", 12).Center().M(0, 12, 0, 0));
         Children.Add(new StackPanel { Children = { _card } }.RowAt(3));
         Restart();
     }

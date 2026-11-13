@@ -326,6 +326,14 @@ public static class U
         Dispatcher.UIThread.Post(() => Dispatcher.UIThread.Post(Step, DispatcherPriority.Background), DispatcherPriority.Loaded);
     }
 
+    /// <summary>Поле для ответа (ромадзи, перевод): экранная клавиатура телефона без заглавной буквы в начале и без подмены слов подсказками.</summary>
+    public static TextBox AnswerBox(this TextBox box)
+    {
+        Avalonia.Input.TextInput.TextInputOptions.SetAutoCapitalization(box, false);
+        Avalonia.Input.TextInput.TextInputOptions.SetIsSensitive(box, true);
+        return box;
+    }
+
     /// <summary>Уже построенные элементы панели после первых keep — в разметку после первого кадра.</summary>
     public static void DeferTail(Panel host, int keep)
     {

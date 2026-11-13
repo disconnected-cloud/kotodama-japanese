@@ -71,7 +71,7 @@ public sealed class WritingPage : UserControl, IPage, IKeyTarget
         var row = new StackPanel { Orientation = Shell.Compact ? Orientation.Vertical : Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
         row.Children.Add(board); row.Children.Add(side);
         var root = new StackPanel();
-        root.Children.Add(U.Header("書", "Прописи", "Пиши мышью или пером — приложение проверит порядок, направление и форму каждой черты."));
+        root.Children.Add(U.Header("書", "Прописи", Shell.Compact ? "Пиши пальцем — приложение проверит порядок, направление и форму каждой черты." : "Пиши мышью или пером — приложение проверит порядок, направление и форму каждой черты."));
         root.Children.Add(row);
         Content = U.Page(root);
         Load();

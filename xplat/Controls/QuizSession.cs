@@ -55,7 +55,7 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
     readonly TextBlock _sub = new() { FontSize = 15, Foreground = U.B("Muted"), HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0) };
     // на телефоне варианты — в один столбец: в двух колонках длинный перевод не помещался рядом с номером
     readonly UniformGrid _options = new() { Columns = Shell.Compact ? 1 : 2, MaxWidth = 760 };
-    readonly TextBox _input = new() { MaxWidth = 520, TextAlignment = TextAlignment.Center };
+    readonly TextBox _input = new TextBox { MaxWidth = 520, TextAlignment = TextAlignment.Center }.AnswerBox();
     readonly Grid _typePanel = new() { MaxWidth = 520 };
     readonly Border _feedback;
     readonly TextBlock _fbIcon = new() { FontFamily = U.R<FontFamily>("Icons"), FontSize = 22, VerticalAlignment = VerticalAlignment.Center };

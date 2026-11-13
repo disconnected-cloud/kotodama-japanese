@@ -63,7 +63,7 @@ public sealed class MicCheckPage : UserControl, IPage
         }
         var modeBox = U.Stack(mode, U.T(p.MicMode == "auto"
             ? "Запись остановится сама, когда ты замолчишь. Если обрезает на паузах — увеличь паузу ниже или выбери ручной режим."
-            : "Нажми на микрофон, говори сколько нужно и нажми ещё раз (или пробел), чтобы закончить.", "Muted").M(0, 8, 0, 0));
+            : Shell.Compact ? "Нажми на микрофон, говори сколько нужно и нажми ещё раз, чтобы закончить." : "Нажми на микрофон, говори сколько нужно и нажми ещё раз (или пробел), чтобы закончить.", "Muted").M(0, 8, 0, 0));
         if (p.MicMode == "auto")
         {
             var pause = new WrapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 10, 0, 0) };

@@ -166,7 +166,9 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget, IResumabl
         top.Children.Add(U.T($"Фраза {_i + 1} из {_l.Items.Length}", "Muted", 12).CenterV());
         top.Children.Add(U.Row(4, U.SpeakBtn(() => p.Jp, true), U.SpeakBtn(() => p.Jp)).Col(1));
         sp.Children.Add(top);
-        sp.Children.Add(U.Jp(p.Jp, p.Jp.Length > 12 ? 32 : 40, null, true).Center().M(0, 6, 0, 0));
+        // телефон: короткая фраза — в одну строку (кегль по длине), иначе последний слог уезжал на новую строку
+        double size = Shell.Compact ? Math.Clamp(250.0 / Math.Max(1, p.Jp.Length), 22, 40) : p.Jp.Length > 12 ? 32 : 40;
+        sp.Children.Add(U.Jp(p.Jp, size, null, true).Center().M(0, 6, 0, 0));
         // строка каны; после попытки здесь же подсвечиваются слоги с ошибками (нажатие — послушать только слог)
         _kanaHost.Content = p.KanaPlain != p.Jp ? U.Jp(p.KanaPlain, 17, U.B("Accent")).Center() : null;
         sp.Children.Add(_kanaHost.Detach().M(0, 6, 0, 0));
@@ -245,7 +247,7 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget, IResumabl
         _rec = new Recorder();
         SetMic(true);
         _status.Text = "Включаю микрофон…";
-        string listen = ProgressStore.P.MicMode == "manual" ? "Говори! Затем нажми на микрофон (или пробел), чтобы закончить" : "Говори! Запись остановится сама после паузы";
+        string listen = ProgressStore.P.MicMode == "manual" ? (Shell.Compact ? "Говори! Затем нажми на микрофон, чтобы закончить" : "Говори! Затем нажми на микрофон (или пробел), чтобы закончить") : "Говори! Запись остановится сама после паузы";
         _rec.Started += () => Dispatcher.UIThread.Post(() => { if (_busy) _status.Text = listen; });
         _result.Content = null;
         var p = P;

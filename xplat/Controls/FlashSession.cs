@@ -124,7 +124,7 @@ public sealed class FlashSession : Grid, IPage, IKeyTarget
             pill.VerticalAlignment = VerticalAlignment.Top;
             g.Children.Add(pill);
         }
-        var hint = U.T("Нажми на карточку или пробел", "Muted", 12);
+        var hint = U.T(Shell.Compact ? "Нажми на карточку" : "Нажми на карточку или пробел", "Muted", 12);
         hint.HorizontalAlignment = HorizontalAlignment.Center; hint.VerticalAlignment = VerticalAlignment.Bottom; hint.Foreground = U.B("Faint");
         g.Children.Add(hint);
         return g;

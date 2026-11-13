@@ -114,7 +114,7 @@ public sealed class KanaPage : UserControl, IPage
         }, "Primary", "");
         learn.HorizontalAlignment = HorizontalAlignment.Left; learn.Margin = new Thickness(0, 14, 0, 8);
         sp.Children.Add(learn);
-        var write = U.Btn("Прописи: пиши знаки мышью", () => Shell.Open(new WritingPage()), "", "");
+        var write = U.Btn(Shell.Compact ? "Прописи: пиши знаки пальцем" : "Прописи: пиши знаки мышью", () => Shell.Open(new WritingPage()), "", "");
         write.HorizontalAlignment = HorizontalAlignment.Left;
         sp.Children.Add(write);
         return U.Card(sp).M(0, 62, 0, 0).Also(c => c.VerticalAlignment = VerticalAlignment.Top);
