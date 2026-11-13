@@ -73,8 +73,9 @@ public partial class App : Application
     public static AppBuilder WithFonts(AppBuilder b) => b.With(new FontManagerOptions
     {
         FontFallbacks = OperatingSystem.IsAndroid()
-            // Android: у системного японского шрифта нет жирного начертания — жирный японский текст брал шрифт без иероглифов
-            ? new[] { new FontFallback { FontFamily = new FontFamily("avares://Kotodama/Assets/fonts#Kotodama Icons") }, new FontFallback { FontFamily = new FontFamily("Noto Sans CJK JP") } }
+            // Android: японский шрифт свой, в APK (Noto Sans JP, обычный и жирный). На части телефонов (китайские прошивки)
+            // системный CJK-шрифт без каны — хирагана и катакана были квадратиками, а иероглифы видны
+            ? new[] { new FontFallback { FontFamily = new FontFamily("avares://Kotodama/Assets/fonts#Kotodama Icons") }, new FontFallback { FontFamily = new FontFamily(AndroidJp) } }
             : new[] { new FontFallback { FontFamily = new FontFamily("avares://Kotodama/Assets/fonts#Kotodama Icons") } },
     });
 
@@ -89,6 +90,8 @@ public partial class App : Application
         ("mincho", "Книжный", "Yu Mincho"),
     };
 
+    const string AndroidJp = "avares://Kotodama/Assets/fonts#Noto Sans JP";
+
     const string JpFallback = "Yu Gothic UI, Meiryo, Noto Sans CJK JP, Noto Sans JP, Source Han Sans JP, IPAGothic, TakaoGothic, VL Gothic, sans-serif";
 
     public static bool FontInstalled(string family) =>
@@ -96,6 +99,11 @@ public partial class App : Application
 
     static void ApplyJpFont(IResourceDictionary r, string key)
     {
+        if (OperatingSystem.IsAndroid())
+        {
+            r["JpFont"] = r["JpSerif"] = new FontFamily(AndroidJp);
+            return;
+        }
         var f = JpFonts.FirstOrDefault(x => x.name == key).family;
         if (string.IsNullOrEmpty(f) || !FontInstalled(f)) return;
         r["JpFont"] = new FontFamily(f + ", " + JpFallback);

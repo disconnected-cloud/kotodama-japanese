@@ -62,6 +62,8 @@
     <AvaloniaResource Include="../Assets/emoji/*.png" Link="Assets/emoji/%(Filename)%(Extension)" />
     <AvaloniaResource Include="../Assets/anime/*.png" Link="Assets/anime/%(Filename)%(Extension)" />
     <AvaloniaResource Include="../xplat/Assets/fonts/*.ttf" Link="Assets/fonts/%(Filename)%(Extension)" />
+    <!-- японский шрифт (кана, кандзи из материалов), обрезан tools/subset_jp_font.py -->
+    <AvaloniaResource Include="Assets/fonts/*.otf" />
     <AndroidResource Include="Resources/**/*" />
   </ItemGroup>
 
