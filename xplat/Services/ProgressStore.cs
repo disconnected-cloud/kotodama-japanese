@@ -75,7 +75,7 @@ public sealed class Progress
     public bool SidebarRail { get; set; }
     public int FocusSessions { get; set; }                    // завершённые «помидоры» фокус-таймера
     public Dictionary<string, string> Notes { get; set; } = new();   // личные заметки к словам (id слова → текст)                     // ПК: боковое меню свёрнуто до иконок (Ctrl+B)
-    public string AsrModel { get; set; } = "small-q5_1";
+    public string AsrModel { get; set; } = ""; // пусто — Asr.DefaultId (на слабом телефоне — быстрая)
     public string Level { get; set; } = "N5";
     public string DayDate { get; set; } = "";                     // счётчики испытаний дня
     public Dictionary<string, int> DayCounts { get; set; } = new();

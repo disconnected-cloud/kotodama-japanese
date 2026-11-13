@@ -180,7 +180,13 @@ public partial class MainView : UserControl
             if (_opened) return;
             _opened = true;
             // системная кнопка «Назад» на телефоне — шаг назад по страницам
-            if (TopLevel.GetTopLevel(this) is { } tl) tl.BackRequested += (_, e) => { if (_overlay != null) { CloseOverlay(); e.Handled = true; } else if (_stack.Count > 1) { Pop(); e.Handled = true; } };
+            if (TopLevel.GetTopLevel(this) is { } tl) tl.BackRequested += (_, e) =>
+            {
+                if (_overlay != null) { CloseOverlay(); e.Handled = true; }
+                else if (_stack.Count > 1) { Pop(); e.Handled = true; }
+                // телефон: «назад» с раздела не закрывает приложение, а ведёт в «Ещё» (откуда раздел открыт) или на главную
+                else if (Shell.Compact && _rootKey != "home") { NavigateRoot(Tabs.Any(t => t.key == _rootKey) ? "home" : "more"); e.Handled = true; }
+            };
             // Android 15+ рисует приложение под строкой состояния и жестовой панелью — отступаем на их высоту
             if (TopLevel.GetTopLevel(this)?.InsetsManager is { } im)
             {

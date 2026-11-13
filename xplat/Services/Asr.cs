@@ -14,7 +14,7 @@ public static class Asr
     public static readonly (string id, string title, string desc, long size)[] Models =
     {
         ("small-q5_1", "Точная", "Whisper small · хороший баланс скорости и точности", 190_085_487),
-        ("base-q5_1", "Быстрая", "Whisper base · для слабых ПК", 59_707_625),
+        ("base-q5_1", "Быстрая", OperatingSystem.IsAndroid() ? "Whisper base · для слабых телефонов, втрое быстрее" : "Whisper base · для слабых ПК", 59_707_625),
     };
 
     static string UrlFor(string id) => id == "kotoba-v2-q5"
@@ -22,11 +22,14 @@ public static class Asr
         : $"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{id}.bin";
 
     /// <summary>Модель по умолчанию — первая скачанная из списка (японская → точная → быстрая).</summary>
-    public static string BestInstalled => Models.Select(m => m.id).FirstOrDefault(id => File.Exists(PathFor(id))) ?? Models[0].id;
+    public static string BestInstalled => Models.Select(m => m.id).FirstOrDefault(id => File.Exists(PathFor(id))) ?? DefaultId;
+
+    /// <summary>Что предложить скачать, пока пользователь не выбрал сам: на слабом телефоне точная модель думает слишком долго.</summary>
+    public static string DefaultId => Anim.LowEndDevice ? "base-q5_1" : Models[0].id;
 
     static string Dir => Path.Combine(ProgressStore.Folder, "models");
     public static string ModelId => Models.Any(m => m.id == ProgressStore.P.AsrModel) && File.Exists(PathFor(ProgressStore.P.AsrModel)) ? ProgressStore.P.AsrModel
-        : File.Exists(PathFor(BestInstalled)) ? BestInstalled : Models.Any(m => m.id == ProgressStore.P.AsrModel) ? ProgressStore.P.AsrModel : Models[0].id;
+        : File.Exists(PathFor(BestInstalled)) ? BestInstalled : Models.Any(m => m.id == ProgressStore.P.AsrModel) ? ProgressStore.P.AsrModel : DefaultId;
     public static string PathFor(string id) => System.IO.Path.Combine(Dir, $"ggml-{id}.bin");
     /// <summary>Для отладочного сравнения моделей: явный путь к файлу модели.</summary>
     public static string? OverridePath;
@@ -109,7 +112,8 @@ public static class Asr
             int ctx = Math.Clamp((int)(sec * 50) + 128, 256, 1500);
             var b = _factory!.CreateBuilder()
                 .WithLanguage("ja")
-                .WithThreads(Math.Clamp(Environment.ProcessorCount - 1, 2, 8))
+                // телефон: у big.LITTLE половина ядер медленные — с ними все потоки ждут отстающих, 4 потока быстрее 8
+                .WithThreads(OperatingSystem.IsAndroid() ? Math.Clamp(Environment.ProcessorCount / 2, 2, 4) : Math.Clamp(Environment.ProcessorCount - 1, 2, 8))
                 .WithAudioContextSize(ctx)
                 .WithSingleSegment()
                 .WithNoContext()
