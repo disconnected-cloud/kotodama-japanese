@@ -264,7 +264,7 @@ public sealed class LearnSession : Grid, IPage, IKeyTarget
             if (!it.IsKanji && !ProgressStore.P.QuietMode) // в тихом режиме — без вопросов на слух
                 qs.Add(new QuizQ
                 {
-                    Prompt = "🔊", PromptSize = 64, PromptJp = false, Sub = "Послушай и выбери перевод (R — ещё раз)", Answer = it.Meaning, SpeakOnShow = true,
+                    Prompt = "🔊", PromptSize = 64, PromptJp = false, Sub = Shell.Compact ? "Послушай и выбери перевод" : "Послушай и выбери перевод (R — ещё раз)", Answer = it.Meaning, SpeakOnShow = true,
                     Options = Opts(it.Meaning, meanings, poolRu), Speak = it.Speak, Key = key, OnResult = mark,
                 });
             else if (it.Examples.Length > 0)

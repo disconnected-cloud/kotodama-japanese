@@ -419,7 +419,7 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
             root.Children.Add(track);
             Anim.Run((fill, "w"), 0, 260, TransitionMs - 100, v => fill.Width = v, Ease.Linear);
         }
-        if (started) root.Children.Add(U.T("Следующий шаг откроется сам · Пробел — сразу", "Muted", 12).Center().M(0, 10, 0, 0));
+        if (started) root.Children.Add(U.T(Shell.Compact ? "Следующий шаг откроется сам" : "Следующий шаг откроется сам · Пробел — сразу", "Muted", 12).Center().M(0, 10, 0, 0));
 
         _host.Children.Clear();
         _host.Children.Add(root);

@@ -47,9 +47,10 @@ public static class WhatsNew
     {
         var sp = new StackPanel { MaxWidth = 640 };
         var head = U.Cols("auto", "*");
-        head.Children.Add(Art.Mascot(96, Mood.Joy));
-        head.Children.Add(U.Stack(U.Jp("新しくなりました！", 15, U.B("Accent")), U.T($"Что нового в Kotodama {Updater.Current.ToString(2)}", "H2", 22).Also(t => t.TextWrapping = TextWrapping.Wrap),
-            U.T("Коротко о главном — всё уже внутри.", "Muted")).CenterV().M(16, 0, 30, 0).Col(1));
+        bool phone = Shell.Compact;
+        head.Children.Add(Art.Mascot(phone ? 64 : 96, Mood.Joy));
+        head.Children.Add(U.Stack(U.Jp("新しくなりました！", phone ? 12 : 15, U.B("Accent")), U.T($"Что нового в Kotodama {Updater.Current.ToString(2)}", "H2", phone ? 19 : 22).Also(t => t.TextWrapping = TextWrapping.Wrap),
+            U.T("Коротко о главном — всё уже внутри.", "Muted")).CenterV().M(phone ? 12 : 16, 0, 30, 0).Col(1));
         sp.Children.Add(head.M(0, 0, 0, 14));
         foreach (var (icon, title, text, open) in Shell.Compact ? PhoneItems : Items)
         {
