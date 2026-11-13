@@ -3,16 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kotodama 2.0 — японский шаг за шагом</title>
-<meta name="description" content="Kotodama — бесплатное приложение для изучения японского с нуля: кана, слова, кандзи, грамматика, говорение с проверкой произношения. Видео-обзор версии 2.0.">
-<meta property="og:title" content="Kotodama 2.0 — японский шаг за шагом">
-<meta property="og:description" content="Видео-обзор: умная сессия «Учиться», говорение с проверкой по слогам, японская классика в оригинале, путь от каны до N2.">
-<meta property="og:image" content="poster.jpg">
-<meta property="og:video" content="kotodama-2.0.mp4">
+<title>Kotodama 2.1 — японский в твоём кармане</title>
+<meta name="description" content="Kotodama — бесплатное приложение для изучения японского с нуля: кана, слова, кандзи, грамматика до N2, говорение с проверкой произношения, офлайн-голоса VOICEVOX. Android, Windows, Linux.">
+<meta property="og:title" content="Kotodama 2.1 — японский в твоём кармане">
+<meta property="og:description" content="Новое видео: телефонная версия 2.1 — VOICEVOX на Android, объяснение ошибок, экзамен юнита и открытки из Японии, путь до конца N2.">
+<meta property="og:image" content="poster-2.1.jpg">
+<meta property="og:video" content="kotodama-2.1.mp4">
 <link rel="icon" href="icon.png">
 <style>
   :root {
     --bg: #0f1014; --surface: #16171c; --stroke: #24252c; --text: #ededf0; --muted: #9a9ca6; --accent: #f07aa0; --accent2: #9d8cff;
+    --paper: #f4efe6; --ink: #1c1a1a; --red: #c4342b;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; }
@@ -31,12 +32,23 @@
   .brand span { color: var(--muted); font-size: 14px; }
   .jp { color: var(--accent); font-family: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif; }
   h1 { font-size: clamp(28px, 5vw, 48px); line-height: 1.12; margin: 0 0 12px; }
+  h2 { font-size: clamp(22px, 3.4vw, 32px); margin: 56px 0 10px; }
   .lead { color: var(--muted); font-size: 18px; max-width: 760px; margin: 0 0 28px; line-height: 1.5; }
   .player {
     position: relative; border-radius: 22px; overflow: hidden; border: 1px solid var(--stroke);
     box-shadow: 0 30px 80px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.03) inset; background: #000;
   }
   video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000; }
+  /* вертикальный ролик 2.1: рядом — что нового */
+  .hero21 { display: grid; grid-template-columns: minmax(260px, 400px) 1fr; gap: 36px; align-items: center; }
+  .player.tall { border-radius: 28px; background: var(--paper); border-color: #3a3632; }
+  .player.tall video { aspect-ratio: 9 / 16; background: var(--paper); }
+  .new { list-style: none; padding: 0; margin: 0 0 24px; display: grid; gap: 12px; }
+  .new li { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: start; }
+  .new i { font-style: normal; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 20px;
+           background: var(--paper); color: var(--red); font-family: "Yu Gothic", "Hiragino Sans", "Noto Sans JP", sans-serif; font-weight: 700; }
+  .new b { display: block; font-size: 16px; }
+  .new span { color: var(--muted); font-size: 14px; line-height: 1.45; }
   .actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 40px; }
   .btn {
     display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; border-radius: 14px; text-decoration: none;
@@ -51,7 +63,10 @@
   .card span { color: var(--muted); font-size: 14px; line-height: 1.45; }
   footer { color: var(--muted); font-size: 13px; margin-top: 40px; line-height: 1.6; }
   footer a { color: var(--accent); }
-  @media (max-width: 600px) { .wrap { padding-top: 28px; } .lead { font-size: 16px; } .player { border-radius: 14px; } }
+  @media (max-width: 760px) {
+    .wrap { padding-top: 28px; } .lead { font-size: 16px; } .player { border-radius: 14px; }
+    .hero21 { grid-template-columns: 1fr; } .player.tall { max-width: 420px; margin: 0 auto; width: 100%; }
+  }
 </style>
 </head>
 <body>
@@ -61,9 +76,34 @@
     <div class="brand"><b>Kotodama <span class="jp">言霊</span></b><span>японский язык шаг за шагом · бесплатно</span></div>
   </header>
 
-  <h1>Kotodama 2.0 — видео-обзор</h1>
-  <p class="lead">Одна кнопка «Учиться», говорение с проверкой по слогам, японская классика в оригинале, путь от каны до N2. Посмотри, что умеет приложение, — 40 секунд.</p>
+  <h1>Kotodama 2.1 — японский в твоём кармане</h1>
+  <p class="lead">Новая версия сделана прежде всего для телефона: всё помещается на экран, офлайн-голоса VOICEVOX работают на Android, а путь доходит до конца N2. 48 секунд — с музыкой.</p>
 
+  <div class="hero21">
+    <div class="player tall">
+      <video controls playsinline preload="metadata" poster="poster-2.1.jpg">
+        <source src="kotodama-2.1.mp4" type="video/mp4">
+        Браузер не поддерживает видео — <a href="kotodama-2.1.mp4">скачай файл</a>.
+      </video>
+    </div>
+    <div>
+      <ul class="new">
+        <li><i>声</i><div><b>VOICEVOX на телефоне</b><span>Офлайн-голоса японских персонажей — без интернета, прямо на Android.</span></div></li>
+        <li><i>誤</i><div><b>Объяснение ошибок</b><span>«Ты выбрал は — это тема, а здесь нужна が, потому что…»</span></div></li>
+        <li><i>試</i><div><b>Экзамен юнита и открытки</b><span>Сдай юнит на 80% — и в коллекции появится открытка из Японии.</span></div></li>
+        <li><i>話</i><div><b>Свободный ответ в диалогах</b><span>Отвечай своими словами — засчитывается по смыслу.</span></div></li>
+        <li><i>読</i><div><b>Тексты по уровню</b><span>Видно, сколько слов уже знакомо; статья по ссылке (NHK Easy); фуригана только над незнакомыми кандзи.</span></div></li>
+        <li><i>二</i><div><b>N2 до конца</b><span>65 уроков грамматики и 36 юнитов пути — от каны до N2.</span></div></li>
+      </ul>
+      <div class="actions" style="margin:0">
+        <a class="btn primary" href="https://github.com/disconnected-cloud/kotodama-japanese/releases/latest">⬇ Скачать Kotodama 2.1</a>
+        <a class="btn" href="https://github.com/disconnected-cloud/kotodama-japanese">Исходный код</a>
+      </div>
+    </div>
+  </div>
+
+  <h2>Обзор версии 2.0</h2>
+  <p class="lead">Одна кнопка «Учиться», говорение с проверкой по слогам, японская классика в оригинале — 40 секунд.</p>
   <div class="player">
     <video controls playsinline preload="metadata" poster="poster.jpg">
       <source src="kotodama-2.0.mp4" type="video/mp4">
@@ -71,23 +111,18 @@
     </video>
   </div>
 
-  <div class="actions">
-    <a class="btn primary" href="https://github.com/disconnected-cloud/kotodama-japanese/releases/latest">⬇ Скачать Kotodama 2.0</a>
-    <a class="btn" href="https://github.com/disconnected-cloud/kotodama-japanese">Исходный код на GitHub</a>
-  </div>
-
-  <div class="grid">
-    <div class="card"><b>Учиться — одна кнопка</b><span>Занятие на 5, 15 или 30 минут собирается само: повторение, ошибки, новое, речь.</span></div>
+  <div class="grid" style="margin-top:40px">
+    <div class="card"><b>Учиться — одна кнопка</b><span>Занятие на 5, 15 или 30 минут собирается само: повторение, ошибки, новое, речь. Можно без звука.</span></div>
     <div class="card"><b>Говорение с проверкой</b><span>Распознавание речи офлайн, ошибки подсвечиваются прямо по слогам.</span></div>
-    <div class="card"><b>От каны до N2</b><span>31 юнит, 55 уроков грамматики, слова и кандзи с порядком черт.</span></div>
+    <div class="card"><b>От каны до N2</b><span>36 юнитов, 65 уроков грамматики, слова и кандзи с порядком черт.</span></div>
     <div class="card"><b>Классика в оригинале</b><span>Акутагава, Сосэки, Миядзава, Ниими Нанкити, хайку — с фуриганой и переводом.</span></div>
-    <div class="card"><b>Прогресс и награды</b><span>Испытания дня, недельная цель, щиты серии, память по FSRS.</span></div>
+    <div class="card"><b>Прогресс и награды</b><span>Итоги недели, испытания дня, щиты серии, память по FSRS, автокопии прогресса.</span></div>
     <div class="card"><b>Словарь на 219 000 статей</b><span>Поиск по-русски, латиницей, каной и кандзи.</span></div>
   </div>
 
   <footer>
-    Windows 10/11 и Linux. Иллюстрации Википе-тан — Wikimedia Commons (CC BY-SA), словарь — JMdict (EDRDG, CC BY-SA 4.0), порядок черт — KanjiVG.
-    Музыка в видео написана специально для обзора.
+    Android, Windows 10/11 и Linux. Иллюстрации Википе-тан — Wikimedia Commons (CC BY-SA), словарь — JMdict (EDRDG, CC BY-SA 4.0), порядок черт — KanjiVG (CC BY-SA 3.0).
+    Музыка в обоих видео написана специально для обзоров.
   </footer>
 </div>
 </body>

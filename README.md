@@ -1,14 +1,16 @@
 # Kotodama · 言霊
 
-**Приложение для изучения японского с нуля** — для Windows и Linux, на русском языке.
+**Приложение для изучения японского с нуля** — для Android, Windows и Linux, на русском языке.
 *Котодама* — «душа слова»: в японской традиции правильно произнесённое слово обретает силу.
 
 
-### 🎬 Видео-обзор Kotodama 2.0
+### 🎬 Видео
+
+**[▶ Kotodama 2.1 — японский в твоём кармане](https://disconnected-cloud.github.io/kotodama-japanese/)** — новый вертикальный ролик о телефонной версии (48 секунд, 1080×1920, 60 к/с, стерео)
 
 [![Видео-обзор Kotodama 2.0 — нажми, чтобы смотреть со звуком](docs/preview.webp)](https://disconnected-cloud.github.io/kotodama-japanese/)
 
-**[▶ Смотреть полное видео со звуком](https://disconnected-cloud.github.io/kotodama-japanese/)** (40 секунд, 1080p, 60 к/с)
+**[▶ Обзор Kotodama 2.0](https://disconnected-cloud.github.io/kotodama-japanese/)** (40 секунд, 1080p, 60 к/с)
 
 ## Что внутри
 
