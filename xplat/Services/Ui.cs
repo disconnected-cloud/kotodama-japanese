@@ -349,8 +349,6 @@ public static class U
         return l;
     }
 
-    /// <summary>Цвет из строки «#RRGGBB».</summary>
-    public static SolidColorBrush Hex(string hex) => new(Color.Parse(hex));
 }
 
 /// <summary>WPF-совместимые имена, чтобы код страниц переносился без переписывания.</summary>

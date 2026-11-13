@@ -11,15 +11,11 @@ NAMES = ["Speech balloon", "House with garden", "Input numbers", "Alarm clock", 
          "Clapper board", "Mobile phone", "Musical note", "Sunrise", "Wrapped gift", "Shortcake", "Station", "SOS button", "Calendar",
          "Sun with face", "House", "Tokyo tower", "Books", "Cloud with rain", "Puzzle piece", "Stopwatch", "Writing hand", "Light bulb",
          "Trophy", "Fire", "Sparkles", "Graduation cap", "Japanese symbol for beginner", "Open book", "Speaking head", "Headphone",
-         "Brain", "Dango", "Sushi", "Mount fuji", "Red paper lantern", "Shinto shrine", "Bookmark tabs", "Memo", "Dart", "Game die",
-         "Video game", "Clipboard", "Crystal ball", "Robot", "Magnifying glass tilted left", "Microphone", "Ticket", "Seedling", "Cat face",
-         "Map of japan", "Department store", "Moon viewing ceremony", "Wind chime", "Bamboo", "Fish cake with swirl", "Rice ball",
-         "Money bag", "Spiral calendar", "Keyboard", "Radio", "Notebook", "Scroll", "Yen banknote", "Studio microphone", "Thought balloon",
-         "Steaming bowl", "Japanese castle", "Shopping cart", "Party popper", "Bar chart", "Package", "Tanabata tree", "Teacup without handle",
-         "Spiral notepad", "Ear", "Eyes", "Busts in silhouette", "Hospital", "Post office", "Convenience store", "Airplane", "Taxi",
-         "Bicycle", "Hot springs", "Umbrella with rain drops", "Snowman", "Maple leaf", "Fireworks", "Carp streamer", "Wedding",
-         "Office building", "School", "Television", "Love letter", "Musical score", "Soccer ball", "Chopsticks", "Bubble tea", "Tomato",
-         "Woman technologist", "Man office worker", "Cooking", "Kimono", "Wavy dash", "Hourglass done", "Crossed swords", "Pen"]
+         "Sushi", "Mount fuji", "Red paper lantern", "Shinto shrine", "Bookmark tabs", "Memo", "Dart", "Game die", "Video game",
+         "Microphone", "Map of japan", "Department store", "Moon viewing ceremony", "Bamboo", "Rice ball", "Money bag", "Spiral calendar",
+         "Keyboard", "Radio", "Scroll", "Thought balloon", "Party popper", "Teacup without handle", "Ear", "Eyes", "Post office",
+         "Convenience store", "Taxi", "Hot springs", "Umbrella with rain drops", "Fireworks", "Office building", "School", "Chopsticks",
+         "Tomato", "Man office worker", "Hourglass done", "Pen"]
 
 def key(n): return n.lower().replace(" ", "_").replace("-", "")
 

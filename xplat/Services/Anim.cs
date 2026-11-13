@@ -158,14 +158,6 @@ public static class Anim
         });
     }
 
-    public static void Pulse(Visual el, bool on)
-    {
-        var (s, _) = Transforms(el);
-        if (!on) { Stop((s, "sc")); Stop((el, "op")); s.ScaleX = s.ScaleY = 1; return; }
-        Run((s, "sc"), 1, 1.9, 1300, v => { s.ScaleX = v; s.ScaleY = v; }, Ease.CubicOut, forever: true);
-        Run((el, "op"), 0.7, 0, 1300, v => el.Opacity = v, Ease.Linear, forever: true);
-    }
-
     public static void CountUp(TextBlock tb, int to, string suffix = "", int ms = 700) =>
         Run((tb, "count"), 0, to, ms, v => tb.Text = ((int)Math.Round(v)).ToString() + suffix);
 }

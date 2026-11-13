@@ -195,7 +195,7 @@ public partial class MainView
             screens.Add(("settings:" + t, () => { SettingsPage._tab = t; NavigateRoot("settings"); if (Shell.Compact) Push(new SettingsPage(t)); }));
         foreach (var o in new[] { "flash", "kanjiflash", "grammar", "grammar1", "onboard", "speech", "dialog", "dialogr", "unit", "reader", "writing", "mic", "pairs", "study", "report",
                                   "radicals", "textl", "word", "article", "match", "build", "listen", "gon", "book", "learn", "learnw", "learn1", "learnk", "learnq", "quiz",
-                                  "numbers", "numq", "numl", "typing", "player", "similar", "wordv", "worda", "keys", "whatsnew", "grammarn2" })
+                                  "numbers", "numq", "numl", "typing", "player", "similar", "wordv", "worda", "keys", "whatsnew", "grammarn2", "mini", "focusdone" })
             screens.Add(("open:" + o, () => { NavigateRoot("home"); DebugOpen(o); }));
         await JDict.LoadAsync();
         foreach (var (name, open) in screens)
@@ -398,6 +398,8 @@ public partial class MainView
             case "player": Push(new PlayerPage()); break;
             case "similar": Push(SimilarKanji.Quiz()); break;
             case "whatsnew": WhatsNew.Show(); break;
+            case "mini": Player.Load(); Player.Toggle(); FocusTimer.Start(25); NavigateRoot("words"); break;
+            case "focusdone": FocusTimer.Start(25); FocusFinished(true); break;
             case "keys": ShowHotkeys(); break;
             case "rail": ProgressStore.P.SidebarRail = true; ApplyRail(false); break;
             case "typing": Push(new TypingPage()); break;

@@ -373,7 +373,6 @@ public sealed class TrainersPage : UserControl, IPage
         return false;
     }
 
-    public static bool PlanDone => Enumerable.Range(0, PlanItems().Count).All(i => ProgressStore.P.Flags.Contains(PlanKey(i)));
 
     static List<(string title, string sub, Action go)> PlanItems()
     {

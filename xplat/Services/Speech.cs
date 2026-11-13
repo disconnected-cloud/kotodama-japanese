@@ -23,8 +23,6 @@ public static class Speech
 
     public static event Action<bool>? PlayingChanged;
 
-    public static bool TtsAvailable => true;
-    public static string VoiceName => ProgressStore.P.MaleVoice ? "Keita (мужской, нейросеть)" : "Nanami (женский, нейросеть)";
 
     public static void Init() { }
 

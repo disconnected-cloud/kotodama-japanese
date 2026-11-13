@@ -43,7 +43,6 @@ public sealed class Progress
     public bool NotifySound { get; set; } = true;
     public string NotifyTone { get; set; } = "bell";    // bell | drop | koto | furin      // мягкий колокольчик у уведомлений и напоминаний
     public string TtsEngine { get; set; } = "auto";   // auto | online | offline
-    public uint OfflineStyle { get; set; }            // устарело (0 совпадало с реальным стилем)
     public int OfflineStyleId { get; set; } = -1;      // выбранный стиль VOICEVOX, -1 — лучший чёткий из установленных
     public string SpeechMode { get; set; } = "easy";     // easy — как в Duolingo, normal, strict
     public string MicMode { get; set; } = "auto";      // auto — стоп по паузе, manual — стоп кнопкой
@@ -73,6 +72,7 @@ public sealed class Progress
     public bool StudyNoSpeech { get; set; }                   // сессия «Учиться» без шага говорения
     public bool MaleVoice { get; set; }
     public bool SidebarRail { get; set; }
+    public int FocusSessions { get; set; }                    // завершённые «помидоры» фокус-таймера
     public Dictionary<string, string> Notes { get; set; } = new();   // личные заметки к словам (id слова → текст)                     // ПК: боковое меню свёрнуто до иконок (Ctrl+B)
     public string AsrModel { get; set; } = "small-q5_1";
     public string Level { get; set; } = "N5";
@@ -249,9 +249,6 @@ public static class ProgressStore
     // ─────────── SRS (FSRS-4.5, см. Fsrs.cs) ───────────
     public static SrsCard? Card(string id) => P.Cards.TryGetValue(id, out var c) ? c : null;
     public static bool IsDue(string id) => P.Cards.TryGetValue(id, out var c) && c.Due <= DateTime.Now;
-    public static int DueCount(string prefix) =>
-        P.Cards.Count(kv => kv.Key.StartsWith(prefix, StringComparison.Ordinal) && kv.Value.Due <= DateTime.Now);
-
     /// <summary>Интервал (дни), который получит карточка при данной оценке — для подписей на кнопках (FSRS).</summary>
     public static double Preview(SrsCard? c, Rating r) => Fsrs.Next(c, r).days;
 

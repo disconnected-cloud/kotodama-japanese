@@ -116,6 +116,7 @@ public partial class MainView : UserControl
             _backBtn.HorizontalContentAlignment = HorizontalAlignment.Center; _backBtn.VerticalContentAlignment = VerticalAlignment.Center;
         }
         bar.Children.Add(left);
+        if (!Shell.Compact) bar.Children.Add(BuildFocusButton().Also(b => b.Margin = new Thickness(0, 4, CustomChrome ? 152 : 16, 0)));
         if (CustomChrome)
         {
             var caps = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top };
@@ -142,6 +143,7 @@ public partial class MainView : UserControl
         main.Children.Add(bar);
         main.Children.Add(_host.RowAt(1));
         main.Children.Add(BuildToast().RowAt(1));
+        main.Children.Add(_mini.RowAt(1));
         if (Shell.Compact) main.Children.Add(BuildTabs().RowAt(2));
         layout.Children.Add(main.Col(1));
         _root.Children.Add(layout);
@@ -303,6 +305,8 @@ public partial class MainView : UserControl
         // меню снова видно (например, после упражнения) — индикатор к текущему разделу
         if (_sidebar.IsVisible && _navItems.TryGetValue(_rootKey, out var curItem)) Dispatcher.UIThread.Post(() => MoveNavIndicator(curItem), DispatcherPriority.Loaded);
         _tabs.IsVisible = Shell.Compact && !focus;
+        _mini.OnPlayerPage = page is PlayerPage;
+        _mini.Render();
         _backBtn.IsVisible = _stack.Count > 1;
         if (_brand != null) _brand.IsVisible = _stack.Count <= 1;
         // телефон: на корневых экранах — логотип (у страниц свой баннер с названием), внутри — название экрана
@@ -316,6 +320,7 @@ public partial class MainView : UserControl
 
     TopLevel? _keysOn;
     bool _statsPending;
+    readonly MiniPlayer _mini = new();
 
     void OnPreviewKey(object? sender, KeyEventArgs e)
     {

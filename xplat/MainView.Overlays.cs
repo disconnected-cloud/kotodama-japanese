@@ -29,9 +29,6 @@ public partial class MainView : UserControl
         Anim.Pop(_toast, 0.9);
     }
 
-    /// <summary>Лепестки сакуры отключены в кроссплатформенной версии (дорогой декор); настройка сохраняется.</summary>
-    public void SetPetals(bool on) { }
-
     // ─────────── «Раскрытие» карточки в страницу ───────────
     bool _expanding;
     public void ExpandFrom(Control source, Control page)

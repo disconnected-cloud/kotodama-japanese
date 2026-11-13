@@ -10,7 +10,6 @@ public sealed record Example(string Jp, string Kana, string Ru)
 
 public sealed record Word(string Id, string Jp, string Kana, string Ru, string Topic, string Level = "N5", string ExJp = "", string ExRu = "")
 {
-    public string ExRomaji => ExJp.Length > 0 ? Db.RomajiFor(ExJp, "") : "";
     public string Romaji { get; } = Services.Kana.ToRomaji(Kana);
     public bool HasKanji => Jp != Kana;
 }
@@ -79,7 +78,6 @@ public static class Db
 
     public static IEnumerable<Word> WordsOf(string level) => Words.Where(w => w.Level == level);
     public static IEnumerable<KanjiInfo> KanjiOf(string level) => Kanji.Where(k => k.Level == level);
-    public static IEnumerable<string> TopicsOf(string level) => WordsOf(level).Select(w => w.Topic).Distinct();
 
     public static string[]? Strokes(string ch) => _strokes.Value.TryGetValue(ch, out var s) ? s : null;
 

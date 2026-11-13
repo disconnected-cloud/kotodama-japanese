@@ -84,6 +84,7 @@ public sealed class Palette : Grid
         yield return new Item("新", "Что нового", "О версии", () => WhatsNew.Show());
         yield return new Item("鍵", "Горячие клавиши", "Шпаргалка · F1", () => Shell.Main.ShowHotkeys());
         yield return new Item("≡", "Свернуть / развернуть меню", "Вид · Ctrl+B", () => Shell.Main.ToggleRail());
+        yield return new Item("集", "Фокус-таймер 25 минут", "Помидор: занятия, потом перерыв · Ctrl+T", () => MainView.StartFocus(25));
         yield return new Item("耳", "Аудиоплеер", "Слушать слова и фразы без экрана", () => Shell.Open(new PlayerPage()));
         yield return new Item("似", "Похожие кандзи", "Тренажёр · 未 или 末", () => Shell.Open(SimilarKanji.Quiz()));
         yield return new Item("時", "Числа, время, цены", "Тренажёр", () => Shell.Open(new NumbersPage()));

@@ -31,7 +31,6 @@ public sealed class Recorder : IDisposable
 
     /// <summary>Текущий уровень 0..1 (читается UI-таймером).</summary>
     public volatile float Level;
-    public bool HeardSpeech => _heard;
 
     public static bool HasMicrophone
     {

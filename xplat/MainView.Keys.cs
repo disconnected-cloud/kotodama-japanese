@@ -28,6 +28,7 @@ public partial class MainView
         if (!ctrl) return false;
         if (Letter(Key.B, PhysicalKey.B)) { ToggleRail(); return true; }
         if (Letter(Key.U, PhysicalKey.U)) { StudyPage.Start(); return true; }
+        if (Letter(Key.T, PhysicalKey.T)) { if (FocusTimer.Running) FocusTimer.Stop(); else StartFocus(25); return true; }
         if (Letter(Key.P, PhysicalKey.P) && e.KeyModifiers.HasFlag(KeyModifiers.Shift)) { Push(new PlayerPage()); return true; }
         if (e.Key == Key.OemComma || e.PhysicalKey == PhysicalKey.Comma) { NavigateRoot("settings"); return true; }
         if (e.Key == Key.OemQuestion || e.PhysicalKey == PhysicalKey.Slash) { ShowHotkeys(); return true; }
@@ -44,6 +45,7 @@ public partial class MainView
             ("Ctrl+K", "Поиск по всему: разделы, уроки, слова"),
             ("Ctrl+U", "Учиться — умная сессия на сегодня"),
             ("Ctrl+Shift+P", "Аудиоплеер"),
+            ("Ctrl+T", "Фокус-таймер 25 минут"),
             ("Ctrl+B", "Свернуть / развернуть меню"),
             ("Ctrl+,", "Настройки"),
             ("F11", "Во весь экран"),

@@ -150,6 +150,9 @@ public static class Art
         ["pause"] = new("#FF8FB1", "#E8457C", Fill: "M6.8 5 H10.6 V19 H6.8 Z M13.4 5 H17.2 V19 H13.4 Z"),
         ["prev"] = new("#B3BCD1", "#6C7690", Fill: "M5.5 5 H8 V19 H5.5 Z M19 5 L9.5 12 L19 19 Z"),
         ["next"] = new("#B3BCD1", "#6C7690", Fill: "M16 5 H18.5 V19 H16 Z M5 5 L14.5 12 L5 19 Z"),
+        ["check"] = new("#6EE3A0", "#1FA868", "M5 12.5 L10 17.5 L19.5 7"),
+        ["close"] = new("#B3BCD1", "#6C7690", "M6 6 L18 18 M18 6 L6 18"),
+        ["tomato"] = new("#FF8F7A", "#E0453C", "M12 7.5 C17 7.5 20 10.5 20 14 C20 18 16.5 20.5 12 20.5 C7.5 20.5 4 18 4 14 C4 10.5 7 7.5 12 7.5 Z M12 7.5 V4 M12 7.5 C10 5.5 8 5.8 7 6.5 M12 7.5 C14 5.5 16 5.8 17 6.5"),
         ["headphones"] = new("#FF8AC8", "#D63F9B", "M4 15 V12 A8 8 0 0 1 20 12 V15 M4 14 H7.5 V20 H5.5 A1.5 1.5 0 0 1 4 18.5 Z M20 14 H16.5 V20 H18.5 A1.5 1.5 0 0 0 20 18.5 Z"),
         ["keyboard"] = new("#8FA8FF", "#4762D9", "M3.5 6.5 H20.5 A1 1 0 0 1 21.5 7.5 V16.5 A1 1 0 0 1 20.5 17.5 H3.5 A1 1 0 0 1 2.5 16.5 V7.5 A1 1 0 0 1 3.5 6.5 Z M8 14.2 H16", Fill: "M5.5 9 H7 V10.5 H5.5 Z M8.5 9 H10 V10.5 H8.5 Z M11.5 9 H13 V10.5 H11.5 Z M14.5 9 H16 V10.5 H14.5 Z M17.3 9 H18.8 V10.5 H17.3 Z"),
         ["clock"] = new("#FFD066", "#F29A1F", "M12 3.5 A8.5 8.5 0 1 0 12 20.5 A8.5 8.5 0 1 0 12 3.5 Z M12 7.5 V12 L15.5 14"),
@@ -161,7 +164,6 @@ public static class Art
     public static (Color a, Color b) IconColors(string name) =>
         Icons.TryGetValue(name, out var d) ? (Color.Parse(d.A), Color.Parse(d.B)) : (Color.Parse("#C59BFF"), Color.Parse("#8452E8"));
 
-    public static bool HasIcon(string name) => Icons.ContainsKey(name);
 
     /// <summary>Цветная иконка-плитка. size — сторона плитки.</summary>
     public static Control Icon(string name, double size = 32)
