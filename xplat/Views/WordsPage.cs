@@ -28,6 +28,10 @@ public sealed class WordsPage : UserControl, IPage
     string _search = "";
     string _level = ProgressStore.P.Level;
     readonly ListBox _list;
+    // Телефон: вся страница прокручивается, список — порциями (вложенный список в узком экране получал нулевую высоту)
+    readonly StackPanel _plainList = new();
+    List<WordRow> _rows = new();
+    int _shown = 40;
     readonly TextBlock _countText = U.T("", "Muted");
 
     public WordsPage()
@@ -97,7 +101,7 @@ public sealed class WordsPage : UserControl, IPage
     {
         var g = new Grid { Margin = Shell.Compact ? new Thickness(12, 8, 12, 12) : new Thickness(40, 12, 40, 16), MaxWidth = 1240 };
         for (int i = 0; i < 3; i++) g.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        g.RowDefinitions.Add(new RowDefinition());
+        g.RowDefinitions.Add(Shell.Compact ? new RowDefinition { Height = GridLength.Auto } : new RowDefinition());
 
         bool themes = _level == "Темы";
         var words = themes ? Themes.Words(null).ToArray() : Db.Words.Where(w => w.Level == _level).ToArray();
@@ -121,11 +125,21 @@ public sealed class WordsPage : UserControl, IPage
         var rev = U.Btn($"Повторить ({due})", () => Shell.Open(new FlashSession("Повторение слов", words.Where(w => ProgressStore.IsDue(w.Id)).Shuffled().Select(FlashSession.FromWord))), "", "").M(0, 0, 10, 10);
         rev.IsEnabled = due > 0;
         acts.Children.Add(rev);
-        acts.Children.Add(U.Btn("Квиз: перевод", () => Quiz(0), "", "").M(0, 0, 10, 10));
-        acts.Children.Add(U.Btn("Квиз: обратный", () => Quiz(1), "", "").M(0, 0, 10, 10));
-        acts.Children.Add(U.Btn("Аудирование", () => Quiz(2), "", "").M(0, 0, 10, 10));
-        acts.Children.Add(U.Btn("Письмо (ромадзи)", () => Quiz(3), "", "").M(0, 0, 10, 10));
-        var actCard = U.Card(acts, new Thickness(18, 18, 8, 8));
+        acts.Children.Add(U.Btn(Shell.Compact ? "Перевод" : "Квиз: перевод", () => Quiz(0), "", "").M(0, 0, 10, 10));
+        acts.Children.Add(U.Btn(Shell.Compact ? "Обратный" : "Квиз: обратный", () => Quiz(1), "", "").M(0, 0, 10, 10));
+        acts.Children.Add(U.Btn(Shell.Compact ? "На слух" : "Аудирование", () => Quiz(2), "", "").M(0, 0, 10, 10));
+        acts.Children.Add(U.Btn(Shell.Compact ? "Ромадзи" : "Письмо (ромадзи)", () => Quiz(3), "", "").M(0, 0, 10, 10));
+        Control actBody = acts;
+        if (Shell.Compact)
+        {
+            // телефон: главное — в строку, четыре квиза — сеткой 2×2 (столбиком они занимали полэкрана)
+            var all = acts.Children.ToList(); acts.Children.Clear();
+            var top = new WrapPanel(); var quiz = new UniformGrid { Columns = 2 };
+            foreach (var c in all.Take(2)) top.Children.Add(c);
+            foreach (var c in all.Skip(2)) { c.Margin = new Thickness(0, 0, 8, 8); c.HorizontalAlignment = HorizontalAlignment.Stretch; quiz.Children.Add(c); }
+            actBody = U.Stack(top, quiz);
+        }
+        var actCard = U.Card(actBody, Shell.Compact ? new Thickness(12, 12, 4, 4) : new Thickness(18, 18, 8, 8));
         g.Children.Add(actCard.RowAt(1));
 
         // Фильтр по темам + поиск
@@ -146,10 +160,11 @@ public sealed class WordsPage : UserControl, IPage
 
         var listWrap = U.Cols("*");
         if (_list.Parent is Panel oldParent) oldParent.Children.Remove(_list); // список переиспользуется между показами
-        listWrap.Children.Add(_list);
+        if (_plainList.Parent is Panel oldPlain) oldPlain.Children.Remove(_plainList);
+        listWrap.Children.Add(Shell.Compact ? _plainList : _list);
         _countText.HorizontalAlignment = HorizontalAlignment.Right; _countText.VerticalAlignment = VerticalAlignment.Bottom; _countText.IsHitTestVisible = false;
         g.Children.Add(listWrap.RowAt(3));
-        Content = g;
+        Content = Shell.Compact ? new ScrollViewer { Content = g, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled } : g;
         Refill();
         Anim.Stagger(g, 60, 0, 4);
     }
@@ -187,13 +202,30 @@ public sealed class WordsPage : UserControl, IPage
 
     void Refill()
     {
-        _list.ItemsSource = Filtered().Select(w =>
+        var rows = Filtered().Select(w =>
         {
             var c = ProgressStore.Card(w.Id);
             return c == null ? new WordRow(w, "новое", U.B("Faint"))
                 : c.Mastered ? new WordRow(w, "выучено · повтор через " + ProgressStore.FormatInterval((c.Due - DateTime.Now).TotalDays), U.B("Good"))
                 : new WordRow(w, c.Due <= DateTime.Now ? "пора повторить" : "в изучении · через " + ProgressStore.FormatInterval(Math.Max(0, (c.Due - DateTime.Now).TotalDays)), c.Due <= DateTime.Now ? U.B("Accent") : U.B("Gold"));
         }).ToList();
+        if (!Shell.Compact) { _list.ItemsSource = rows; return; }
+        _rows = rows; _shown = 40;
+        RenderPlain();
+    }
+
+    void RenderPlain()
+    {
+        _plainList.Children.Clear();
+        foreach (var r in _rows.Take(_shown)) _plainList.Children.Add(RowView(r));
+        if (_rows.Count > _shown)
+        {
+            int left = _rows.Count - _shown;
+            var more = U.Btn($"Показать ещё {Math.Min(40, left)} (осталось {left})", () => { _shown += 40; RenderPlain(); }, "", "");
+            more.HorizontalAlignment = HorizontalAlignment.Stretch;
+            _plainList.Children.Add(more.M(0, 4, 0, 12));
+        }
+        if (_rows.Count == 0) _plainList.Children.Add(U.T("Ничего не найдено", "Muted").M(4, 8, 0, 0));
     }
 
     void LearnNew()

@@ -59,6 +59,15 @@ public sealed class HomePage : UserControl, IPage
         left.Children.Add(U.T(studied ? "СЕССИЯ НА СЕГОДНЯ ВЫПОЛНЕНА ✓" : resume ? "СЕССИЯ НА ПАУЗЕ" : "СЕССИЯ НА СЕГОДНЯ", "Overline").M(0, 20, 0, 0));
         left.Children.Add(U.T(studied ? "Отлично! Можно закрепить ещё раз или выбрать раздел" : $"{plan.Count} {MainView.Plural(plan.Count, "шаг", "шага", "шагов")} · около {plan.Sum(x => x.Minutes)} минут", "H2", 19).M(0, 4, 0, 10));
         var chips = new WrapPanel();
+        if (Shell.Compact)
+        {
+            // телефон: шаги одним рядом — иконка и короткая подпись (длинные «таблетки» выстраивались столбиком)
+            var steps = new UniformGrid { Columns = Math.Max(1, plan.Count), Rows = 1, Margin = new Thickness(-4, 0, -4, 0) };
+            foreach (var st in plan)
+                steps.Children.Add(U.Stack(Art.Icon(st.Icon, 34).Center(), U.T(Short(st), "Muted", 11.5).Also(x => { x.TextAlignment = TextAlignment.Center; x.TextWrapping = TextWrapping.NoWrap; }).Center().M(0, 4, 0, 0)).M(4, 0, 4, 0).Tip(st.Title));
+            left.Children.Add(steps);
+        }
+        else
         foreach (var st in plan)
             chips.Children.Add(new Border
             {
@@ -70,7 +79,9 @@ public sealed class HomePage : UserControl, IPage
         var acts = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
         var go = U.Btn(studied ? "Ещё сессия" : resume ? "Продолжить сессию" : "Учиться", StudyPage.Start, "Primary", "");
         go.MinWidth = 190; go.Height = 44; go.FontSize = 15;
-        acts.Children.Add(go.M(0, 0, 10, 6));
+        // телефон: главная кнопка во всю ширину, остальные — рядом под ней
+        if (Shell.Compact) { go.HorizontalAlignment = HorizontalAlignment.Stretch; go.HorizontalContentAlignment = HorizontalAlignment.Center; left.Children.Add(go.M(0, 14, 0, 0)); }
+        else acts.Children.Add(go.M(0, 0, 10, 6));
         acts.Children.Add(U.Btn($"Путь: юнит {u.Id}", () => { Shell.Go("path"); Shell.Open(new UnitPage(u)); }, "", "").M(0, 0, 10, 6).Tip($"{u.Title} · {d}/{t}"));
         if (due > 0) acts.Children.Add(U.Btn($"Повторить ({due})", () => Shell.Go("review"), "", "").M(0, 0, 10, 6));
         // «Продолжить, где остановился» — последний открытый урок, текст или диалог
@@ -178,6 +189,13 @@ public sealed class HomePage : UserControl, IPage
         Anim.FadeUp(stats, 90, 12, 380);
         return root;
     }
+
+    /// <summary>Короткое имя шага для ряда иконок на телефоне.</summary>
+    static string Short(StudyStage s) => s.Icon switch
+    {
+        "target" => "Ошибки", "path" => "Путь", "words" => "Слова", "voice" => "На слух", "speech" => "Речь",
+        "review" => "Повтор", "games" => "Игра", _ => s.Title.Split(' ')[0],
+    };
 
     static Border Stat(string label, int value, string unit, string color)
     {

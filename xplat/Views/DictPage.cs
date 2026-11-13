@@ -34,6 +34,10 @@ public sealed class DictPage : UserControl, IPage
 {
     public string Title => "Словарь";
     readonly ListBox _list;
+    // телефон: страница прокручивается целиком, результаты — порциями (см. WordsPage)
+    readonly StackPanel _plain = new();
+    List<DictRow> _rows = new();
+    int _shown = 30;
     readonly StackPanel _empty = new();
     readonly StackPanel _recent = new();
 
@@ -72,8 +76,9 @@ public sealed class DictPage : UserControl, IPage
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        root.RowDefinitions.Add(new RowDefinition());
-        root.Children.Add(U.Header("辞", "Словарь", $"Справочник JMdict — {JDict.CountLabel} статей, чтобы найти любое слово. Учебные слова с карточками — в разделе «Слова». Ищи по-русски, латиницей (taberu), каной или кандзи."));
+        root.RowDefinitions.Add(Shell.Compact ? new RowDefinition { Height = GridLength.Auto } : new RowDefinition());
+        root.Children.Add(U.Header("辞", "Словарь", Shell.Compact ? $"JMdict — {JDict.CountLabel} статей. Ищи по-русски, латиницей, каной или кандзи."
+            : $"Справочник JMdict — {JDict.CountLabel} статей, чтобы найти любое слово. Учебные слова с карточками — в разделе «Слова». Ищи по-русски, латиницей (taberu), каной или кандзи."));
 
         var search = new Grid();
         search.Children.Add(_box);
@@ -84,7 +89,7 @@ public sealed class DictPage : UserControl, IPage
         search.Children.Add(new TextBlock { Text = "", FontFamily = U.R<FontFamily>("Icons"), FontSize = 16, Foreground = U.B("Muted"), Margin = new Thickness(16, 0, 0, 0), IsHitTestVisible = false, VerticalAlignment = VerticalAlignment.Center });
         root.Children.Add(search.RowAt(1));
         root.Children.Add(_info.M(2, 10, 0, 10).RowAt(2));
-        root.Children.Add(_list.RowAt(3));
+        root.Children.Add((Shell.Compact ? (Control)_plain : _list).RowAt(3));
         // Пустой экран: подсказка и примеры запросов
         var chips = new WrapPanel { Margin = new Thickness(0, 14, 0, 0) };
         foreach (var q in new[] { "кошка", "taberu", "ありがとう", "猫", "вкусный", "benkyou", "友達", "путешествие" })
@@ -100,7 +105,19 @@ public sealed class DictPage : UserControl, IPage
         _empty.Children.Add(_recent);
         _empty.Margin = new Thickness(0, 10, 0, 0);
         root.Children.Add(_empty.RowAt(3));
-        Content = root;
+        Content = Shell.Compact ? new ScrollViewer { Content = root, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled } : root;
+    }
+
+    void RenderPlain()
+    {
+        _plain.Children.Clear();
+        foreach (var r in _rows.Take(_shown)) _plain.Children.Add(RowView(r));
+        if (_rows.Count > _shown)
+        {
+            var more = U.Btn($"Показать ещё (осталось {_rows.Count - _shown})", () => { _shown += 30; RenderPlain(); }, "", "");
+            more.HorizontalAlignment = HorizontalAlignment.Stretch;
+            _plain.Children.Add(more.M(0, 4, 0, 12));
+        }
     }
 
     /// <summary>Запрос, переданный из палитры Ctrl+K.</summary>
@@ -126,6 +143,7 @@ public sealed class DictPage : UserControl, IPage
         if (q.Trim().Length == 0)
         {
             _list.ItemsSource = null;
+            _plain.Children.Clear();
             _empty.IsVisible = true;
             _info.Text = $"{JDict.Count:N0} статей. Введи слово — по-русски, латиницей, каной или кандзи. Кнопка «+» добавит слово в твои карточки.";
             return;
@@ -133,7 +151,8 @@ public sealed class DictPage : UserControl, IPage
         _empty.IsVisible = false;
         var res = await Task.Run(() => JDict.Search(q));
         if (id != _searchId) return; // пришёл более новый запрос
-        _list.ItemsSource = res.Select(e => new DictRow(e)).ToList();
+        if (Shell.Compact) { _rows = res.Select(e => new DictRow(e)).ToList(); _shown = 30; RenderPlain(); }
+        else _list.ItemsSource = res.Select(e => new DictRow(e)).ToList();
         _info.Text = q.Trim().Length == 0
             ? $"{JDict.Count:N0} статей · показаны самые частые слова"
             : res.Count == 0 ? "Ничего не найдено. Попробуй другое написание или более короткий запрос."

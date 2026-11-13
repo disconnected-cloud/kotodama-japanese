@@ -64,7 +64,7 @@ public sealed class LearnSession : Grid, IPage, IKeyTarget
         _items = items.ToList();
         _done = done;
         _customQuiz = quiz;
-        Margin = new Thickness(40, 8, 40, 24);
+        Margin = Shell.Compact ? new Thickness(0, 8, 0, 8) : new Thickness(40, 8, 40, 24); // на телефоне поля даёт U.Page
         Children.Add(U.Page(new StackPanel { MaxWidth = 900, HorizontalAlignment = HorizontalAlignment.Center, Children = { _dots, _body } }));
         Render();
     }

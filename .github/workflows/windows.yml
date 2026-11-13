@@ -53,7 +53,10 @@ jobs:
           cat snaps/cliptest.txt
           test -s snaps/cliptest.txt
           # «многоточие» в превью — намеренно; всё остальное (за краем, сжат, шире, выше) — ошибка вёрстки
-          ! grep -E "за краем|сжат|шире на|выше на|FAIL" snaps/cliptest.txt
+          KOTODAMA_PHONE=320x640 timeout 400 ./build/Kotodama.exe --phone --cliptest snaps/cliptest-320.txt || true
+          cat snaps/cliptest-320.txt
+          test -s snaps/cliptest-320.txt
+          ! grep -E "за краем|сжат|столбиком|разрыв слова|наложение|шире на|выше на|FAIL" snaps/cliptest.txt snaps/cliptest-320.txt
 
       - name: Обрезанный текст на компьютере (минимальный размер окна)
         run: |

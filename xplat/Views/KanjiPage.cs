@@ -50,14 +50,32 @@ public sealed class KanjiPage : UserControl, IPage
         var rev = U.Btn($"Повторить ({due})", () => Shell.Open(new FlashSession("Повторение кандзи", kanji.Where(k => ProgressStore.IsDue(k.Id)).Shuffled().Select(FlashSession.FromKanji))), "", "").M(0, 0, 10, 0);
         rev.IsEnabled = due > 0;
         acts.Children.Add(rev);
-        acts.Children.Add(U.Btn("Квиз: значение", () => Quiz(false), "", "").M(0, 0, 10, 0));
-        acts.Children.Add(U.Btn("Квиз: чтение слов", () => Quiz(true), "", "").M(0, 0, 10, 0));
-        acts.Children.Add(U.Btn("Ключи: из чего состоят", () => Shell.Open(new RadicalsPage()), "", ""));
-        root.Children.Add(acts.RowAt(1));
+        acts.Children.Add(U.Btn(Shell.Compact ? "Значение" : "Квиз: значение", () => Quiz(false), "", "").M(0, 0, 10, 0));
+        acts.Children.Add(U.Btn(Shell.Compact ? "Чтение" : "Квиз: чтение слов", () => Quiz(true), "", "").M(0, 0, 10, 0));
+        acts.Children.Add(U.Btn(Shell.Compact ? "Ключи" : "Ключи: из чего состоят", () => Shell.Open(new RadicalsPage()), "", ""));
+        if (Shell.Compact)
+        {
+            // телефон: «учить/повторить» в строку, остальное сеткой в две колонки
+            var all = acts.Children.ToList(); acts.Children.Clear();
+            var top = new WrapPanel(); var rest = new UniformGrid { Columns = 2 };
+            foreach (var c in all.Take(2)) top.Children.Add(c);
+            foreach (var c in all.Skip(2)) { c.Margin = new Thickness(0, 0, 8, 8); c.HorizontalAlignment = HorizontalAlignment.Stretch; rest.Children.Add(c); }
+            root.Children.Add(U.Stack(top, rest).M(0, 0, 0, 12).RowAt(1));
+        }
+        else root.Children.Add(acts.RowAt(1));
 
-        var body = U.Cols("*", "20", "400");
         var tiles = new WrapPanel();
         foreach (var k in kanji) tiles.Children.Add(Tile(k));
+        if (Shell.Compact)
+        {
+            // телефон: вся страница прокручивается, знак открывается своим экраном (пополам с карточкой было тесно)
+            root.RowDefinitions[2].Height = GridLength.Auto;
+            root.Children.Add(tiles.RowAt(2));
+            Content = new ScrollViewer { Content = root, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+            Anim.Stagger(tiles, 12, 0, 60);
+            return;
+        }
+        var body = U.Cols("*", "20", "400");
         body.Children.Add(new ScrollViewer { Content = tiles, Padding = new Thickness(0, 0, 8, 0) });
         if (_detail.Parent is ScrollViewer oldSv) oldSv.Content = null; // панель переиспользуется между показами
         body.Children.Add(new ScrollViewer { Content = _detail }.Col(2));
@@ -87,7 +105,11 @@ public sealed class KanjiPage : UserControl, IPage
         if (k == _sel) Select(b);
         b.PointerEntered += (_, _) => { if (b != _selTile) b.BorderBrush = U.B("StrokeStrong"); };
         b.PointerExited += (_, _) => { if (b != _selTile) b.BorderBrush = U.B("Stroke"); };
-        b.PointerReleased += (_, _) => { _sel = k; Select(b); ShowDetail(k); };
+        b.PointerReleased += (_, _) =>
+        {
+            _sel = k; Select(b); ShowDetail(k);
+            if (Shell.Compact && _detail.Content is Control card) { _detail.Content = null; Shell.Open(new SimplePage($"{k.Char} — {k.Ru.Split(',', ';')[0]}", card)); }
+        };
         return b;
     }
 
@@ -197,4 +219,11 @@ public sealed class KanjiPage : UserControl, IPage
         }
         Shell.Open(new QuizSession(reading ? "Чтение кандзи" : "Значения кандзи", qs));
     }
+}
+
+/// <summary>Простой экран с заголовком в верхней панели (телефон: карточка кандзи и т.п.).</summary>
+public sealed class SimplePage : UserControl, IPage
+{
+    public string Title { get; }
+    public SimplePage(string title, Control content) { Title = title; Content = U.Page(content); }
 }

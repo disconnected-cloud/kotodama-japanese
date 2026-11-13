@@ -53,7 +53,7 @@ public sealed class FlashSession : Grid, IPage, IKeyTarget
         Title = title;
         _queue = cards.ToList();
         _total = _queue.Count;
-        Margin = new Thickness(40, 8, 40, 24);
+        Margin = Shell.Compact ? new Thickness(12, 8, 12, 12) : new Thickness(40, 8, 40, 24);
 
         _main.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         _main.RowDefinitions.Add(new RowDefinition());

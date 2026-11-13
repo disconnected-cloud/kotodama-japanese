@@ -181,7 +181,7 @@ public sealed class BuilderSession : Grid, IPage, IKeyTarget
             .Select(x => (tokens: x.Kana.Replace("、", " ").Replace("。", "").Replace("！", "").Replace("？", "").Split(' ', StringSplitOptions.RemoveEmptyEntries), x.Jp, x.Ru))
             .Where(x => x.tokens.Length is >= 3 and <= 8).ToList();
         _items = src.Shuffled().Take(10).ToList();
-        Margin = new Thickness(40, 10, 40, 24);
+        Margin = Shell.Compact ? new Thickness(12, 10, 12, 12) : new Thickness(40, 10, 40, 24);
         var sp = new StackPanel { MaxWidth = 820, HorizontalAlignment = HorizontalAlignment.Center };
         sp.Children.Add(_bar.M(0, 0, 0, 24));
         sp.Children.Add(_ru.Center());

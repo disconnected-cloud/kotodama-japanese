@@ -39,3 +39,17 @@ public sealed class AdaptiveGrid : Grid
         return base.MeasureOverride(available);
     }
 }
+
+/// <summary>Сетка плиток: число колонок — по доступной ширине (не меньше MinTile на плитку, не больше MaxColumns).</summary>
+public sealed class TileGrid : Avalonia.Controls.Primitives.UniformGrid
+{
+    public double MinTile = 160;
+    public int MaxColumns = 4;
+
+    protected override Size MeasureOverride(Size available)
+    {
+        if (!double.IsInfinity(available.Width))
+            Columns = Math.Clamp((int)(available.Width / MinTile), 1, MaxColumns);
+        return base.MeasureOverride(available);
+    }
+}

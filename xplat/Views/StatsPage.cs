@@ -64,7 +64,7 @@ public sealed class StatsPage : UserControl, IPage
         root.Children.Add(U.Card(Report.Goal(), new Thickness(22)).M(0, 16, 0, 0));
 
         // ─────────── Награды ───────────
-        var rw = new UniformGrid { Columns = U.Columns(4, 2), Margin = new Thickness(-6, 16, -6, 0) };
+        Avalonia.Controls.Primitives.UniformGrid rw = Shell.Compact ? new TileGrid { MinTile = 165, MaxColumns = 2, Margin = new Thickness(-6, 16, -6, 0) } : new UniformGrid { Columns = 4, Margin = new Thickness(-6, 16, -6, 0) };
         rw.Children.Add(Kpi("shield", "Щиты серии", p.Shields, $"из {Challenges.MaxShields}", "Щит спасает серию, если пропустить день. Даётся за недельную цель"));
         rw.Children.Add(Kpi("medal", "Значки недель", p.Badges.Count, MainView.Plural(p.Badges.Count, "неделя", "недели", "недель"), "Недели, когда взята недельная цель по опыту"));
         rw.Children.Add(Kpi("star", "Идеальные дни", p.PerfectDays, "все испытания", "Дни, когда выполнены все три испытания"));

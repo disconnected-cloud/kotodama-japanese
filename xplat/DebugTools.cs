@@ -145,11 +145,48 @@ public partial class MainView
                 if (lay.Height > h + 1.5) why.Add($"выше на {lay.Height - h:0}");
                 // сжат соседней колонкой: узкая надпись разбита на много строк («В / каф / е»)
                 if (tb.Bounds.Width < Bounds.Width * 0.3 && lay.TextLines.Count >= 3 && text.Contains(' ')) why.Add($"сжат ({lay.TextLines.Count} строк в {tb.Bounds.Width:0} px)");
+                // знаки столбиком: надпись без пробелов (японский, короткое слово) сжата до одного-двух знаков в строке
+                else if (tb.Bounds.Width < 48 && lay.TextLines.Count >= 3 && text.Trim().Length >= 3) why.Add($"столбиком ({lay.TextLines.Count} строк в {tb.Bounds.Width:0} px)");
+                // перенос посреди слова: строка кончается буквой и следующая начинается буквой («Аудировани / е»)
+                for (int li = 0; li + 1 < lay.TextLines.Count && !text.Contains('\\') && !text.Contains("://"); li++) // пути и ссылки переносить можно
+                {
+                    int end = lay.TextLines[li].FirstTextSourceIndex + lay.TextLines[li].Length;
+                    if (end > 0 && end < text.Length && char.IsLetter(text[end - 1]) && char.IsLetter(text[end]) && text[end - 1] < 0x3000 && text[end] < 0x3000)
+                    { why.Add($"разрыв слова «…{text[Math.Max(0, end - 6)..end]}|{text[end..Math.Min(text.Length, end + 4)]}…»"); break; }
+                }
                 bool inHScroll = tb.GetVisualAncestors().OfType<ScrollViewer>().Any(s => s.HorizontalScrollBarVisibility != ScrollBarVisibility.Disabled);
                 if (p != null && !inHScroll && (p.Value.X + tb.Bounds.Width > Bounds.Width + 1.5 || p.Value.X < -1.5)) why.Add($"за краем экрана (x={p.Value.X:0}, w={tb.Bounds.Width:0})");
                 if (why.Count > 0)
                     issues.Add($"    [{string.Join(", ", why)}] «{(text.Length > 60 ? text[..60] + "…" : text).Replace('\n', ' ')}»");
             }
+            // наложение: две надписи занимают одно место (декоративные полупрозрачные иероглифы-водяные знаки не в счёт)
+            var boxes = new List<(Rect r, string t)>();
+            foreach (var tb in this.GetVisualDescendants().OfType<TextBlock>())
+            {
+                var text = tb.Text ?? tb.Inlines?.Text;
+                if (string.IsNullOrWhiteSpace(text) || !tb.IsEffectivelyVisible || tb.Bounds.Width <= 0) continue;
+                double op = 1; for (Visual? v = tb; v != null; v = v.GetVisualParent()) op *= v.Opacity;
+                if (op < 0.5) continue;
+                var p = tb.TranslatePoint(default, this);
+                if (p == null) continue;
+                var lay = tb.TextLayout;
+                double w = Math.Min(tb.Bounds.Width, lay.WidthIncludingTrailingWhitespace), h = Math.Min(tb.Bounds.Height, lay.Height);
+                double x = p.Value.X + tb.TextAlignment switch { TextAlignment.Center => (tb.Bounds.Width - w) / 2, TextAlignment.Right => tb.Bounds.Width - w, _ => 0 };
+                var r = new Rect(x, p.Value.Y, w, h);
+                // что прокручено за край своей области — обрезано и не видно: считаем только видимую часть
+                foreach (var sv in tb.GetVisualAncestors().OfType<ScrollViewer>())
+                    if (sv.TranslatePoint(default, this) is { } sp) r = r.Intersect(new Rect(sp, sv.Bounds.Size));
+                if (r.Width > 1 && r.Height > 1) boxes.Add((r, text));
+            }
+            for (int a = 0; a < boxes.Count; a++)
+                for (int b = a + 1; b < boxes.Count; b++)
+                {
+                    var i = boxes[a].r.Intersect(boxes[b].r);
+                    double small = Math.Min(boxes[a].r.Width * boxes[a].r.Height, boxes[b].r.Width * boxes[b].r.Height);
+                    if (i.Width > 2 && i.Height > 2 && i.Width * i.Height > small * 0.25)
+                        issues.Add($"    [наложение] «{Short(boxes[a].t)}» и «{Short(boxes[b].t)}»");
+                }
+            static string Short(string s) => (s.Length > 30 ? s[..30] + "…" : s).Replace('\n', ' ');
             log.Add($"{name}: {(issues.Count == 0 ? "ok" : issues.Count + " проблем")}");
             // снимок экрана с проблемами (KOTODAMA_CLIPSNAP=папка) — чтобы глазами отличить настоящую обрезку
             if ((issues.Count > 0 || Environment.GetEnvironmentVariable("KOTODAMA_CLIPSNAP_ALL") == "1") && Environment.GetEnvironmentVariable("KOTODAMA_CLIPSNAP") is { Length: > 0 } dir)
