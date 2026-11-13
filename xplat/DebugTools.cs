@@ -107,6 +107,12 @@ public partial class MainView
         {
             // KOTODAMA_SNAP_SCALE=1.2 — снимок в повышенном разрешении (для видео)
             double k = double.TryParse(Environment.GetEnvironmentVariable("KOTODAMA_SNAP_SCALE"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var kk) ? kk : 1;
+            // KOTODAMA_SCROLL=600 — прокрутить страницу перед снимком (проверка низа длинных страниц)
+            if (double.TryParse(Environment.GetEnvironmentVariable("KOTODAMA_SCROLL"), out var scroll) && _host.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault() is { } sv)
+            {
+                sv.Offset = new Vector(0, scroll);
+                sv.UpdateLayout();
+            }
             var size = new PixelSize((int)(Bounds.Width * k), (int)(Bounds.Height * k));
             using var rtb = new RenderTargetBitmap(size, new Vector(96 * k, 96 * k));
             rtb.Render(this);
@@ -361,6 +367,7 @@ public partial class MainView
             case "article": Push(new ArticlePage(JapanPage.All[0])); break;
             case "match": Push(new MatchRushGame()); break;
             case "player": Push(new PlayerPage()); break;
+            case "similar": Push(SimilarKanji.Quiz()); break;
             case "keys": ShowHotkeys(); break;
             case "rail": ProgressStore.P.SidebarRail = true; ApplyRail(false); break;
             case "typing": Push(new TypingPage()); break;

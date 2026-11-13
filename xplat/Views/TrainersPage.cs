@@ -268,19 +268,28 @@ public sealed class TrainersPage : UserControl, IPage
         var root = new StackPanel();
         root.Children.Add(U.Header("練", "Тренажёры и игры", "Игры, план на день, работа над ошибками и упражнения на грамматику, счёт и слух.", art: "coach"));
 
-        var grid = new UniformGrid { Columns = U.Columns(3), Margin = new Thickness(-6, 18, -6, 0) };
-        grid.Children.Add(Tile("誤", "Тетрадь ошибок", Mistakes.Count > 0 ? $"{Mistakes.Count} ошибок ждут исправления" : "Ошибок нет — отлично!", () => { var q = MistakesQuiz(); if (q != null) Shell.Open(q); else Shell.Toast("Ошибок пока нет", "完璧"); }));
-        grid.Children.Add(Tile("活", "Спряжение глаголов", "11 форм: ます, て, ない, потенциальная…", () => Shell.Open(Conj.Quiz())));
-        grid.Children.Add(Tile("播", "Аудиоплеер", "Слушай слова и фразы без экрана: японский — пауза — перевод", () => Shell.Open(new PlayerPage())));
-        grid.Children.Add(Tile("打", "Набор на японском", "Печатай латиницей — получай кану. Скорость и точность", () => Shell.Open(new TypingPage())));
-        grid.Children.Add(Tile("時", "Числа, время, цены", "Цифры на слух, よじ, はっせん, ついたち", () => Shell.Open(new NumbersPage())));
-        grid.Children.Add(Tile("数", "Счётные суффиксы", "本・枚・匹・人… с особыми чтениями", () => Shell.Open(new CountersPage())));
-        grid.Children.Add(Tile("対", "Минимальные пары", "おばさん или おばあさん? Слух и произношение", () => Shell.Open(new PairsPage())));
-        grid.Children.Add(Tile("聞", "Диктант", "Слушай и записывай слово", () => Shell.Open(Dictation())));
-        grid.Children.Add(Tile("耳", "Фразы на слух", "Целые фразы в обычном темпе, без текста — что сказали?", () => Shell.Open(PhraseListening())));
-        grid.Children.Add(Tile("組", "Собери предложение", "Расставь слова по порядку", () => Shell.Open(new BuilderSession())));
-        grid.Children.Add(Tile("書", "Прописи", "Пиши кандзи мышью или пером — проверка порядка черт", () => Shell.Open(new WritingPage())));
-        grid.Children.Add(Tile("試", "Пробный тест JLPT", $"30 вопросов уровня {ProgressStore.P.Level}", () => Shell.Open(MockTest(ProgressStore.P.Level))));
+        // упражнения по смыслу: слух и речь, письмо и чтение, грамматика и счёт
+        var listen = Group(
+            Tile("播", "Аудиоплеер", "Слушай слова и фразы без экрана: японский — пауза — перевод", () => Shell.Open(new PlayerPage())),
+            Tile("聞", "Диктант", "Слушай и записывай слово", () => Shell.Open(Dictation())),
+            Tile("耳", "Фразы на слух", "Целые фразы в обычном темпе, без текста — что сказали?", () => Shell.Open(PhraseListening())),
+            Tile("対", "Минимальные пары", "おばさん или おばあさん? Слух и произношение", () => Shell.Open(new PairsPage())));
+        var write = Group(
+            Tile("打", "Набор на японском", "Печатай латиницей — получай кану. Скорость и точность", () => Shell.Open(new TypingPage())),
+            Tile("書", "Прописи", "Пиши кандзи мышью или пером — проверка порядка черт", () => Shell.Open(new WritingPage())),
+            Tile("似", "Похожие кандзи", "未 или 末? Вставь знак в слово — не путай похожие", () => Shell.Open(SimilarKanji.Quiz())),
+            Tile("組", "Собери предложение", "Расставь слова по порядку", () => Shell.Open(new BuilderSession())));
+        var grammar = Group(
+            Tile("活", "Спряжение глаголов", "11 форм: ます, て, ない, потенциальная…", () => Shell.Open(Conj.Quiz())),
+            Tile("時", "Числа, время, цены", "Цифры на слух, よじ, はっせん, ついたち", () => Shell.Open(new NumbersPage())),
+            Tile("数", "Счётные суффиксы", "本・枚・匹・人… с особыми чтениями", () => Shell.Open(new CountersPage())),
+            Tile("誤", "Тетрадь ошибок", Mistakes.Count > 0 ? $"{Mistakes.Count} ошибок ждут исправления" : "Ошибок нет — отлично!", () => { var q = MistakesQuiz(); if (q != null) Shell.Open(q); else Shell.Toast("Ошибок пока нет", "完璧"); }));
+        // пробный экзамен — широкой карточкой под группами
+        var exam = U.Cols("auto", "*", "auto");
+        exam.Children.Add(Emoji.Img("graduation_cap", 52).CenterV());
+        exam.Children.Add(U.Stack(U.T($"Пробный тест JLPT {ProgressStore.P.Level}", "H3", 16), U.T("30 вопросов с таймером: лексика, кандзи, грамматика, аудирование — и разбор по разделам, как на настоящем экзамене.", "Muted").Also(t => t.TextWrapping = TextWrapping.Wrap)).CenterV().M(16, 0, 16, 0).Col(1));
+        exam.Children.Add(U.Btn("Начать тест", () => Shell.Open(MockTest(ProgressStore.P.Level)), "Primary", "").CenterV().Col(2));
+        var examCard = U.Card(exam, new Thickness(20, 16)).M(0, 20, 0, 0);
         root.Children.Add(U.T("Игры", "H2").M(0, 0, 0, 4));
         root.Children.Add(U.T("Закрепляют уже изученные слова — учиться веселее, а ошибки попадают в тетрадь.", "Muted").M(0, 0, 0, 10));
         var games = new UniformGrid { Columns = U.Columns(3), Margin = new Thickness(-6, 0, -6, 0) };
@@ -292,15 +301,21 @@ public sealed class TrainersPage : UserControl, IPage
         games.Children.Add(Game("flame", "Спринт 60 секунд", "Верно или нет — как можно быстрее", "sprint", () => Shell.Open(new SprintGame())));
         root.Children.Add(games);
         root.Children.Add(PlanCard().M(0, 24, 0, 0));
-        root.Children.Add(grid.Also(g => g.Margin = new Thickness(-6, 0, -6, 0)));
-        root.Children.Insert(root.Children.IndexOf(grid), U.T("Упражнения", "H2").M(0, 26, 0, 12));
+        root.Children.Add(U.T("Упражнения", "H2").M(0, 26, 0, 4));
+        root.Children.Add(U.T("Каждое — 5–10 минут. Ошибки попадают в тетрадь и вернутся на повторении.", "Muted").M(0, 0, 0, 6));
+        foreach (var (title, icon, g) in new[] { ("Слух и речь", "headphones", listen), ("Письмо и чтение", "write", write), ("Грамматика и счёт", "grammar", grammar) })
+        {
+            root.Children.Add(U.Row(10, Art.Icon(icon, 26), U.T(title, "H3", 16).CenterV()).M(0, 14, 0, 4));
+            root.Children.Add(g);
+        }
+        root.Children.Add(examCard);
         Anim.Stagger(games, 35, 80);
         Content = U.Page(root);
     }
 
     static readonly Dictionary<string, string> TileArt = new()
     {
-        ["誤"] = "memo", ["時"] = "alarm_clock", ["打"] = "keyboard", ["播"] = "radio", ["活"] = "gear", ["数"] = "input_numbers", ["聞"] = "headphone", ["組"] = "puzzle_piece", ["試"] = "graduation_cap",
+        ["誤"] = "memo", ["耳"] = "ear", ["時"] = "alarm_clock", ["打"] = "keyboard", ["似"] = "eyes", ["播"] = "radio", ["活"] = "gear", ["数"] = "input_numbers", ["聞"] = "headphone", ["組"] = "puzzle_piece", ["試"] = "graduation_cap",
         ["書"] = "writing_hand", ["雨"] = "cloud_with_rain", ["対"] = "game_die", ["速"] = "stopwatch",
     };
 
@@ -316,6 +331,14 @@ public sealed class TrainersPage : UserControl, IPage
         HomePage.Hover(card);
         card.PointerReleased += (_, _) => { Shell.Main.PendingExpand = card; go(); };
         return card;
+    }
+
+    /// <summary>Группа плиток: на компьютере по четыре в ряд, на телефоне одна колонка.</summary>
+    static UniformGrid Group(params Border[] tiles)
+    {
+        var g = new UniformGrid { Columns = U.Columns(4), Margin = new Thickness(-6, 0, -6, 0) };
+        foreach (var t in tiles) g.Children.Add(t);
+        return g;
     }
 
     static Border Tile(string jp, string title, string sub, Action go)

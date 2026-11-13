@@ -84,6 +84,7 @@ public sealed class Palette : Grid
         yield return new Item("鍵", "Горячие клавиши", "Шпаргалка · F1", () => Shell.Main.ShowHotkeys());
         yield return new Item("≡", "Свернуть / развернуть меню", "Вид · Ctrl+B", () => Shell.Main.ToggleRail());
         yield return new Item("耳", "Аудиоплеер", "Слушать слова и фразы без экрана", () => Shell.Open(new PlayerPage()));
+        yield return new Item("似", "Похожие кандзи", "Тренажёр · 未 или 末", () => Shell.Open(SimilarKanji.Quiz()));
         yield return new Item("時", "Числа, время, цены", "Тренажёр", () => Shell.Open(new NumbersPage()));
         yield return new Item("打", "Набор на японском", "Тренажёр · ромадзи → кана", () => Shell.Open(new TypingPage()));
         yield return new Item("雨", "Кана-дождь", "Игра", () => Shell.Open(new KanaRainGame(false)));

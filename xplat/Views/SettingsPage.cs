@@ -172,6 +172,10 @@ public sealed partial class SettingsPage : UserControl, IPage
                 yield return Section("Резервная копия", "Сохрани прогресс в файл — пригодится при переустановке или переносе на другой компьютер.", U.Row(10,
                     U.Btn("Экспорт прогресса", ExportProgress, "", ""),
                     U.Btn("Импорт из файла", ImportProgress, "", "")));
+                yield return Section("Экспорт в Anki", "Карточки для Anki: слово, чтение, латиница, перевод, пример и твоя заметка. В Anki: Файл → Импорт.", U.Row(10,
+                    U.Btn("Изучаемые", () => ExportAnki(AnkiExport.Set.Learning), "", ""),
+                    U.Btn($"Весь уровень {p.Level}", () => ExportAnki(AnkiExport.Set.Level), "", ""),
+                    U.Btn("Тетрадь ошибок", () => ExportAnki(AnkiExport.Set.Mistakes), "", "")));
                 yield return Section("Автокопии", "Каждый день при запуске прогресс копируется сам — хранятся последние 14 дней. Если что-то пошло не так, можно вернуться к копии.", AutoBackupBlock());
                 yield return Section("Обновления", $"Установлена версия {Updater.Current.ToString(3)}. Новые версии берутся из github.com/{Updater.Repo}.", UpdateBlock());
                 yield return Section("Хранилище", $"Всего занято: {Storage.Format(Storage.Total)} · папка: {ProgressStore.Folder}", StorageBlock());
@@ -268,6 +272,25 @@ public sealed partial class SettingsPage : UserControl, IPage
         await using (var src = System.IO.File.OpenRead(System.IO.Path.Combine(ProgressStore.Folder, "progress.json")))
             await src.CopyToAsync(dst);
         Shell.Toast("Прогресс сохранён в файл", "保存");
+    }
+
+    static async void ExportAnki(AnkiExport.Set set)
+    {
+        var (text, count) = AnkiExport.Build(set);
+        if (count == 0) { Shell.Toast(set == AnkiExport.Set.Learning ? "Пока нет изучаемых слов — начни с раздела «Слова»" : "Нечего экспортировать", "空"); return; }
+        var sp = TopLevel.GetTopLevel(Shell.Main)?.StorageProvider;
+        if (sp == null) return;
+        var name = set switch { AnkiExport.Set.Level => "уровень-" + ProgressStore.P.Level, AnkiExport.Set.Mistakes => "ошибки", _ => "изучаемые" };
+        var file = await sp.SaveFilePickerAsync(new()
+        {
+            SuggestedFileName = $"kotodama-anki-{name}.txt", DefaultExtension = "txt",
+            FileTypeChoices = new[] { new Avalonia.Platform.Storage.FilePickerFileType("Текст для Anki") { Patterns = new[] { "*.txt" } } },
+        });
+        if (file == null) return;
+        await using (var dst = await file.OpenWriteAsync())
+        await using (var w = new System.IO.StreamWriter(dst, new System.Text.UTF8Encoding(false)))
+            await w.WriteAsync(text);
+        Shell.Toast($"Сохранено карточек: {count}. В Anki: Файл → Импорт", "暗");
     }
 
     static async void ImportProgress()
