@@ -233,13 +233,16 @@ public sealed class PathPage : UserControl, IPage
         int now = Math.Max(8, Array.IndexOf(units, current) + 4);
         var later = new List<Func<Control>>();
         string? lastLevel = null;
+        var seen = new HashSet<string>();
         for (int i = 0; i < units.Length; i++)
         {
             var u = units[i];
             int k = i;
             if (u.Level != lastLevel)
             {
-                Control Head() => U.T(GrammarPage.LevelName(u.Level).ToUpperInvariant(), "Overline").M(54, k == 0 ? 0 : 18, 0, 10);
+                // уровень уже встречался (разговорные юниты N5 после N4) — не «основы» второй раз, а практика
+                string name = seen.Add(u.Level) ? GrammarPage.LevelName(u.Level) : $"{u.Level} · разговорная практика";
+                Control Head() => U.T(name.ToUpperInvariant(), "Overline").M(54, k == 0 ? 0 : 18, 0, 10);
                 if (i < now) root.Children.Add(Head()); else later.Add(Head);
                 lastLevel = u.Level;
             }
