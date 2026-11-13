@@ -19,6 +19,7 @@ public class MainActivity : AvaloniaMainActivity<App>
         Platform.Hooks.Playback = () => new AndroidPlayback();
         Platform.Hooks.Mic = () => new AndroidMic();
         Platform.Hooks.SystemTts = AndroidTts.SynthesizeAsync;
+        Platform.Hooks.BackgroundAudio = PlaybackService.Set;
         ProgressStore.Load();
         return App.WithFonts(base.CustomizeAppBuilder(builder));
     }

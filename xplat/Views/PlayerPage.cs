@@ -71,12 +71,13 @@ public static class Player
     {
         if (List.Count == 0) Load();
         if (List.Count == 0) return;
-        if (Playing) Stop(); else { Playing = true; Active = true; StartLoop(); }
+        if (Playing) Stop(); else { Playing = true; Active = true; StartLoop(); Platform.Hooks.BackgroundAudio?.Invoke(true); }
         Notify();
     }
 
     public static void Stop()
     {
+        if (Playing) Platform.Hooks.BackgroundAudio?.Invoke(false);
         Playing = false;
         _run++;
         Speech.Stop();
@@ -182,7 +183,7 @@ public sealed class PlayerPage : UserControl, IPage, IKeyTarget
     void Build()
     {
         var root = new StackPanel { MaxWidth = 1080 };
-        root.Children.Add(U.Header("播", "Аудиоплеер", "Слушай без экрана: японский, пауза, чтобы вспомнить, перевод и ещё раз японский. Можно уйти в другой раздел — плеер продолжит внизу окна."));
+        root.Children.Add(U.Header("播", "Аудиоплеер", "Слушай без экрана: японский, пауза, чтобы вспомнить, перевод и ещё раз японский. " + (Shell.Compact ? "Можно выключить экран — плеер продолжит играть, остановить можно из уведомления." : "Можно уйти в другой раздел — плеер продолжит внизу окна.")));
 
         var src = new WrapPanel();
         foreach (var (key, name) in new[] { ("learned", "Изученные слова"), ("due", "На повторение"), ("new", "Новые слова уровня"), ("mistakes", "Мои ошибки"), ("phrases", "Разговорник"), ("dialogs", "Диалоги") })

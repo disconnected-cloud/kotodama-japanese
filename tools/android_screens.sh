@@ -14,7 +14,7 @@ sleep 25
 adb exec-out screencap -p > android-start.png
 for s in "--page home" "--page path" "--page kana" "--page kanji" "--page words" "--page grammar" "--page speech" \
          "--page review" "--page more" "--page dict" "--page trainers" "--page stats" \
-         "--open quiz" "--open learnq" "--open dialog" "--open wod" "--open week" "--open setvoice"          "--open unit" "--open learnk" "--open grammar" "--open word" "--open player" "--open numbers" "--open typing"          "--open book" "--open article" "--open whatsnew" "--open onboard" "--page japan"; do
+         "--open quiz" "--open learnq" "--open dialog" "--open wod" "--open week" "--open setvoice"          "--open unit" "--open learnk" "--open grammar" "--open word" "--open player" "--open numbers" "--open typing"          "--open book" "--open article" "--open whatsnew" "--open onboard" "--page japan" "--open playerdemo"; do
   name=$(echo "$s" | tr -d '-' | tr ' ' '_')
   adb shell am start -S -n "$ACT" --es args "'$s'" > /dev/null
   sleep 14
