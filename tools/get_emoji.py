@@ -13,11 +13,18 @@ NAMES = ["Speech balloon", "House with garden", "Input numbers", "Alarm clock", 
          "Trophy", "Fire", "Sparkles", "Graduation cap", "Japanese symbol for beginner", "Open book", "Speaking head", "Headphone",
          "Brain", "Dango", "Sushi", "Mount fuji", "Red paper lantern", "Shinto shrine", "Bookmark tabs", "Memo", "Dart", "Game die",
          "Video game", "Clipboard", "Crystal ball", "Robot", "Magnifying glass tilted left", "Microphone", "Ticket", "Seedling", "Cat face",
-         "Map of japan", "Department store", "Moon viewing ceremony", "Wind chime", "Bamboo", "Fish cake with swirl", "Rice ball"]
+         "Map of japan", "Department store", "Moon viewing ceremony", "Wind chime", "Bamboo", "Fish cake with swirl", "Rice ball",
+         "Money bag", "Spiral calendar", "Keyboard", "Radio", "Notebook", "Scroll", "Yen banknote", "Studio microphone", "Thought balloon",
+         "Steaming bowl", "Japanese castle", "Shopping cart", "Party popper", "Bar chart", "Package", "Tanabata tree", "Teacup without handle",
+         "Spiral notepad", "Ear", "Eyes", "Busts in silhouette", "Hospital", "Post office", "Convenience store", "Airplane", "Taxi",
+         "Bicycle", "Hot springs", "Umbrella with rain drops", "Snowman", "Maple leaf", "Fireworks", "Carp streamer", "Wedding",
+         "Office building", "School", "Television", "Love letter", "Musical score", "Soccer ball", "Chopsticks", "Bubble tea", "Tomato",
+         "Woman technologist", "Man office worker", "Cooking", "Kimono", "Wavy dash", "Hourglass done", "Crossed swords", "Pen"]
 
 def key(n): return n.lower().replace(" ", "_").replace("-", "")
 
 def fetch(n):
+    if os.path.exists(os.path.join(out, key(n) + ".png")): return n, True
     file = n.lower().replace(" ", "_") + "_3d.png"
     for path in (f"{n}/3D/{file}", f"{n}/Default/3D/{n.lower().replace(' ', '_')}_3d_default.png"):
         url = BASE + urllib.parse.quote(path)

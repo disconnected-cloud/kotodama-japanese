@@ -31,6 +31,7 @@ public sealed class QuizQ
     public string? WrongHint;               // подсказка только при ошибке (чем похожие знаки отличаются)
     public Action<bool>? OnResult;
     public string? Key;                     // для тетради ошибок
+    public Func<string, string>? Norm;      // своя нормализация ввода (числа: только цифры)
 }
 
 /// <summary>Квиз: выбор из 4 вариантов или ввод ответа. Комбо, повтор ошибок, итоговый экран.</summary>
@@ -260,9 +261,10 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
     void CheckTyped()
     {
         if (_locked) return;
-        var text = (_input.Text ?? "").Trim().ToLowerInvariant().Replace(" ", "");
+        var norm = Q.Norm ?? (x => x.Trim().ToLowerInvariant().Replace(" ", ""));
+        var text = norm(_input.Text ?? "");
         if (text.Length == 0) return;
-        var alts = Q.Answer.Split('|').Select(a => a.Trim().ToLowerInvariant().Replace(" ", ""));
+        var alts = Q.Answer.Split('|').Select(norm);
         bool ok = alts.Contains(text);
         _input.IsEnabled = false;
         if (!ok) Anim.Shake(_typePanel); else Anim.Pop(_typePanel, 0.95);

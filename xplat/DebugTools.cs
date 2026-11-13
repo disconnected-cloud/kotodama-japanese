@@ -343,6 +343,10 @@ public partial class MainView
             case "word": JDict.LoadAsync().ContinueWith(_ => Dispatcher.UIThread.Post(() => Push(new WordPage(JDict.Lookup("勉強")!)))); break;
             case "article": Push(new ArticlePage(JapanPage.All[0])); break;
             case "match": Push(new MatchRushGame()); break;
+            case "typing": Push(new TypingPage()); break;
+            case "numbers": Push(new NumbersPage()); break;
+            case "numq": Push(NumbersPage.ReadNumbers()); break;
+            case "numl": Push(NumbersPage.Prices()); break;
             case "build": Push(new WordBuilderGame()); break;
             case "listen": Push(new ListenCatchGame()); break;
             case "gon": Push(new TextPage(ReaderPage.Texts.First(t => t.Book == "Лисёнок Гон"))); break;
