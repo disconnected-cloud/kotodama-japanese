@@ -15,6 +15,8 @@ public interface IKeyTarget { bool HandleKey(Key key); }
 
 public static class Shell
 {
+    /// <summary>Отладочная проверка (--snap, --cliptest…): без трея, значка в панели задач и уведомлений.</summary>
+    public static bool TestRun;
     public static MainView Main { get; set; } = null!;
     /// <summary>Телефонная раскладка: нижние вкладки вместо бокового меню, одна колонка, меньше отступы.</summary>
     public static bool Compact { get; set; } = OperatingSystem.IsAndroid() || Environment.GetCommandLineArgs().Contains("--phone");

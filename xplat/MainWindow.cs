@@ -31,7 +31,9 @@ public class MainWindow : Window
         var args = Environment.GetCommandLineArgs();
         if (args.Any(a => a is "--snap" or "--selftest" or "--offscreen" or "--speechaudit" or "--cliptest" or "--perf" or "--rerender"))
         {
-            ShowActivated = false; ShowInTaskbar = false;
+            // проверки идут невидимо: окно прозрачное, без рамки, не в панели задач и за краем экрана (снимок рендерится из интерфейса, не с экрана)
+            ShowActivated = false; ShowInTaskbar = false; Opacity = 0; SystemDecorations = SystemDecorations.None; Topmost = false;
+            Shell.TestRun = true;
             if (args.Contains("--snap") || args.Contains("--cliptest") || args.Contains("--perf") || args.Contains("--rerender")) { Platform.AudioPlayer.Muted = true; ProgressStore.ReadOnly = true; }
             WindowStartupLocation = WindowStartupLocation.Manual; Position = new PixelPoint(-20000, 0);
         }

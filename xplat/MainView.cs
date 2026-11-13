@@ -198,11 +198,11 @@ public partial class MainView : UserControl
         // настоящий первый кадр — после отрисовки, а не после построения дерева
         TopLevel.GetTopLevel(this)?.RequestAnimationFrame(_ => Perf.WarmUpAfterFirstFrame());
         UpdateStats();
-        Dispatcher.UIThread.Post(() => { if (Win is { } w) Badge.Update(w); }, DispatcherPriority.Background);
+        Dispatcher.UIThread.Post(() => { if (Win is { } w && !Shell.TestRun) Badge.Update(w); }, DispatcherPriority.Background);
         Dispatcher.UIThread.Post(() => { if (!Environment.GetCommandLineArgs().Skip(1).Any()) WordOfDay.Tick(); }, DispatcherPriority.Background);
         _navItems["home"].IsChecked = true;
         PlayIntro();
-        if (Win is { } win) Tray.Init(win);
+        if (Win is { } win && !Shell.TestRun) Tray.Init(win); // проверки не показывают значок в трее
         var args = Platform.Hooks.Args ?? Environment.GetCommandLineArgs();
         bool plain = !args.Skip(1).Any();
         if (!ProgressStore.P.Flags.Contains("onboarded") && plain) Push(new OnboardingPage());
@@ -214,7 +214,7 @@ public partial class MainView : UserControl
             if (CrashReport.HasNew()) { CrashReport.MarkSeen(); Shell.Toast("В прошлый раз была ошибка — отправить отчёт можно в Настройках → «Обратная связь»", "!"); }
         }
         var remind = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
-        remind.Tick += (_, _) => Tray.Tick();
+        remind.Tick += (_, _) => { if (!Shell.TestRun) Tray.Tick(); };
         remind.Start();
         int pi = Array.IndexOf(args, "--page");
         if (pi > 0 && pi + 1 < args.Length) NavigateRoot(args[pi + 1]);
@@ -343,7 +343,7 @@ public partial class MainView : UserControl
         _dueBadge.IsVisible = due > 0;
         _dueText.Text = due > 99 ? "99+" : due.ToString();
         if (_tabBadge != null) { _tabBadge.IsVisible = due > 0; ((TextBlock)_tabBadge.Child!).Text = _dueText.Text; }
-        if (Win is { IsVisible: true } bw) Badge.Update(bw);
+        if (Win is { IsVisible: true } bw && !Shell.TestRun) Badge.Update(bw);
     }
 
     public static string Plural(int n, string one, string few, string many)
