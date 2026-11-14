@@ -364,7 +364,10 @@ public partial class MainView : UserControl
     void OnPreviewKey(object? sender, KeyEventArgs e)
     {
         // Ctrl+K — и в русской раскладке (Ctrl+Л): проверяем и код клавиши, и её физическое место
+#if DEBUG
+        // отладка раскладок; в релизе нет — иначе в файл попадал бы и текст дневника
         if (Environment.GetEnvironmentVariable("KOTODAMA_KEYLOG") is { } kl) System.IO.File.AppendAllText(kl, $"{e.Key} {e.PhysicalKey} {e.KeyModifiers} intro={_intro.IsVisible}" + Environment.NewLine);
+#endif
         bool ctrlK = e.KeyModifiers.HasFlag(KeyModifiers.Control) && !e.KeyModifiers.HasFlag(KeyModifiers.Alt) && (e.Key == Key.K || e.PhysicalKey == PhysicalKey.K);
         if (ctrlK && !_intro.IsVisible) { if (_palette == null) OpenPalette(); e.Handled = true; return; }
         if (_intro.IsVisible) { CloseIntro(fast: true); e.Handled = true; return; }
