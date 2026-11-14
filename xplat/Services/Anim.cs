@@ -79,6 +79,9 @@ public static class Anim
             double k = (double)el / tw.Ms;
             if (tw.Forever)
             {
+                // элемент ушёл со страницы — бесконечная анимация больше не держит его и таймер (Д6)
+                if (el > 1000 && key is System.Runtime.CompilerServices.ITuple { Length: > 0 } tk && tk[0] is Visual v && TopLevel.GetTopLevel(v) == null)
+                { (finished ??= new()).Add((key, tw)); continue; }
                 double cyc = k % (tw.AutoReverse ? 2 : 1);
                 if (tw.AutoReverse && cyc > 1) cyc = 2 - cyc;
                 tw.Set(tw.From + (tw.To - tw.From) * tw.Ease(Math.Min(1, cyc)));
@@ -151,6 +154,7 @@ public static class Anim
 
     public static void Shake(Visual el)
     {
+        if (Lite) return; // «без анимаций» — и без тряски (Д7)
         var (_, t) = Transforms(el);
         double[] xs = { 0, -10, 9, -7, 5, -3, 0 };
         Run((t, "x"), 0, 1, 380, k =>

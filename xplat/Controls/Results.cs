@@ -110,6 +110,7 @@ public static class Results
     /// <summary>Короткий салют из конфетти. Элементы удаляются после анимации.</summary>
     public static void Confetti(Panel host)
     {
+        if (Anim.Lite) return; // «без анимаций» и слабый компьютер — без конфетти (Д7)
         var canvas = new Canvas { IsHitTestVisible = false, ClipToBounds = true };
         if (host is Grid g) { Grid.SetRowSpan(canvas, Math.Max(1, g.RowDefinitions.Count)); Grid.SetColumnSpan(canvas, Math.Max(1, g.ColumnDefinitions.Count)); }
         host.Children.Add(canvas);
