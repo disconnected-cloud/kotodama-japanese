@@ -21,7 +21,7 @@ public class MainWindow : Window
         // 1366×768 при масштабе 125–150 % — это ~910×510: минимальный размер не должен быть больше экрана (Д9)
         Opened += (_, _) =>
         {
-            if (Screens.ScreenFromWindow(this) is not { } scr) return;
+            if (Shell.TestRun || Screens.ScreenFromWindow(this) is not { } scr) return; // снимки в CI — всегда одного размера
             double sc = scr.Scaling, w = scr.WorkingArea.Width / sc, h = scr.WorkingArea.Height / sc;
             MinWidth = Math.Min(MinWidth, w - 16); MinHeight = Math.Min(MinHeight, h - 16);
             if (Width > w || Height > h) { Width = Math.Min(Width, w); Height = Math.Min(Height, h); }
