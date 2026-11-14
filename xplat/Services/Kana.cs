@@ -95,6 +95,12 @@ public static class Kana
     static readonly Lazy<(string r, string k)[]> Rev = new(() =>
     {
         var d = new Dictionary<string, string>();
+        // Кунрэй (ti, tu, di) и маленькая кана через x/l (как в японской раскладке) — раньше таблицы заимствований:
+        // «tukue» — это つくえ, а не とぅくえ; てぃ и とぅ набираются как «thi», «twu»
+        foreach (var (r, k) in new[] { ("ti", "ち"), ("tu", "つ"), ("di", "ぢ"), ("du", "づ"), ("thi", "てぃ"), ("dhi", "でぃ"), ("twu", "とぅ"),
+                     ("xtsu", "っ"), ("ltsu", "っ"), ("xtu", "っ"), ("ltu", "っ"), ("xya", "ゃ"), ("lya", "ゃ"), ("xyu", "ゅ"), ("lyu", "ゅ"), ("xyo", "ょ"), ("lyo", "ょ"),
+                     ("xa", "ぁ"), ("la", "ぁ"), ("xi", "ぃ"), ("li", "ぃ"), ("xu", "ぅ"), ("lu", "ぅ"), ("xe", "ぇ"), ("le", "ぇ"), ("xo", "ぉ"), ("lo", "ぉ"), ("xwa", "ゎ"), ("lwa", "ゎ") })
+            d[r] = k;
         foreach (var kv in Map) if (!kv.Key.StartsWith("ゃ") && kv.Key.Length > 0 && !"ゃゅょぁぃぅぇぉ".Contains(kv.Key[0])) d.TryAdd(kv.Value, kv.Key);
         foreach (var (r, k) in new[] { ("si", "し"), ("ti", "ち"), ("tu", "つ"), ("hu", "ふ"), ("zi", "じ"), ("di", "ぢ"), ("du", "づ"),
                      ("sya", "しゃ"), ("syu", "しゅ"), ("syo", "しょ"), ("tya", "ちゃ"), ("tyu", "ちゅ"), ("tyo", "ちょ"),
