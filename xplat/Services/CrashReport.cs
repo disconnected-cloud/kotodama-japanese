@@ -74,11 +74,20 @@ public static class CrashReport
 
     public static void MarkSeen() { ProgressStore.P.LastCrashSeen = DateTime.Now; ProgressStore.Notify(); }
 
+    /// <summary>Путь к профилю (C:\Users\Имя, /home/имя) заменяется на %USERPROFILE%: отчёт уходит в публичный issue.</summary>
+    public static string Anonymize(string text)
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        if (home.Length > 3) text = text.Replace(home, "%USERPROFILE%", StringComparison.OrdinalIgnoreCase);
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"(?i)([A-Z]:\\Users\\)[^\\\r\n]+", "$1%USERNAME%"); // имя может быть с пробелом
+        return System.Text.RegularExpressions.Regex.Replace(text, @"(/home/|/Users/)[^/\s]+", "$1%USERNAME%");
+    }
+
     public static void Open(string? userNote = null)
     {
-        var entry = LastEntry() ?? "(журнал пуст)";
+        var entry = Anonymize(LastEntry() ?? "(журнал пуст)");
         if (entry.Length > 3000) entry = entry[..3000] + "\n…";
-        var warn = WarnTail(8);
+        var warn = Anonymize(WarnTail(8));
         var body = $"""
             **Что произошло:** {userNote ?? "опиши, что делал перед ошибкой"}
 
@@ -98,7 +107,15 @@ public static class CrashReport
             ```
             </details>
             """;
-        var url = $"https://github.com/{Updater.Repo}/issues/new?labels=bug&title={Uri.EscapeDataString("Ошибка: " + FirstLine(entry))}&body={Uri.EscapeDataString(body)}";
+        var title = Uri.EscapeDataString("Ошибка: " + FirstLine(entry));
+        var url = $"https://github.com/{Updater.Repo}/issues/new?labels=bug&title={title}&body={Uri.EscapeDataString(body)}";
+        // GitHub не принимает адреса длиннее ~8 КБ: длинный отчёт — в буфер обмена, в адресе только просьба вставить
+        if (url.Length > 7000)
+        {
+            try { _ = Avalonia.Controls.TopLevel.GetTopLevel(Shell.Main)?.Clipboard?.SetTextAsync(body); } catch { }
+            url = $"https://github.com/{Updater.Repo}/issues/new?labels=bug&title={title}&body={Uri.EscapeDataString("Отчёт скопирован в буфер обмена — вставь его сюда (Ctrl+V).")}";
+            try { Shell.Toast("Отчёт скопирован — вставь его в открывшуюся страницу", "!"); } catch { }
+        }
         try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); } catch { }
         MarkSeen();
     }
