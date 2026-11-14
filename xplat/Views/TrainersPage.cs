@@ -472,7 +472,7 @@ public sealed class TrainersPage : UserControl, IPage
     {
         var lvl = ProgressStore.P.Level;
         var pool = Db.SpeechLessons.SelectMany(l => l.Items.Select(i => (i.Jp, i.Ru)))
-            .Concat(Db.Dialogs.Where(d => string.CompareOrdinal(d.Level, lvl) >= 0).SelectMany(d => d.Lines.Select(l => (l.Jp, l.Ru))))
+            .Concat(Db.Dialogs.Where(d => Db.LevelRank(d.Level) <= Db.LevelRank(lvl)).SelectMany(d => d.Lines.Select(l => (l.Jp, l.Ru))))
             .Concat(Db.Words.Where(w => w.Level == lvl && w.ExJp.Length > 0).Select(w => (Jp: w.ExJp, Ru: w.ExRu)))
             .Where(x => x.Jp.Length is >= 4 and <= 28 && x.Ru.Length is > 0 and <= 70)
             .DistinctBy(x => x.Ru).ToList();

@@ -123,6 +123,9 @@ public static class Db
     static readonly Lazy<Quest[]> _quests = new(LoadQuests, LazyThreadSafetyMode.PublicationOnly);
     public static Quest[] Quests => _quests.Value;
 
+    /// <summary>Сложность уровня для сравнения (строки сравнивать нельзя: «1000» и «Живой» — не JLPT): N5 = 0 … N1 = 4.</summary>
+    public static int LevelRank(string level) => level switch { "N5" => 0, "N4" or "1000" or "Живой" => 1, "N3" => 2, "N2" => 3, "N1" => 4, _ => 0 };
+
     public static IEnumerable<Word> WordsOf(string level) => Words.Where(w => w.Level == level);
     public static IEnumerable<KanjiInfo> KanjiOf(string level) => Kanji.Where(k => k.Level == level);
 
