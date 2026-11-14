@@ -275,7 +275,7 @@ public partial class MainView : UserControl
                 cell.Children.Add(badge);
             }
             var k = key;
-            cell.PointerReleased += (_, _) => { if (_rootKey == k && _stack.Count > 1) ShowRoot(k); else NavigateRoot(k); };
+            cell.OnClick(() => { if (_rootKey == k && _stack.Count > 1) ShowRoot(k); else NavigateRoot(k); });
             _tabItems[key] = new TabItem(pill, pillScale, off, on, lab);
             _tabs.Children.Add(cell.Col(i));
         }

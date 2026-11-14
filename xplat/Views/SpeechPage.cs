@@ -67,7 +67,7 @@ public sealed class SpeechPage : UserControl, IPage
         sp.Children.Add(U.Pill("Особое", U.B("AccentSoft"), U.B("Accent")).Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 10, 0, 0); }));
         var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
         HomePage.Hover(card);
-        card.PointerReleased += (_, _) => Shell.OpenFrom(card, new SpeechLessonPage(PersonalLesson()));
+        card.OnClick(() => Shell.OpenFrom(card, new SpeechLessonPage(PersonalLesson())));
         return card;
     }
 
@@ -80,7 +80,7 @@ public sealed class SpeechPage : UserControl, IPage
         sp.Children.Add(U.Pill("Особое", U.B("AccentSoft"), U.B("Accent")).Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 10, 0, 0); }));
         var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
         HomePage.Hover(card);
-        card.PointerReleased += (_, _) => Shell.OpenFrom(card, new PairsPage());
+        card.OnClick(() => Shell.OpenFrom(card, new PairsPage()));
         return card;
     }
 
@@ -98,7 +98,7 @@ public sealed class SpeechPage : UserControl, IPage
         sp.Children.Add(new ProgressBar { Maximum = 100, Value = avg, Height = 4, Margin = new Thickness(0, 12, 0, 0) });
         var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
         HomePage.Hover(card);
-        card.PointerReleased += (_, _) => Shell.OpenFrom(card, new SpeechLessonPage(l));
+        card.OnClick(() => Shell.OpenFrom(card, new SpeechLessonPage(l)));
         return card;
     }
 }

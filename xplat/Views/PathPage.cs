@@ -299,7 +299,7 @@ public sealed class PathPage : UserControl, IPage
         if (unlocked)
         {
             HomePage.Hover(card);
-            card.PointerReleased += (_, _) => Shell.OpenFrom(card, new UnitPage(u));
+            card.OnClick(() => Shell.OpenFrom(card, new UnitPage(u)));
         }
         g.Children.Add(card.Col(1));
         return g;

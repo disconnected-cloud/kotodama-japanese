@@ -73,7 +73,7 @@ public sealed class ParticlesPage : UserControl, IPage
             var sp = U.Stack(U.T(mode.title, "H3", 16), U.T(mode.sub, "Muted", 13).M(0, 4, 0, 0));
             var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
             HomePage.Hover(card);
-            card.PointerReleased += (_, _) => { Shell.Main.PendingExpand = card; Shell.Open(Quiz(mode.title, mode.keys)); };
+            card.OnClick(() => { Shell.Main.PendingExpand = card; Shell.Open(Quiz(mode.title, mode.keys)); });
             grid.Children.Add(card);
         }
         root.Children.Add(grid);

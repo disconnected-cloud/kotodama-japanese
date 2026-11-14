@@ -69,7 +69,7 @@ public sealed partial class SettingsPage : UserControl, IPage
             var k = key;
             item.PointerEntered += (_, _) => { if (k != _tab) item.Background = U.B("SelectedTint"); };
             item.PointerExited += (_, _) => { if (k != _tab) item.Background = Brushes.Transparent; };
-            item.PointerReleased += (_, _) => { if (Shell.Compact) Shell.Open(new SettingsPage(k)); else { _tab = k; OnShown(); } };
+            item.OnClick(() => { if (Shell.Compact) Shell.Open(new SettingsPage(k)); else { _tab = k; OnShown(); } });
             tabs.Children.Add(item);
         }
 
@@ -234,7 +234,7 @@ public sealed partial class SettingsPage : UserControl, IPage
                 Child = on ? new TextBlock { Text = "✓", Foreground = Brushes.White, FontWeight = FontWeight.Bold, FontSize = 18, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } : null,
             };
             var k = key;
-            dot.PointerReleased += (_, _) => { if (p.AccentColor == k) return; p.AccentColor = k; ProgressStore.Notify(); OnShown(); AskRestart(); };
+            dot.OnClick(() => { if (p.AccentColor == k) return; p.AccentColor = k; ProgressStore.Notify(); OnShown(); AskRestart(); });
             row.Children.Add(U.Stack(dot.Center(), U.T(name, "Muted", 12).Center().M(0, 6, 0, 0)).M(0, 0, 18, 0));
         }
         return row;

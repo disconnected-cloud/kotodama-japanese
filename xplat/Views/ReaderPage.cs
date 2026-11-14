@@ -203,7 +203,7 @@ public sealed class ReaderPage : UserControl, IPage
             var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
             HomePage.Hover(card);
             var text = t;
-            card.PointerReleased += (_, _) => Shell.OpenFrom(card, new TextPage(text));
+            card.OnClick(() => Shell.OpenFrom(card, new TextPage(text)));
             grid.Children.Add(card);
         }
         root.Children.Add(grid);
@@ -402,7 +402,7 @@ public sealed class TextPage : UserControl, IPage, IResumable
             {
                 stack.PointerEntered += (_, _) => surf.Foreground = accent;
                 stack.PointerExited += (_, _) => surf.Foreground = text;
-                stack.PointerReleased += (_, _) => ShowWord(tok);
+                stack.OnClick(() => ShowWord(tok));
             }
             wrap.Children.Add(stack);
         }

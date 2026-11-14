@@ -54,7 +54,7 @@ public sealed class QuestsPage : UserControl, IPage
         g.Children.Add(info.M(16, 0, 0, 0).Col(1));
         var card = new Border { Classes = { "Card" }, Child = g, Margin = new Thickness(6), Cursor = Cursors.Hand, Padding = new Thickness(18, 16) };
         HomePage.Hover(card);
-        card.PointerReleased += (_, _) => Shell.OpenFrom(card, new QuestRun(q));
+        card.OnClick(() => Shell.OpenFrom(card, new QuestRun(q)));
         return card;
     }
 }
@@ -172,7 +172,7 @@ public sealed class QuestRun : UserControl, IPage, IKeyTarget
             if (!_solved && !wrong)
             {
                 HomePage.Hover(b);
-                b.PointerReleased += (_, _) => Choose(choice);
+                b.OnClick(() => Choose(choice));
             }
             _options.Children.Add(b);
         }

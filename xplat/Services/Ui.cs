@@ -382,10 +382,24 @@ public static class U
         return el;
     }
 
-    /// <summary>Клик левой кнопкой (замена WPF MouseLeftButtonUp).</summary>
-    public static T OnClick<T>(this T el, Action a) where T : Control
+    /// <summary>
+    /// Клик левой кнопкой — и то же самое с клавиатуры: элемент получает фокус по Tab, срабатывает по Enter и пробелу,
+    /// а экранный диктор читает его подпись (8.1, доступность). name — подпись, если в элементе нет текста.
+    /// </summary>
+    public static T OnClick<T>(this T el, Action a, string? name = null) where T : Control
     {
         el.PointerReleased += (_, e) => { if (e.InitialPressMouseButton == MouseButton.Left) a(); };
+        el.Focusable = true;
+        el.IsTabStop = true;
+        el.Cursor ??= new Cursor(StandardCursorType.Hand);
+        el.KeyDown += (_, e) => { if (e.Key is Key.Enter or Key.Space && !e.Handled) { e.Handled = true; a(); } };
+        if (name != null) Avalonia.Automation.AutomationProperties.SetName(el, name);
+        else el.AttachedToVisualTree += (_, _) =>
+        {
+            if (Avalonia.Automation.AutomationProperties.GetName(el) is { Length: > 0 }) return;
+            var text = string.Join(" ", el.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).Where(t => !string.IsNullOrWhiteSpace(t)).Take(2));
+            if (text.Length > 0) Avalonia.Automation.AutomationProperties.SetName(el, text);
+        };
         return el;
     }
 

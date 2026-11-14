@@ -216,7 +216,7 @@ public sealed class HomePage : UserControl, IPage
         g.Children.Add(U.Stack(U.T(title, "H3", 14), U.T(sub, "Muted", 12)).CenterV().M(12, 0, 0, 0).Col(1));
         var card = new Border { Classes = { "Card" }, Child = g, Margin = new Thickness(6), Padding = new Thickness(16, 12, 16, 12), Cursor = Cursors.Hand };
         Hover(card);
-        card.PointerReleased += (_, _) => { if (key == "radicals") Shell.Open(new RadicalsPage()); else Shell.Go(key); };
+        card.OnClick(() => { if (key == "radicals") Shell.Open(new RadicalsPage()); else Shell.Go(key); });
         return card;
     }
 

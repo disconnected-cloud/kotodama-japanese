@@ -112,7 +112,7 @@ public sealed class GrammarPage : UserControl, IPage
         if (!Shell.Compact) g.Children.Add(U.Pill(l.Level).CenterV().Col(2));
         var card = new Border { Classes = { "Card" }, Child = g, Margin = new Thickness(Shell.Compact ? 4 : 8), Padding = new Thickness(Shell.Compact ? 14 : 18), Cursor = Cursors.Hand };
         HomePage.Hover(card);
-        card.PointerReleased += (_, _) => Shell.OpenFrom(card, new GrammarLessonPage(l));
+        card.OnClick(() => Shell.OpenFrom(card, new GrammarLessonPage(l)));
         return card;
     }
 }

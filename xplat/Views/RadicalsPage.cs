@@ -53,7 +53,7 @@ public sealed class RadicalsPage : UserControl, IPage
                     U.T(name.Length > 12 ? name[..12] + "…" : name, "Muted", 12).Center(), U.T($"×{kanji.Count}", "Muted", 12, U.B("Faint")).Center()).CenterV(),
             }.Tip(name);
             var pp = part;
-            tile.PointerReleased += (_, _) => { _sel = pp; OnShown(); };
+            tile.OnClick(() => { _sel = pp; OnShown(); });
             grid.Children.Add(tile);
         }
         body.Children.Add(grid);

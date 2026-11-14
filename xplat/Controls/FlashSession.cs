@@ -73,7 +73,7 @@ public sealed class FlashSession : Grid, IPage, IKeyTarget, IFocusPage
             Margin = new Thickness(0, 10, 0, 22), Cursor = Cursors.Hand, Child = _face,
             BoxShadow = BoxShadows.Parse("0 6 24 0 #59000000"),
         };
-        _card.PointerReleased += (_, _) => { if (!_flipped) Flip(); };
+        _card.OnClick(() => { if (!_flipped) Flip(); });
         SetRow(_card, 1); _main.Children.Add(_card);
         SetRow(_bottom, 2); _main.Children.Add(_bottom);
 

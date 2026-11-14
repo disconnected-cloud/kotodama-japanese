@@ -66,7 +66,7 @@ public sealed class JapanPage : UserControl, IPage
             U.T(a.Lead, "Muted", 12.5).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.MaxHeight = 52; t.TextTrimming = TextTrimming.CharacterEllipsis; }).M(0, 6, 0, 0));
         var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
         HomePage.Hover(card);
-        card.PointerReleased += (_, _) => Shell.OpenFrom(card, new ArticlePage(a));
+        card.OnClick(() => Shell.OpenFrom(card, new ArticlePage(a)));
         return card;
     }
 }

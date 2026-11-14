@@ -211,7 +211,7 @@ public sealed class MemoryGame : Grid, IPage, IFocusPage
         var back = U.Jp("?", 34, U.B("Faint"), true).Center().CenterV();
         var b = new Border { Classes = { "Card" }, Height = Shell.Compact ? 104 : 120, Margin = new Thickness(Shell.Compact ? 4 : 6), Cursor = Cursors.Hand, Child = back, Tag = (w, jp, face, back) };
         if (Shell.Compact) b.Padding = new Thickness(6);
-        b.PointerReleased += (_, _) => Click(b);
+        b.OnClick(() => Click(b));
         return b;
     }
 

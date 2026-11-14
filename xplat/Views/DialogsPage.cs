@@ -46,7 +46,7 @@ public sealed class DialogsPage : UserControl, IPage
         g.Children.Add(new TextBlock { Text = done ? "" : "", FontFamily = U.R<FontFamily>("Icons"), Foreground = U.B(done ? "Good" : "Faint"), VerticalAlignment = VerticalAlignment.Center }.Col(2));
         var card = new Border { Classes = { "Card" }, Child = g, Margin = new Thickness(6), Padding = new Thickness(16), Cursor = Cursors.Hand };
         HomePage.Hover(card);
-        card.PointerReleased += (_, _) => Shell.OpenFrom(card, new DialogPage(d));
+        card.OnClick(() => Shell.OpenFrom(card, new DialogPage(d)));
         return card;
     }
 }

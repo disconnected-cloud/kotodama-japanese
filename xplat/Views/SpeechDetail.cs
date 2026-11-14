@@ -104,7 +104,7 @@ public static class SpeechDetail
             };
             cell.Tip(wrong ? (op == '~' ? $"Нужно «{tm}» ({Kana.ToRomaji(tm)}), прозвучало «{hm}» — нажми, чтобы послушать" : $"Пропущено «{tm}» — нажми, чтобы послушать")
                 : unclear ? "Прозвучало нечётко — нажми, чтобы послушать образец" : "Нажми, чтобы послушать этот слог");
-            cell.PointerReleased += (_, _) => { PlayMora(targetJp, i, tm); Anim.Pop(cell, 0.85); };
+            cell.OnClick(() => { PlayMora(targetJp, i, tm); Anim.Pop(cell, 0.85); });
             wrap.Children.Add(cell);
         }
         var hint = bad == 0 ? "Все слоги верно · нажми на любой, чтобы послушать отдельно"

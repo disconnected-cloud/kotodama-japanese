@@ -58,7 +58,7 @@ public sealed class MicButton : Grid
         _btn.PointerEntered += (_, _) => { if (State == Mode.Idle) Anim.Run((_pressS, "s"), _pressS.ScaleX, 1.05, 180, v => { _pressS.ScaleX = _pressS.ScaleY = v; }); };
         _btn.PointerExited += (_, _) => Anim.Run((_pressS, "s"), _pressS.ScaleX, 1, 220, v => { _pressS.ScaleX = _pressS.ScaleY = v; });
         _btn.PointerPressed += (_, _) => Anim.Run((_pressS, "s"), _pressS.ScaleX, 0.94, 90, v => { _pressS.ScaleX = _pressS.ScaleY = v; });
-        _btn.PointerReleased += (_, _) => { Anim.Run((_pressS, "s"), _pressS.ScaleX, 1, 260, v => { _pressS.ScaleX = _pressS.ScaleY = v; }, Ease.BackOut(0.8)); Click?.Invoke(); };
+        _btn.OnClick(() => { Anim.Run((_pressS, "s"), _pressS.ScaleX, 1, 260, v => { _pressS.ScaleX = _pressS.ScaleY = v; }, Ease.BackOut(0.8)); Click?.Invoke(); });
         ToolTip.SetTip(_btn, "Говорить (пробел)");
 
         _timer.Tick += (_, _) => Tick();

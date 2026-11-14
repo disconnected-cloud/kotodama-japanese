@@ -389,7 +389,7 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget, IFocusPage
             {
                 int ii = i;
                 card.Cursor = Cursors.Hand;
-                card.PointerReleased += (_, _) => Launch(ii);
+                card.OnClick(() => Launch(ii));
             }
             row.Children.Add(card.Col(1));
             row.Children.Add(U.T(st == 2 ? "пропущено" : $"{s.Minutes} мин", "Muted", 12).CenterV().M(12, 0, 4, 0).Col(2).DesktopOnly());

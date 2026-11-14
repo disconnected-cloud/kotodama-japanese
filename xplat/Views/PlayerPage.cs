@@ -317,7 +317,7 @@ public sealed class MiniPlayer : Border
         info.Children.Add(Art.Icon("headphones", 26).CenterV());
         info.Children.Add(_jp.M(10, 0, 10, 0));
         info.Children.Add(_ru);
-        info.PointerReleased += (_, _) => Shell.Open(new PlayerPage());
+        info.OnClick(() => Shell.Open(new PlayerPage()));
         ToolTip.SetTip(info, "Открыть аудиоплеер");
         var row = new StackPanel { Orientation = Orientation.Horizontal };
         row.Children.Add(Round("prev", "Назад", () => Player.Jump(-1)).CenterV());

@@ -114,7 +114,7 @@ public sealed class LearnSession : Grid, IPage, IKeyTarget, IFocusPage
                     U.Jp(it.Reading, 13, U.B("Accent")).Center().M(0, 6, 0, 0).Also(t => t.IsVisible = it.Reading != it.Front),
                     U.T(it.Meaning, "Body", 13).Center().M(0, 4, 0, 0).Also(t => { t.TextAlignment = TextAlignment.Center; t.TextWrapping = TextWrapping.Wrap; t.MaxHeight = 40; })),
             }.Tip("Нажми — послушать");
-            tile.PointerReleased += (_, _) => Speech.Say(it.Speak);
+            tile.OnClick(() => Speech.Say(it.Speak));
             Views.HomePage.Hover(tile);
             grid.Children.Add(tile);
         }

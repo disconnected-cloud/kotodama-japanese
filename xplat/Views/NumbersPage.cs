@@ -56,7 +56,7 @@ public sealed class NumbersPage : UserControl, IPage
         var sp = U.Stack(Emoji.Img(emoji, 44).Also(i => i.HorizontalAlignment = HorizontalAlignment.Left), U.T(title, "H3", 15).M(0, 10, 0, 3), U.T(sub, "Muted").Also(t => t.MinHeight = 34));
         var card = new Border { Classes = { "Card" }, Child = sp, Margin = new Thickness(6), Cursor = Cursors.Hand };
         HomePage.Hover(card);
-        card.PointerReleased += (_, _) => { Shell.Main.PendingExpand = card; go(); };
+        card.OnClick(() => { Shell.Main.PendingExpand = card; go(); });
         return card;
     }
 

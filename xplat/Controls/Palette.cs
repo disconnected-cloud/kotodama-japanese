@@ -137,7 +137,7 @@ public sealed class Palette : Grid
             g.Children.Add(U.Jp(it.Icon, 18, U.B("Accent"), true).CenterV());
             g.Children.Add(U.Stack(U.T(it.Title, "H3", 14), U.T(it.Sub, "Muted", 12)).Col(1));
             var row = new Border { Child = g, Padding = new Thickness(10, 8, 10, 8), CornerRadius = new CornerRadius(10), Cursor = Cursors.Hand, Background = i == _sel ? U.B("AccentSoft") : Brushes.Transparent };
-            row.PointerReleased += (_, _) => Run(it);
+            row.OnClick(() => Run(it));
             int idx = i;
             row.PointerEntered += (_, _) => { if (_sel != idx) { _sel = idx; Render(); } };
             _list.Children.Add(row);

@@ -86,7 +86,7 @@ public static class SmartHints
             Child = U.Jp(text, 13).Also(t => t.TextWrapping = TextWrapping.NoWrap), Padding = new Thickness(9, 3), Margin = new Thickness(0, 0, 6, 4),
             CornerRadius = new CornerRadius(8), Background = U.B("Surface2"), BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(1), Cursor = Cursors.Hand,
         }.Tip(tip);
-        b.PointerReleased += (_, _) => go();
+        b.OnClick(() => go());
         return b;
     }
 

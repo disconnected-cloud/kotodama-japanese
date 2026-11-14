@@ -157,7 +157,7 @@ public sealed class KanaPage : UserControl, IPage
         }.Tip($"{ch} — {c.Romaji} · освоение {score}/5");
         b.PointerEntered += (_, _) => b.BorderBrush = U.B("Accent");
         b.PointerExited += (_, _) => b.BorderBrush = U.B("Stroke");
-        b.PointerReleased += (_, _) => { Speech.Say(ch); Anim.Pop(b, 0.85); };
+        b.OnClick(() => { Speech.Say(ch); Anim.Pop(b, 0.85); });
         return b;
     }
 
