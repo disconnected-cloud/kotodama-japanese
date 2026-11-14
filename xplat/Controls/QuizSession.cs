@@ -146,7 +146,15 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
 
     void Start()
     {
-        Children.Clear(); Children.Add(_main);
+        Children.Clear();
+        if (_all.Count == 0)
+        {
+            // нечего проверять (всё выучено, пустой набор) — понятный экран вместо падения (Д1)
+            Children.Add(U.Stack(U.T("Пока нечего проверять", "H2").Center(), U.T("В этом наборе нет вопросов. Выучи новые слова или выбери другой набор.", "Muted").Center().M(0, 8, 0, 16),
+                U.Btn("Назад", Shell.Back, "Primary", "").Center()).Also(s => { s.VerticalAlignment = VerticalAlignment.Center; s.Margin = new Thickness(24); }));
+            return;
+        }
+        Children.Add(_main);
         _queue = _all.Shuffled();
         _retried.Clear();
         _idx = _correct = _answered = _combo = _bestCombo = _xp = 0;
