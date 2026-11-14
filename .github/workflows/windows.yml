@@ -81,6 +81,12 @@ jobs:
           ls -la snaps
           cat "$APPDATA/Matsubakira/crash.log" 2>/dev/null || true
 
+      - name: Замер запуска (метки Perf) — артефакт, чтобы видеть регрессии
+        if: always()
+        run: |
+          timeout 120 ./build/Kotodama.exe --perf snaps/perf.txt || true
+          cat snaps/perf.txt || true
+
       - name: Сравнение с эталонами (tests/snapshots)
         run: |
           pip install --quiet pillow
