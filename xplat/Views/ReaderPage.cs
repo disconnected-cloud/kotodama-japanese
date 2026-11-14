@@ -237,9 +237,36 @@ public sealed class ReaderPage : UserControl, IPage
     {
         using var req = new HttpRequestMessage(HttpMethod.Get, url);
         req.Headers.UserAgent.ParseAdd("Mozilla/5.0 Kotodama");
-        using var resp = await Http.SendAsync(req);
+        using var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
         resp.EnsureSuccessStatusCode();
-        return ExtractJapanese(await resp.Content.ReadAsStringAsync());
+        // не больше 5 МБ: ссылка на огромный файл не должна съесть память
+        const int Max = 5 << 20;
+        if (resp.Content.Headers.ContentLength > Max) throw new InvalidDataException("страница слишком большая");
+        await using var src = await resp.Content.ReadAsStreamAsync();
+        var ms = new MemoryStream();
+        var buf = new byte[1 << 16]; int n;
+        while ((n = await src.ReadAsync(buf)) > 0) { ms.Write(buf, 0, n); if (ms.Length > Max) throw new InvalidDataException("страница слишком большая"); }
+        return ExtractJapanese(Decode(ms.ToArray(), resp.Content.Headers.ContentType?.CharSet));
+    }
+
+    /// <summary>
+    /// Текст страницы в её кодировке: заголовок ответа, затем &lt;meta charset&gt;, иначе UTF-8. Shift_JIS и EUC-JP
+    /// (в т.ч. Аодзора Бунко) требуют провайдера кодовых страниц — без него были «кракозябры» (Г11).
+    /// </summary>
+    public static string Decode(byte[] bytes, string? headerCharset)
+    {
+        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+        var name = headerCharset?.Trim('"', ' ');
+        if (string.IsNullOrEmpty(name))
+        {
+            var head = System.Text.Encoding.ASCII.GetString(bytes, 0, Math.Min(bytes.Length, 4096));
+            var m = System.Text.RegularExpressions.Regex.Match(head, @"charset\s*=\s*[""']?([\w\-]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (m.Success) name = m.Groups[1].Value;
+        }
+        System.Text.Encoding enc;
+        try { enc = string.IsNullOrEmpty(name) ? System.Text.Encoding.UTF8 : System.Text.Encoding.GetEncoding(name); }
+        catch (ArgumentException) { enc = System.Text.Encoding.UTF8; }
+        return enc.GetString(bytes);
     }
 
     /// <summary>
