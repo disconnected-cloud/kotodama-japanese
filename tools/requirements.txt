@@ -1,0 +1,4 @@
+fugashi==1.5.2
+unidic-lite==1.0.8
+pillow==13.0.0
+fonttools==4.68.0

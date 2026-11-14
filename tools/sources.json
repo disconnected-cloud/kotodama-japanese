@@ -1,0 +1,35 @@
+{
+  "//": "Закреплённые версии исходных данных (Е5). sha256 = null — источник обновляется на месте (EDRDG, Tatoeba): fetch_sources.py печатает хэш скачанного файла, его стоит записать сюда вместе с датой.",
+  "jmdict-rus": {
+    "url": "https://github.com/scriptin/jmdict-simplified/releases/download/3.6.2%2B20261109214828/jmdict-rus-3.6.2%2B20261109214828.json.tgz",
+    "sha256": "47058e9e7ce15b102b523d828bc7ce9fa540ec8563f7836857611fa947105380",
+    "license": "CC BY-SA 4.0 (EDRDG)"
+  },
+  "kanjidic2": {
+    "url": "https://github.com/scriptin/jmdict-simplified/releases/download/3.6.2%2B20261109214828/kanjidic2-all-3.6.2%2B20261109214828.json.tgz",
+    "sha256": "733dd72ce7abad078dca9ab9727038aa496c51be54c643a0fa08f375f23649bf",
+    "license": "CC BY-SA 4.0 (EDRDG)"
+  },
+  "kradfile": {
+    "url": "http://ftp.edrdg.org/pub/Nihongo/kradfile.gz",
+    "sha256": null,
+    "license": "CC BY-SA 4.0 (EDRDG)"
+  },
+  "kanjium-accents": {
+    "url": "https://raw.githubusercontent.com/mifunetoshiro/kanjium/9ebca4589565c696e7c39e089e2e928ad65f678c/data/source_files/raw/accents.txt",
+    "sha256": null,
+    "license": "CC BY-SA 4.0"
+  },
+  "kanjivg": {
+    "url": "https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji/",
+    "sha256": null,
+    "license": "CC BY-SA 3.0",
+    "note": "strokes.py качает SVG по одному знаку в папку кэша"
+  },
+  "tatoeba": {
+    "url": "https://downloads.tatoeba.org/exports/per_language/jpn/jpn_sentences.tsv.bz2",
+    "sha256": null,
+    "license": "CC BY 2.0 FR",
+    "note": "нужны также rus_sentences.tsv.bz2 и links.tar.bz2 из того же раздела"
+  }
+}
