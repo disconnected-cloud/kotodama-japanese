@@ -91,7 +91,9 @@ public sealed class Progress
     public List<string> StudySkipped { get; set; } = new();
     public int StudySeconds { get; set; }
     public int StudyXpStart { get; set; }
-    public bool PrefetchVoice { get; set; } = true;               // готовить озвучку сессии заранее (VOICEVOX в фоне)
+    public bool PrefetchVoice { get; set; } = true;
+    public bool SystemTheme { get; set; }                          // тема как в Windows (светлая/тёмная по системной настройке)
+    public bool HideMascot { get; set; }                           // не показывать маскота на главной               // готовить озвучку сессии заранее (VOICEVOX в фоне)
     public int Schema { get; set; }                                // номер схемы прогресса: применённые миграции (ProgressStore.Migrations)
     public int StudySessions { get; set; }                         // всего пройдено сессий
 }

@@ -124,7 +124,8 @@ public sealed partial class SettingsPage : UserControl, IPage
 
             case "look":
                 yield return Section("Тема", "Применяется после перезапуска.",
-                    Choice(new[] { 0, 2, 1 }, p.LightTheme ? 1 : p.NightTheme ? 2 : 0, v => { p.LightTheme = v == 1; p.NightTheme = v == 2; AskRestart(); }, v => v switch { 0 => "Тёмная", 1 => "Светлая", _ => "Ночь" }));
+                    Choice(new[] { 3, 0, 2, 1 }, p.SystemTheme ? 3 : p.LightTheme ? 1 : p.NightTheme ? 2 : 0, v => { p.SystemTheme = v == 3; p.LightTheme = v == 1; p.NightTheme = v == 2; AskRestart(); }, v => v switch { 3 => "Как в Windows", 0 => "Тёмная", 1 => "Светлая", _ => "Ночь" }));
+                yield return Section("Маскот", null, Toggle("Показывать Википе-тан на главной", !p.HideMascot, v => p.HideMascot = !v));
                 var fonts = Enumerable.Range(0, App.JpFonts.Length).Where(i => App.FontInstalled(App.JpFonts[i].family)).ToArray();
                 yield return Section("Шрифт японского текста", "«Учебник» — как в японских школьных прописях: формы знаков ближе к рукописным. Применяется после перезапуска.", U.Stack(
                     Choice(fonts, Math.Max(0, Array.FindIndex(App.JpFonts, f => f.name == p.JpFontName)), v => { p.JpFontName = App.JpFonts[v].name; AskRestart(); }, v => App.JpFonts[v].title),

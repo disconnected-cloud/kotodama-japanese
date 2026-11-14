@@ -121,7 +121,21 @@ public static class Anim
     public static bool LowEndDevice =>
         OperatingSystem.IsAndroid() && (Environment.ProcessorCount <= 4 || GC.GetGCMemoryInfo().TotalAvailableMemoryBytes is > 0 and < 3L << 30);
 
-    public static void ApplyMotion(int motion) => Lite = motion == 2 || (motion == 0 && LowEndDevice);
+    public static void ApplyMotion(int motion) => Lite = motion == 2 || (motion == 0 && (LowEndDevice || SystemReducedMotion));
+
+    /// <summary>Windows: «Специальные возможности → Визуальные эффекты → Эффекты анимации» выключены — без анимаций и тут (7.6).</summary>
+    static bool SystemReducedMotion
+    {
+        get
+        {
+            if (!OperatingSystem.IsWindows()) return false;
+            try { return SystemParametersInfo(0x1042 /* SPI_GETCLIENTAREAANIMATION */, 0, out int on, 0) && on == 0; }
+            catch { return false; } // нет user32 — считаем, что анимации разрешены
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    static extern bool SystemParametersInfo(uint action, uint param, out int value, uint ini);
 
     public static void FadeUp(Visual el, int delay = 0, double dy = 16, int ms = 380)
     {

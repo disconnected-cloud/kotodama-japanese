@@ -25,9 +25,12 @@ public partial class App : Application
     {
         Perf.Mark("Avalonia готова");
         if (!ProgressStore.IsLoaded) ProgressStore.Load(); // на телефоне нет Program.Main
-        bool light = ProgressStore.P.LightTheme || Environment.GetCommandLineArgs().Contains("--light");
+        // «Как в системе»: светлая или тёмная — по настройке Windows (7.2)
+        bool light = ProgressStore.P.SystemTheme && !Environment.GetCommandLineArgs().Any(a => a is "--night" or "--contrast")
+            ? PlatformSettings?.GetColorValues().ThemeVariant == Avalonia.Platform.PlatformThemeVariant.Light
+            : ProgressStore.P.LightTheme || Environment.GetCommandLineArgs().Contains("--light");
         RequestedThemeVariant = light ? ThemeVariant.Light : ThemeVariant.Dark;
-        bool night = !light && (ProgressStore.P.NightTheme || Environment.GetCommandLineArgs().Contains("--night"));
+        bool night = !light && !ProgressStore.P.SystemTheme && (ProgressStore.P.NightTheme || Environment.GetCommandLineArgs().Contains("--night"));
         ApplyPalette(Resources, light, ProgressStore.P.AccentColor, night);
         ApplyJpFont(Resources, ProgressStore.P.JpFontName);
         Anim.ApplyMotion(ProgressStore.P.Motion);

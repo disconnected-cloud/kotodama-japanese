@@ -93,7 +93,7 @@ public sealed class HomePage : UserControl, IPage
         hero.Children.Add(left.M(28, 22, 12, 22));
         // крупно и по пояс: баннер обрезает низ картинки
         bool studiedToday = p.Flags.Contains("study:" + DateTime.Today.ToString("yyyy-MM-dd"));
-        var kotoha = studiedToday ? Art.Anime("zen", 300) : Art.Mascot(mood == Mood.Joy ? 330 : 480, mood);
+        var kotoha = p.HideMascot ? new Control() : studiedToday ? Art.Anime("zen", 300) : Art.Mascot(mood == Mood.Joy ? 330 : 480, mood);
         kotoha.VerticalAlignment = VerticalAlignment.Top;
         kotoha.Margin = new Thickness(0, 14, 30, studiedToday || mood == Mood.Joy ? 0 : -400);
         hero.Children.Add(kotoha.DesktopOnly().Col(1));

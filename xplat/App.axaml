@@ -254,6 +254,14 @@
       <Setter Property="Background" Value="{DynamicResource Surface2}"/>
       <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrong}"/>
     </Style>
+    <!-- Видимая рамка фокуса при работе с клавиатуры (Tab): мышью не появляется (7.6) -->
+    <Style Selector=":is(Button):focus-visible, RadioButton:focus-visible, ToggleButton:focus-visible, CheckBox:focus-visible, ToggleSwitch:focus-visible">
+      <Setter Property="FocusAdorner">
+        <FocusAdornerTemplate>
+          <Border BorderBrush="{DynamicResource Accent}" BorderThickness="2" CornerRadius="10" Margin="-3"/>
+        </FocusAdornerTemplate>
+      </Setter>
+    </Style>
     <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
       <Setter Property="Background" Value="{DynamicResource Surface2}"/>
       <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
