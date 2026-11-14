@@ -22,6 +22,7 @@ namespace Matsubakira;
 public partial class MainView : UserControl
 {
     readonly Dictionary<string, Control> _roots = new();
+    readonly List<string> _rootOrder = new();
     readonly List<Control> _stack = new();
     readonly Grid _root = new();
     readonly ContentControl _host = new() { Focusable = false };
@@ -58,7 +59,7 @@ public partial class MainView : UserControl
     {
         Perf.Mark("построение интерфейса");
         Shell.Main = this;
-        ProgressStore.Replaced += () => Avalonia.Threading.Dispatcher.UIThread.Post(() => { _roots.Clear(); NavigateRoot(_rootKey); });
+        ProgressStore.Replaced += () => Avalonia.Threading.Dispatcher.UIThread.Post(() => { _roots.Clear(); _rootOrder.Clear(); NavigateRoot(_rootKey); });
         Background = U.B("Bg");
         _host.RenderTransform = _hostShift;
 
@@ -280,6 +281,9 @@ public partial class MainView : UserControl
             page = Factories[key]();
             if (key != "review") _roots[key] = page;
         }
+        // в памяти — последние 6 разделов, а не все 18 навсегда (раздел 6); давно не открытый строится заново
+        _rootOrder.Remove(key); _rootOrder.Add(key);
+        while (_rootOrder.Count > 6) { _roots.Remove(_rootOrder[0]); _rootOrder.RemoveAt(0); }
         _rootKey = key;
         HighlightTab();
         _stack.Clear();
