@@ -74,6 +74,7 @@ jobs:
       - name: AppImage — один файл, запускается на любом дистрибутиве, со значком и ярлыком (8.1)
         run: |
           set -e
+          sudo apt-get install -y -qq desktop-file-utils >/dev/null  # appimagetool проверяет ярлык
           APP=Kotodama.AppDir
           mkdir -p $APP/usr/lib/kotodama
           cp -r out/Kotodama-linux/. $APP/usr/lib/kotodama/
