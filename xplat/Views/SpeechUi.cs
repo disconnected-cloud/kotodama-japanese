@@ -45,10 +45,17 @@ public static class SpeechUi
             return new SpeechCheck(false, 0, "", "Ничего не услышано. Говори громче или открой «Проверка микрофона» в разделе «Говорение».");
         await JDict.LoadAsync();
         var a1 = await Asr.TranscribeDetailedAsync(r.Wav, ct);
-        var s1 = Speech.Score(a1.Text, a1.Confidence, jp, kana) with { Tokens = a1.Tokens };
-        if (s1.Score >= 88) return s1;
+        if (Decide(a1, null, jp, kana) is { Score: >= 88 } s1) return s1;
         status?.Invoke("Уточняю распознавание…");
         var a2 = await Asr.TranscribeDetailedAsync(r.Wav, ct, jp);
+        return Decide(a1, a2, jp, kana);
+    }
+
+    /// <summary>Итог двух проходов: a1 — без подсказки, a2 — с подсказкой (или null). Без обращения к модели — для замеров.</summary>
+    public static SpeechCheck Decide(AsrResult a1, AsrResult? a2, string jp, string kana)
+    {
+        var s1 = Speech.Score(a1.Text, a1.Confidence, jp, kana) with { Tokens = a1.Tokens };
+        if (a2 == null || s1.Score >= 88) return s1;
         int cap = HintCap(s1.Heard.Length == 0, Similar(s1.HeardKana, jp, kana), a2.Confidence);
         var s2 = Speech.Score(a2.Text, a2.Confidence, jp, kana, cap) with { Tokens = a2.Tokens };
         return s2.Score > s1.Score ? s2 : s1;

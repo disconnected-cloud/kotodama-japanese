@@ -20,6 +20,14 @@ static class Program
             ProgressStore.Load();
             return Voicevox.RunSelfCheck();
         }
+        // Замер моделей распознавания (5.2): без окна, прогресс только читается
+        if (args.Length > 1 && args[0] == "--asr-bench")
+        {
+            ProgressStore.ReadOnly = true;
+            ProgressStore.Load();
+            try { return AsrBench.RunAsync(args[1], args.Skip(2).ToArray(), int.TryParse(Environment.GetEnvironmentVariable("KOTODAMA_BENCH_N"), out var bn) ? bn : 30).GetAwaiter().GetResult(); }
+            catch (Exception e) { Console.Error.WriteLine(e); return 1; }
+        }
         // Служебные режимы проверки интерфейса (CI) работают только на чтение и запускаются друг за другом — им мьютекс не нужен
         bool tool = args.Any(a => a is "--snap" or "--cliptest" or "--perf" or "--rerender" or "--rutts");
         if (!tool)
