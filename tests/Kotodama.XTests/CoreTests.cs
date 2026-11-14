@@ -128,7 +128,8 @@ public class SpeechBySoundTests
     [InlineData("おはよございます", "おはようございます", "おはようございます")]
     [InlineData("ここは", "ここ", "ここ")]
     [InlineData("じゃね", "じゃあね", "じゃあね")]
-    [InlineData("真っ直ぐですね。", "まっすぐですね。", "まっすぐですね。")]    public void SameSoundIsAccepted(string heard, string jp, string kana) =>
+    [InlineData("真っ直ぐですね。", "まっすぐですね。", "まっすぐですね。")]
+    public void SameSoundIsAccepted(string heard, string jp, string kana) =>
         Assert.True(Speech.Score(heard, 0.6f, jp, kana).Score >= 75, Speech.Score(heard, 0.6f, jp, kana).ToString());
 
     [Fact]

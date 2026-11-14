@@ -72,10 +72,10 @@ public sealed class Progress
     public bool QuietMode { get; set; }                       // «тихо»: без автоозвучки, аудирования и говорения — только текст
     public bool StudyNoSpeech { get; set; }                   // сессия «Учиться» без шага говорения
     public bool MaleVoice { get; set; }
-    public bool SidebarRail { get; set; }
+    public bool SidebarRail { get; set; }                     // ПК: боковое меню свёрнуто до иконок (Ctrl+B)
     public int FocusSessions { get; set; }                    // завершённые «помидоры» фокус-таймера
     public Dictionary<string, string> Journal { get; set; } = new();  // дневник: "yyyy-MM-dd" → текст записи
-    public Dictionary<string, string> Notes { get; set; } = new();   // личные заметки к словам (id слова → текст)                     // ПК: боковое меню свёрнуто до иконок (Ctrl+B)
+    public Dictionary<string, string> Notes { get; set; } = new();   // личные заметки к словам (id слова → текст)
     public string AsrModel { get; set; } = ""; // пусто — Asr.DefaultId (на слабом телефоне — быстрая)
     public string Level { get; set; } = "N5";
     public string DayDate { get; set; } = "";                     // счётчики испытаний дня
@@ -85,14 +85,14 @@ public sealed class Progress
     public int ShieldsUsed { get; set; }
     public int PerfectDays { get; set; }                           // дни, когда выполнены все испытания
     public List<string> Badges { get; set; } = new();             // значки недель (понедельник недели)
-    public int StudyMode { get; set; } = 1;
+    public int StudyMode { get; set; } = 1;                        // длина сессии «Учиться»: 0 — 5 мин, 1 — 15, 2 — 30
     public string StudyDay { get; set; } = "";                     // незаконченная сессия «Учиться» (дата)
     public List<string> StudyDone { get; set; } = new();
     public List<string> StudySkipped { get; set; } = new();
     public int StudySeconds { get; set; }
     public int StudyXpStart { get; set; }
     public int Schema { get; set; }                                // номер схемы прогресса: применённые миграции (ProgressStore.Migrations)
-    public int StudySessions { get; set; }                         // всего пройдено сессий            // длина сессии «Учиться»: 0 — 5 мин, 1 — 15, 2 — 30
+    public int StudySessions { get; set; }                         // всего пройдено сессий
 }
 
 [JsonSerializable(typeof(Progress))]

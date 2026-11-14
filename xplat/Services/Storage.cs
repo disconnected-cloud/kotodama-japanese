@@ -15,7 +15,6 @@ public static class Storage
         new Item("audio", "Кэш озвучки", "Сохранённые фразы — скачаются заново при прослушивании", Tts.CacheDir, true),
         new Item("models", "Модели распознавания (Whisper)", "Нужны для проверки произношения", System.IO.Path.Combine(ProgressStore.Folder, "models"), true),
         new Item("voicevox", "Офлайн-голоса VOICEVOX", "Ядро, словарь и пакеты голосов", Voicevox.Dir, true),
-        new Item("llm", "Модель ИИ-собеседника", "Раздел убран в версии 1.3.1 — файлы больше не нужны", System.IO.Path.Combine(ProgressStore.Folder, "llm"), true),
         new Item("logs", "Журналы и временные файлы", "crash.log, warn.log, профиль запуска, старые записи", ProgressStore.Folder, false),
     };
 
@@ -57,6 +56,7 @@ public static class Storage
     /// <summary>Вызывается при запуске до загрузки нативных библиотек: доудаляет то, что было занято.</summary>
     public static void RunPendingDeletes()
     {
+        TryDeleteDir(System.IO.Path.Combine(ProgressStore.Folder, "llm")); // модель ИИ-собеседника: раздел убран в 1.3.1
         foreach (var f in ProgressStore.P.Flags.Where(x => x.StartsWith("pending-delete:")).ToList())
         {
             var it = Items.FirstOrDefault(i => i.Key == f["pending-delete:".Length..]);

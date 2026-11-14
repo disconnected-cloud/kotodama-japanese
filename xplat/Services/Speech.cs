@@ -24,7 +24,6 @@ public static class Speech
     public static event Action<bool>? PlayingChanged;
 
 
-    public static void Init() { }
 
     public static void Stop()
     {
@@ -43,7 +42,6 @@ public static class Speech
     /// <summary>Произнести (fire-and-forget). slow — медленный темп для разбора.</summary>
     public static async void Say(string text, bool slow = false) { if (Platform.AudioPlayer.Muted) return; try { await SayAsync(text, slow); } catch (Exception e) { CrashReport.Warn("Озвучка", e); } }
 
-    /// <summary>Произнести и дождаться окончания (нужно для диалогов).</summary>
     /// <summary>
     /// Отдельный знак хираганы синтезатор читает как частицу: は — «ва», へ — «э», を — «о».
     /// Одиночный слог (в т.ч. しゃ) отдаём катаканой — ハ, ヘ читаются как «ха», «хэ».
@@ -55,6 +53,7 @@ public static class Speech
         return single && t.All(c => c >= 'ぁ' && c <= 'ゖ') ? Kana.ToKatakana(t) : text;
     }
 
+    /// <summary>Произнести и дождаться окончания (нужно для диалогов).</summary>
     public static async Task<bool> SayAsync(string text, bool slow = false, bool? male = null)
     {
         if (string.IsNullOrWhiteSpace(text)) return false;

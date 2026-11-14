@@ -131,7 +131,6 @@ public static class Db
 
     public static string[]? Strokes(string ch) => _strokes.Value.TryGetValue(ch, out var s) ? s : null;
 
-    /// <summary>Латиница для предложения: заранее размеченные границы слов и частицы (MeCab) → Хэпбёрн.</summary>
     /// <summary>Правильное чтение фразы или слова из материалов приложения (кана с пробелами между словами) — для проверки озвучки.</summary>
     public static string? KanaFor(string jp) => _kanaMap.Value.TryGetValue(jp.Trim(), out var k) ? k : null;
     static readonly Lazy<Dictionary<string, string>> _kanaMap = new(() =>
@@ -146,6 +145,7 @@ public static class Db
         return m;
     });
 
+    /// <summary>Латиница для предложения: заранее размеченные границы слов и частицы (MeCab) → Хэпбёрн.</summary>
     public static string RomajiFor(string jp, string kana) =>
         _romaji.Value.TryGetValue(jp, out var seg) ? Services.Kana.ToRomaji(seg) : Services.Kana.ToRomaji(kana.Length > 0 ? kana : jp);
 
@@ -273,7 +273,7 @@ public static class Db
     }
 
     /// <summary>
-    /// Юниты в порядке «Пути». Новые юниты дописываются в конец course.json (Id = позиция в файле, на нём держится прогресс),
+    /// Юниты в порядке «Пути». Новые юниты дописываются в конец course.json (Id — явное поле "id", на нём держится прогресс),
     /// а поле "after": N ставит юнит на «Пути» сразу после юнита N — так уроки встают на свой уровень, не сбивая прогресс.
     /// </summary>
     static CourseUnit[] LoadCourse()

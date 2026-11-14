@@ -95,7 +95,7 @@ public static class Voicevox
     public static bool Installed => BaseInstalled && InstalledPacks.Count > 0 && ProgressStore.P.Flags.Contains("vv-ok");
     public static bool Downloaded => BaseInstalled && InstalledPacks.Count > 0;
 
-    /// <summary>Пробный синтез в дочернем процессе: Matsubakira.exe --vv-check. Код 0 — всё работает.</summary>
+    /// <summary>Пробный синтез в дочернем процессе: Kotodama --vv-check. Код 0 — всё работает.</summary>
     public static async Task<(bool ok, string message)> SelfCheckAsync()
     {
         if (Droid) return await SelfCheckInProcessAsync();
