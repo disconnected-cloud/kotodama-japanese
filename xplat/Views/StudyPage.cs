@@ -37,7 +37,7 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
     readonly List<int> _state = new();   // 0 — впереди, 1 — сделано, 2 — пропущено
     int _cur = -1;
     bool _launched, _finished;
-    int _xpStart;
+    int _xpStart, _launchXp;
     bool _started;
     int _secondsBefore;                  // время, проведённое в сессии до перезапуска приложения
     readonly Stopwatch _clock = new();
@@ -258,10 +258,15 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
         if (_launched)
         {
             _launched = false;
-            _state[_cur] = 1;
-            Save();
-            Advance(auto: true);
-            return;
+            // Шаг засчитывается, только если в нём что-то сделано (любое упражнение даёт XP), а не просто открыт и закрыт
+            if (ProgressStore.P.Xp > _launchXp)
+            {
+                _state[_cur] = 1;
+                Save();
+                Advance(auto: true);
+                return;
+            }
+            Shell.Toast("Шаг не выполнен — вернись к нему или пропусти", "!");
         }
         Render();
     }
@@ -288,6 +293,7 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
         if (!_started) { _started = true; _xpStart = ProgressStore.P.Xp; }
         if (!_clock.IsRunning) _clock.Start();
         _cur = i;
+        _launchXp = ProgressStore.P.Xp;
         if (_stages[i].Launch()) { _launched = true; Save(); }
         else { _state[i] = 2; Save(); Advance(auto: false); }
     }
@@ -436,10 +442,14 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
         int xp = ProgressStore.P.Xp - _xpStart;
         int done = _state.Count(s => s == 1);
         int min = Math.Max(1, (int)Math.Round(Seconds / 60.0));
-        ProgressStore.P.Flags.Add("study:" + DateTime.Today.ToString("yyyy-MM-dd"));
-        ProgressStore.P.StudySessions++;
         ProgressStore.P.StudyDay = "";
-        Challenges.Bump("study");
+        // все шаги пропущены — сессия не засчитывается: ни счётчика, ни испытания дня, ни достижения
+        if (done > 0)
+        {
+            ProgressStore.P.Flags.Add("study:" + DateTime.Today.ToString("yyyy-MM-dd"));
+            ProgressStore.P.StudySessions++;
+            Challenges.Bump("study");
+        }
         ProgressStore.Notify();
         Sfx.Done();
         var grid = new Grid();

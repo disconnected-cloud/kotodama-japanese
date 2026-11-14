@@ -281,14 +281,16 @@ public sealed class DialogPage : UserControl, IPage, IKeyTarget, IResumable
 
     void Finish(bool listenOnly)
     {
-        if (!listenOnly)
-        {
-            ProgressStore.P.Flags.Add("dialog:" + _d.Id);
-            ProgressStore.AddXp(15);
-        }
         int avg = _scores.Count > 0 ? (int)_scores.Average() : 0;
-        _status.Text = listenOnly ? "Диалог прослушан. Теперь попробуй сыграть роль!" : _scores.Count > 0 ? $"Диалог пройден! Средняя оценка: {avg}. +15 XP" : "Диалог пройден! +15 XP";
-        if (!listenOnly && avg >= 80 && Content is Panel host) Results.Confetti(host);
+        // Засчитывается только роль, сыгранная на зачётную оценку; 15 XP — за первое прохождение, повтор — 3 XP
+        bool passed = !listenOnly && _scores.Count > 0 && avg >= Speech.PassScore;
+        bool first = passed && ProgressStore.P.Flags.Add("dialog:" + _d.Id);
+        int xp = !passed ? 0 : first ? 15 : 3;
+        if (xp > 0) ProgressStore.AddXp(xp);
+        _status.Text = listenOnly ? "Диалог прослушан. Теперь попробуй сыграть роль!"
+            : !passed ? (_scores.Count == 0 ? "Реплики не записаны — диалог не засчитан. Скажи свою роль вслух!" : $"Средняя оценка {avg} — нужно {Speech.PassScore}. Попробуй ещё раз!")
+            : $"Диалог пройден! Средняя оценка: {avg}. +{xp} XP";
+        if (passed && avg >= 80 && Content is Panel host) Results.Confetti(host);
         _controls.Children.Clear();
         _controls.Children.Add(U.Btn("Ещё раз", () => Run(listenOnly), "", "").M(0, 0, 8, 0));
         _controls.Children.Add(U.Btn("К диалогам", Shell.Back, "Primary", ""));
