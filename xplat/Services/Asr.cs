@@ -94,6 +94,8 @@ public static class Asr
     {
         var path = OverridePath ?? PathFor(ModelId);
         if (_factory != null && _loaded == path) return;
+        // мало свободной памяти (large-v3-turbo занимает больше гигабайта) — сначала выгружаем голоса VOICEVOX
+        if (GC.GetGCMemoryInfo().TotalAvailableMemoryBytes is > 0 and < 6L << 30) Voicevox.Unload();
         _factory?.Dispose();
         _factory = WhisperFactory.FromPath(path);
         _loaded = path;
@@ -190,9 +192,14 @@ public static class Asr
             prevY = a * (prevY + v - prevX); prevX = v;
             x[i] = (float)prevY;
         }
-        var abs = x.Select(Math.Abs).ToArray();
-        Array.Sort(abs);
-        double peak = abs[Math.Min(n - 1, (int)(n * 0.999))];
+        // 99,9-й перцентиль по гистограмме (1024 корзины), без копии и сортировки всех отсчётов
+        var hist = new int[1024];
+        float max = 1;
+        for (int i = 0; i < n; i++) max = Math.Max(max, Math.Abs(x[i]));
+        for (int i = 0; i < n; i++) hist[Math.Min(1023, (int)(Math.Abs(x[i]) / max * 1023))]++;
+        int need = n - (int)(n * 0.999), acc = 0, bin = 1023;
+        while (bin > 0 && (acc += hist[bin]) < need) bin--;
+        double peak = (bin + 1) * max / 1024;
         double gain = peak > 50 ? Math.Min(12, 0.89 * 32767 / peak) : 1;
         for (int i = 0; i < n; i++)
         {
