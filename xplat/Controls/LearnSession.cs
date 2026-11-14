@@ -46,7 +46,7 @@ public sealed class LearnItem
 /// (порядок черт, чтения, подсказка-мнемоника, примеры с озвучкой), и только потом — проверка
 /// исключительно по тому, что только что показали. Ошибки возвращаются, пока всё не будет верно.
 /// </summary>
-public sealed class LearnSession : Grid, IPage, IKeyTarget
+public sealed class LearnSession : Grid, IPage, IKeyTarget, IFocusPage
 {
     public string Title { get; }
     readonly List<LearnItem> _items;

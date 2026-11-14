@@ -37,7 +37,7 @@ static class GamePool
 /// «Пары на скорость»: слева японские слова, справа переводы. Соедини пары, пока идёт минута —
 /// найденная пара сразу заменяется новой. Ошибка отнимает 3 секунды.
 /// </summary>
-public sealed class MatchRushGame : Grid, IPage
+public sealed class MatchRushGame : Grid, IPage, IFocusPage
 {
     public string Title => "Пары на скорость";
     const string Key = "match";
@@ -143,7 +143,7 @@ public sealed class MatchRushGame : Grid, IPage
 }
 
 /// <summary>«Собери слово»: перевод и озвучка — собери чтение из слогов каны (есть лишние).</summary>
-public sealed class WordBuilderGame : Grid, IPage, IKeyTarget
+public sealed class WordBuilderGame : Grid, IPage, IKeyTarget, IFocusPage
 {
     public string Title => "Собери слово";
     const string Key = "build";
@@ -278,7 +278,7 @@ public sealed class WordBuilderGame : Grid, IPage, IKeyTarget
 }
 
 /// <summary>«Ловец звуков»: звучит слово — успей нажать на него среди шести. Чем быстрее, тем больше очков.</summary>
-public sealed class ListenCatchGame : Grid, IPage, IKeyTarget
+public sealed class ListenCatchGame : Grid, IPage, IKeyTarget, IFocusPage
 {
     public string Title => "Ловец звуков";
     const string Key = "listen";

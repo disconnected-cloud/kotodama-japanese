@@ -161,7 +161,7 @@ public static class Counters
 }
 
 /// <summary>«Собери предложение»: русская фраза → расставь японские слова по порядку.</summary>
-public sealed class BuilderSession : Grid, IPage, IKeyTarget
+public sealed class BuilderSession : Grid, IPage, IKeyTarget, IFocusPage
 {
     public string Title => "Собери предложение";
     readonly List<(string[] tokens, string jp, string ru)> _items;

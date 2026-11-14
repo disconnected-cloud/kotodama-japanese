@@ -17,7 +17,7 @@ using Matsubakira.Services;
 namespace Matsubakira.Views;
 
 /// <summary>Первый запуск: приветствие → цель и время → уровень (или тест) → голос и микрофон.</summary>
-public sealed class OnboardingPage : UserControl, IPage
+public sealed class OnboardingPage : UserControl, IPage, IFocusPage
 {
     public string Title => "Добро пожаловать";
     int _step;

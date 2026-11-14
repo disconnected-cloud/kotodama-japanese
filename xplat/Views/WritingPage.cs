@@ -21,7 +21,7 @@ namespace Matsubakira.Views;
 /// Прописи: пишешь знак мышью/пером, каждая черта сверяется с KanjiVG —
 /// порядок, направление (начальная точка) и форма (средняя дистанция после ресемплинга).
 /// </summary>
-public sealed class WritingPage : UserControl, IPage, IKeyTarget
+public sealed class WritingPage : UserControl, IPage, IKeyTarget, IFocusPage
 {
     public string Title => "Прописи";
     static readonly double Size = Shell.Compact ? 270 : 330; // телефон 320 точек: с полями страницы поле 300 не помещалось

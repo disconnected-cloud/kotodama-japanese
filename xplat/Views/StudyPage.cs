@@ -17,7 +17,7 @@ public sealed record StudyStage(string Icon, string Title, string Why, int Minut
 
 /// <summary>«Учиться»: одна кнопка — приложение само собирает сессию по статистике
 /// (повторение по FSRS, ошибки, новое по пути, аудирование, речь) и ведёт по шагам без возврата в меню.</summary>
-public sealed class StudyPage : UserControl, IPage, IKeyTarget
+public sealed class StudyPage : UserControl, IPage, IKeyTarget, IFocusPage
 {
     public string Title => "Учиться";
 

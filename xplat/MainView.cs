@@ -332,8 +332,7 @@ public partial class MainView : UserControl
         _host.Content = null; // страница может быть закэширована — сначала отцепляем
         _host.Content = page;
         // Режим фокуса: во время упражнений боковое меню скрывается
-        bool focus = page is Controls.QuizSession or Controls.FlashSession { IsEmpty: false } or BuilderSession or SpeechLessonPage or DialogPage or WritingPage or KanaRainGame or MemoryGame or SprintGame or OnboardingPage
-            or Controls.LearnSession or StudyPage or MatchRushGame or WordBuilderGame or ListenCatchGame;
+        bool focus = page is IFocusPage { WantsFocus: true }; // упражнения помечены интерфейсом — новое не забудется (Ж5)
         _sideCol.Width = new GridLength(focus || Shell.Compact ? 0 : SideWidth);
         _sidebar.IsVisible = !focus && !Shell.Compact;
         // меню снова видно (например, после упражнения) — индикатор к текущему разделу

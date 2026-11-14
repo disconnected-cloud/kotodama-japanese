@@ -46,7 +46,7 @@ static class GameUi
 }
 
 /// <summary>Кана-дождь: знаки падают, печатай чтение латиницей. Цикл анимации работает только во время игры.</summary>
-public sealed class KanaRainGame : Grid, IPage
+public sealed class KanaRainGame : Grid, IPage, IFocusPage
 {
     public string Title => "Кана-дождь";
     readonly bool _kata;
@@ -167,7 +167,7 @@ public sealed class KanaRainGame : Grid, IPage
 }
 
 /// <summary>«Найди пару»: 12 карточек, японское слово ↔ перевод. Переворот с анимацией, озвучка при совпадении.</summary>
-public sealed class MemoryGame : Grid, IPage
+public sealed class MemoryGame : Grid, IPage, IFocusPage
 {
     public string Title => "Найди пару";
     readonly UniformGrid _grid = new() { Columns = Shell.Compact ? 3 : 4, MaxWidth = 860 };
@@ -252,7 +252,7 @@ public sealed class MemoryGame : Grid, IPage
 }
 
 /// <summary>Спринт 60 секунд: верный ли перевод? ← нет / → да. Серия верных ответов умножает очки.</summary>
-public sealed class SprintGame : Grid, IPage, IKeyTarget
+public sealed class SprintGame : Grid, IPage, IKeyTarget, IFocusPage
 {
     public string Title => "Спринт 60 секунд";
     readonly ProgressBar _timer = new() { Maximum = 60, Height = 6 };

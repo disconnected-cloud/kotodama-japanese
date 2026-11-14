@@ -420,3 +420,9 @@ public static class Geo
 {
     public static double Dist(Avalonia.Point a, Avalonia.Point b) => Math.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y));
 }
+
+/// <summary>Экран-упражнение: открывается в «режиме фокуса» (без бокового меню и лишних отвлечений).</summary>
+public interface IFocusPage
+{
+    bool WantsFocus => true;
+}

@@ -35,7 +35,7 @@ public sealed class QuizQ
 }
 
 /// <summary>Квиз: выбор из 4 вариантов или ввод ответа. Комбо, повтор ошибок, итоговый экран.</summary>
-public sealed class QuizSession : Grid, IPage, IKeyTarget
+public sealed class QuizSession : Grid, IPage, IKeyTarget, IFocusPage
 {
     public string Title { get; }
     readonly List<QuizQ> _all;

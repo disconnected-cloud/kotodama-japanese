@@ -32,7 +32,7 @@ public sealed class StudyCard
 }
 
 /// <summary>Сессия флеш-карточек с интервальным повторением: «показать ответ» → оценка 1–4.</summary>
-public sealed class FlashSession : Grid, IPage, IKeyTarget
+public sealed class FlashSession : Grid, IPage, IKeyTarget, IFocusPage
 {
     public string Title { get; }
     readonly List<StudyCard> _queue;
@@ -82,6 +82,7 @@ public sealed class FlashSession : Grid, IPage, IKeyTarget
     }
 
     public bool IsEmpty => _total == 0;
+    public bool WantsFocus => !IsEmpty; // пустое повторение — обычный экран, не режим фокуса
 
     void ShowEmpty()
     {

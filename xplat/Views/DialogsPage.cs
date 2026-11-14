@@ -52,7 +52,7 @@ public sealed class DialogsPage : UserControl, IPage
 }
 
 /// <summary>Сценка по ролям: чат-пузыри, озвучка собеседника, запись и оценка своих реплик.</summary>
-public sealed class DialogPage : UserControl, IPage, IKeyTarget, IResumable
+public sealed class DialogPage : UserControl, IPage, IKeyTarget, IResumable, IFocusPage
 {
     readonly Dialog _d;
     public string ResumeKey => $"dialog:{_d.Id}";
