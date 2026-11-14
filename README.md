@@ -80,7 +80,7 @@
 |---|---|
 | `Kotodama-Setup-3.1.0.exe` | Обычная установка: ярлык в «Пуске», удаление через «Приложения». Права администратора не нужны. |
 | `Kotodama-portable-win-x64.zip` | Распакуй и запусти `Kotodama.exe`. Ничего устанавливать не нужно. |
-| `Kotodama-win-x64.zip` | Архив поменьше, но нужен [.NET 8 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0). |
+| `Kotodama-win-x64.zip` | Архив для автообновления; .NET 10 встроен, ставить ничего не нужно. |
 | `Kotodama-linux-x64.tar.gz` | **Linux** (x64): распакуй, запусти `./Kotodama` или `./install.sh` — появится в меню приложений. |
 | `Kotodama-android.apk` | **Android** (тестовая версия): установи APK, разрешив установку из этого источника. |
 

@@ -7,7 +7,8 @@ if exist %OUT%\Kotodama rmdir /s /q %OUT%\Kotodama
 if exist %OUT%\Kotodama-portable rmdir /s /q %OUT%\Kotodama-portable
 if exist %OUT%\Kotodama-linux rmdir /s /q %OUT%\Kotodama-linux
 del /q %OUT%\*.zip %OUT%\*.tar.gz %OUT%\*.exe 2>nul
-dotnet publish xplat -c Release -r win-x64 --self-contained false -o %OUT%\Kotodama || goto :err
+rem 4.2: и обычный архив со встроенным .NET 10 — у кого стоял только .NET 8, автообновление не сломает запуск
+dotnet publish xplat -c Release -r win-x64 --self-contained true -o %OUT%\Kotodama || goto :err
 dotnet publish xplat -c Release -r win-x64 --self-contained true -o %OUT%\Kotodama-portable || goto :err
 type nul > %OUT%\Kotodama-portable\portable
 copy /y "packaging\windows\ПРОЧТИ.txt" %OUT%\Kotodama-portable\ >nul

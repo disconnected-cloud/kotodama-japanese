@@ -27,7 +27,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: "10.0.x"
 
       - name: Шрифты и библиотеки для запуска интерфейса
         run: |
@@ -42,10 +42,10 @@ jobs:
           dotnet build xplat/Kotodama.csproj -c Debug
           mkdir -p snaps
           for page in home words speech kanji settings; do
-            xvfb-run -a -s "-screen 0 1400x900x24" dotnet xplat/bin/Debug/net8.0/Kotodama.dll --page $page --snap snaps/$page.png || true
+            xvfb-run -a -s "-screen 0 1400x900x24" dotnet xplat/bin/Debug/net10.0/Kotodama.dll --page $page --snap snaps/$page.png || true
           done
           for what in flash writing pairs; do
-            xvfb-run -a -s "-screen 0 1400x900x24" dotnet xplat/bin/Debug/net8.0/Kotodama.dll --open $what --snap snaps/open-$what.png || true
+            xvfb-run -a -s "-screen 0 1400x900x24" dotnet xplat/bin/Debug/net10.0/Kotodama.dll --open $what --snap snaps/open-$what.png || true
           done
           ls -la snaps
           test -f snaps/home.png

@@ -3,7 +3,7 @@
   <!-- Kotodama на Avalonia: один код для Windows и Linux -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>Kotodama</AssemblyName>
