@@ -10,7 +10,8 @@ public static class AnkiExport
 {
     public enum Set { Learning, Level, Mistakes }
 
-    static string Esc(string s) => s.Replace("\t", " ").Replace("\r", "").Replace("\n", "<br>");
+    /// <summary>Режим #html:true: «<», «>» и «&» в переводах экранируются, иначе карточка ломается (Г10).</summary>
+    static string Esc(string s) => System.Net.WebUtility.HtmlEncode(s.Replace("\t", " ").Replace("\r", "")).Replace("\n", "<br>");
     static string Tag(string s) => new(s.Replace(' ', '_').Replace("·", "").Where(c => !char.IsWhiteSpace(c)).ToArray());
 
     public static (string text, int count) Build(Set set)
@@ -38,7 +39,7 @@ public static class AnkiExport
         {
             var back = new StringBuilder();
             if (w.HasKanji) back.Append(w.Kana).Append("<br>");
-            back.Append("<i>").Append(w.Romaji).Append("</i><br><b>").Append(Esc(w.Ru)).Append("</b>");
+            back.Append("<i>").Append(Esc(w.Romaji)).Append("</i><br><b>").Append(Esc(w.Ru)).Append("</b>");
             if (w.ExJp.Length > 0) back.Append("<br><br>").Append(Esc(w.ExJp)).Append("<br><small>").Append(Esc(w.ExRu)).Append("</small>");
             if (p.Notes.TryGetValue(w.Id, out var note)) back.Append("<br><br>✎ ").Append(Esc(note));
             sb.Append(Esc(w.Jp)).Append('\t').Append(back).Append('\t').Append("kotodama ").Append(Tag(w.Level)).Append(' ').Append(Tag(w.Topic)).AppendLine();
