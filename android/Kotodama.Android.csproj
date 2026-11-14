@@ -54,7 +54,7 @@
 
   <ItemGroup>
     <Compile Include="../xplat/**/*.cs" LinkBase="Shared"
-             Exclude="../xplat/obj/**;../xplat/bin/**;../xplat/Program.cs;../xplat/MainWindow.cs;../xplat/Services/Tray.cs;../xplat/Services/Badge.cs" />
+             Exclude="../xplat/obj/**;../xplat/bin/**;../xplat/Program.cs;../xplat/MainWindow.cs;../xplat/Services/Tray.cs;../xplat/Services/Badge.cs;../xplat/Views/QuickDict.cs" />
     <AvaloniaXaml Include="../xplat/App.axaml" Link="App.axaml" />
     <EmbeddedResource Include="../Data/*.json;../Data/*.gz" LogicalName="%(Filename)%(Extension)" />
     <AvaloniaResource Include="../Assets/app.png" Link="Assets/app.png" />

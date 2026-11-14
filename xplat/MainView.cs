@@ -220,7 +220,7 @@ public partial class MainView : UserControl
         Dispatcher.UIThread.Post(() => { if (!Environment.GetCommandLineArgs().Skip(1).Any()) WordOfDay.Tick(); }, DispatcherPriority.Background);
         _navItems["home"].IsChecked = true;
         PlayIntro();
-        if (Win is { } win && !Shell.TestRun) Tray.Init(win); // проверки не показывают значок в трее
+        if (Win is { } win && !Shell.TestRun) { Tray.Init(win); Views.QuickDict.Init(win); } // проверки не показывают значок в трее; Ctrl+Alt+J — быстрый словарь
         var args = Platform.Hooks.Args ?? Environment.GetCommandLineArgs();
         bool plain = !args.Skip(1).Any();
         if (!ProgressStore.P.Flags.Contains("onboarded") && plain) Push(new OnboardingPage());
