@@ -71,4 +71,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name || inputs.tag }}
-        run: gh release upload "$TAG" Kotodama-linux-x64.tar.gz --clobber
+        # архив пересобран — строку в SHA256SUMS обновляем, иначе автообновление на Linux отвергнет его
+        run: |
+          gh release upload "$TAG" Kotodama-linux-x64.tar.gz --clobber
+          gh release download "$TAG" -p SHA256SUMS --clobber || touch SHA256SUMS
+          grep -v " Kotodama-linux-x64.tar.gz$" SHA256SUMS > SHA256SUMS.new || true
+          sha256sum Kotodama-linux-x64.tar.gz >> SHA256SUMS.new
+          mv SHA256SUMS.new SHA256SUMS
+          gh release upload "$TAG" SHA256SUMS --clobber

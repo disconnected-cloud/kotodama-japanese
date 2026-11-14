@@ -15,6 +15,8 @@ dotnet publish xplat -c Release -r linux-x64 --self-contained true -o %OUT%\Koto
 powershell -NoProfile -Command "Compress-Archive -Force '%OUT%\Kotodama\*' '%OUT%\Kotodama-win-x64.zip'; Compress-Archive -Force '%OUT%\Kotodama-portable\*' '%OUT%\Kotodama-portable-win-x64.zip'"
 python tools\pack_linux.py %OUT%\Kotodama-linux %OUT%\Kotodama-linux-x64.tar.gz
 call build-installer.cmd
+rem Контрольные суммы для автообновления (формат sha256sum): программа сверяет архив перед установкой
+powershell -NoProfile -Command "Set-Location '%OUT%'; Get-ChildItem *.zip,*.tar.gz,*.exe | ForEach-Object { (Get-FileHash $_.Name -Algorithm SHA256).Hash.ToLower() + '  ' + $_.Name } | Set-Content -Encoding ascii SHA256SUMS"
 echo.
 echo Готово: файлы релиза в папке %OUT%
 pause
