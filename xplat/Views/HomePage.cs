@@ -139,6 +139,8 @@ public sealed class HomePage : UserControl, IPage
                 {
                     Section("speech", "Говорение", $"{Db.SpeechLessons.Length} уроков", "speech"),
                     Section("dialogs", "Диалоги", $"{Db.Dialogs.Length} сценок", "dialogs"),
+                    Section("quest", "Приключения", $"{Db.Quests.Length} истории · ★ {Db.Quests.Sum(QuestsPage.Stars)} из {Db.Quests.Length * 3}", "quests"),
+                    Section("journal", "Дневник", p.Journal.ContainsKey(DateTime.Today.ToString("yyyy-MM-dd")) ? $"сегодня записано ✓ · серия {JournalPage.Streak()}" : "тема дня ждёт пары фраз", "journal"),
                 }),
                 ("ЧИТАТЬ И ИГРАТЬ", new[]
                 {

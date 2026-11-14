@@ -87,8 +87,8 @@ public sealed class ParticlesPage : UserControl, IPage
 
     static Control RuleRow(Rule r)
     {
-        var g = U.Cols("64", "*", "auto");
-        g.Children.Add(U.Stack(U.Jp(r.P, 30, U.B("Accent"), true).Center(), U.T(r.Name, "Muted", 11).Also(t => { t.TextAlignment = TextAlignment.Center; t.TextWrapping = TextWrapping.Wrap; }).Center()).CenterV());
+        var g = U.Cols("104", "*", "auto");
+        g.Children.Add(U.Stack(U.Jp(r.P, 30, U.B("Accent"), true).Center(), U.T(r.Name, "Muted", 11).Also(t => { t.TextAlignment = TextAlignment.Center; t.TextWrapping = TextWrapping.Wrap; t.MaxWidth = 100; }).Center()).CenterV());
         g.Children.Add(U.Stack(
             U.T(r.Explain, "Body", 14).Also(t => t.TextWrapping = TextWrapping.Wrap),
             U.Jp(r.ExJp, 17).M(0, 6, 0, 0),

@@ -188,7 +188,7 @@ public static class U
         var (ca, cb) = Controls.Art.IconColors(icon);
         var g = Cols("auto", "*", "auto");
         g.Children.Add(Shell.Compact ? Controls.Art.Icon(icon, 42) : Controls.Art.Icon(icon, 58));
-        var sp = Stack(T(title, "H1", Shell.Compact ? 22 : 28), T(subtitle, "Muted", Shell.Compact ? 12.5 : 13.5).Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 3, 0, 0));
+        var sp = Stack(T(title, "H1", Shell.Compact ? 22 : 28).Also(t => t.TextWrapping = TextWrapping.Wrap), T(subtitle, "Muted", Shell.Compact ? 12.5 : 13.5).Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 3, 0, 0));
         sp.VerticalAlignment = VerticalAlignment.Center; sp.Margin = new Thickness(18, 0, 12, 0);
         g.Children.Add(sp.Col(1));
         if (right != null)

@@ -393,7 +393,7 @@ public partial class MainView
             case "kanjiflash": Push(new Controls.FlashSession("Демо", Db.Kanji.Take(5).Select(Controls.FlashSession.FromKanji))); break;
             case "grammar": Push(new GrammarLessonPage(Db.Grammar[4])); break;
             case "grammar1": Push(new GrammarLessonPage(Db.Grammar[0])); break;
-            case "grammarn2": Push(new GrammarLessonPage(Db.Grammar[^4])); break;
+            case "grammarn2": Push(new GrammarLessonPage(Db.Grammar.Last(g => g.Level == "N2"))); break;
             case "onboard": Push(new OnboardingPage()); break;
             case "speech": Push(new SpeechLessonPage(Db.SpeechLessons[1])); break;
             case "dialog": Push(new DialogPage(Db.Dialogs[1])); break;
