@@ -18,6 +18,14 @@ public class MainWindow : Window
     {
         Title = "Kotodama · 言霊 — японский язык";
         Width = 1280; Height = 820; MinWidth = 1020; MinHeight = 680;
+        // 1366×768 при масштабе 125–150 % — это ~910×510: минимальный размер не должен быть больше экрана (Д9)
+        Opened += (_, _) =>
+        {
+            if (Screens.ScreenFromWindow(this) is not { } scr) return;
+            double sc = scr.Scaling, w = scr.WorkingArea.Width / sc, h = scr.WorkingArea.Height / sc;
+            MinWidth = Math.Min(MinWidth, w - 16); MinHeight = Math.Min(MinHeight, h - 16);
+            if (Width > w || Height > h) { Width = Math.Min(Width, w); Height = Math.Min(Height, h); }
+        };
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Background = U.B("Bg");
         try { Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://Kotodama/Assets/app.ico"))); } catch { }
@@ -54,7 +62,13 @@ public class MainWindow : Window
         // «Сворачивать в трей»: окно прячется, напоминания и слово дня продолжают приходить
         Closing += (_, e) =>
         {
-            if (ProgressStore.P.MinimizeToTray && !_reallyClose && !e.IsProgrammatic) { e.Cancel = true; Hide(); Shell.Toast("Kotodama работает в трее", "言"); }
+            // только когда закрывает пользователь (не выход из системы) и только если значок в трее есть (Д8)
+            if (ProgressStore.P.MinimizeToTray && !_reallyClose && !e.IsProgrammatic && e.CloseReason == WindowCloseReason.WindowClosing)
+            {
+                e.Cancel = true;
+                if (Tray.Available) { Hide(); Shell.Toast("Kotodama работает в трее", "言"); }
+                else WindowState = WindowState.Minimized; // значка нет — окно на панели задач, а не потеряно
+            }
         };
     }
 

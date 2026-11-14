@@ -39,6 +39,9 @@ public static class Tray
     /// <summary>Куда перейти по клику на последнее уведомление.</summary>
     static string? _clickTarget;
 
+    /// <summary>Значок в трее действительно создан (в GNOME без StatusNotifier его нет — прятать окно туда нельзя).</summary>
+    public static bool Available => OperatingSystem.IsWindows() ? _added : _linuxIcon != null && Environment.GetEnvironmentVariable("XDG_CURRENT_DESKTOP")?.Contains("GNOME", StringComparison.OrdinalIgnoreCase) != true;
+
     public static void Init(Window w)
     {
         _win = w;
