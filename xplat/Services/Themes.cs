@@ -20,12 +20,16 @@ public static class Themes
         ("Время и календарь", new[] { "время", "час", "минут", "день", "недел", "месяц", "год", "утро", "вечер", "ночь", "сегодня", "завтра", "вчера", "понедельник", "праздник", "календар", "рано", "поздно", "скоро", "сейчас" }),
     };
 
-    /// <summary>Подходит ли слово к теме: совпадение корня в начале одного из значений.</summary>
+    /// <summary>Слова, которые начинаются с корня темы, но к ней не относятся: «рад» — не «радио», «рук» — не «руководитель».</summary>
+    static readonly string[] Exclude = { "радио", "радиус", "радикал", "руковод", "кошел", "летат", "ушёл", "ушл", "детал", "часть", "частн", "частый", "частот", "годн", "годит", "платье", "платок", "учит", "учтив", "кровать", "кровл", "небольш", "небрежн", "лесть", "лестн", "лестниц" };
+
+    /// <summary>Подходит ли слово к теме: значение начинается с корня темы (корень с пробелом — только целое слово).</summary>
     public static bool Match(Word w, string theme)
     {
-        var stems = All.First(t => t.name == theme).stems;
-        var ru = " " + w.Ru.ToLowerInvariant().Replace(',', ' ').Replace(';', ' ').Replace('(', ' ') + " ";
-        return stems.Any(s => ru.Contains(" " + s, StringComparison.Ordinal));
+        var t = All.FirstOrDefault(x => x.name == theme);
+        if (t.stems == null) return false; // неизвестная тема — пустая подборка, а не падение
+        var tokens = w.Ru.ToLowerInvariant().Split(new[] { ' ', ',', ';', '(', ')', '/', '.', '!', '?', '«', '»' }, StringSplitOptions.RemoveEmptyEntries);
+        return tokens.Any(tok => !Exclude.Any(tok.StartsWith) && t.stems.Any(s => s.EndsWith(' ') ? tok == s.TrimEnd() : tok.StartsWith(s, StringComparison.Ordinal)));
     }
 
     public static IEnumerable<Word> Words(string? theme) =>
