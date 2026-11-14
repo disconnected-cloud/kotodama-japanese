@@ -175,7 +175,7 @@ public static class SpeechUi
                 }
                 catch (Exception ex)
                 {
-                    status.Text = ex is OperationCanceledException ? "Загрузка отменена." : "Ошибка загрузки: " + ex.Message;
+                    status.Text = ex is OperationCanceledException ? "Загрузка остановлена — нажми «Скачать», чтобы продолжить с того же места." : "Ошибка загрузки: " + ex.Message;
                     btn.IsEnabled = true; choose.IsEnabled = true; cancel.IsVisible = false; bar.IsVisible = false;
                 }
             };

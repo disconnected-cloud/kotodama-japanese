@@ -119,7 +119,7 @@ public sealed partial class SettingsPage : UserControl, IPage
                 yield return SpeechUi.ModelCard(OnShown).M(0, 0, 0, 16);
                 if (Asr.Ready)
                     yield return Section("Модель распознавания", "Максимальная лучше всех понимает речь с акцентом (нужно 8 ГБ памяти), быстрая — для слабых компьютеров. Переключение скачает выбранную модель. Модели обучены на речи носителей, поэтому оценка акцента приблизительная.",
-                        Choice(Enumerable.Range(0, Asr.Models.Length).ToArray(), Math.Max(0, Array.FindIndex(Asr.Models, m => m.id == Asr.ModelId)), v => { ProgressStore.P.AsrModel = Asr.Models[v].id; Task.Run(Asr.Unload); OnShown(); }, v => Asr.Models[v].title));
+                        Choice(Enumerable.Range(0, Asr.Models.Length).ToArray(), Math.Max(0, Array.FindIndex(Asr.Models, m => m.id == Asr.ModelId)), v => { ProgressStore.P.AsrModel = Asr.Models[v].id; _ = Asr.UnloadAsync(); OnShown(); }, v => Asr.Models[v].title));
                 break;
 
             case "look":

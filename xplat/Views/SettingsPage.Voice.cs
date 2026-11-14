@@ -109,14 +109,18 @@ public sealed partial class SettingsPage : UserControl, IPage
         var status = U.T(Voicevox.LastError ?? "", "Muted");
         var btn = U.Btn(Voicevox.BaseInstalled ? "Скачать выбранные пакеты" : "Установить VOICEVOX (+ ~30 МБ компонентов)", () => { }, "Primary", "\uE896");
         btn.HorizontalAlignment = HorizontalAlignment.Left; btn.Margin = new Thickness(0, 8, 0, 0);
+        CancellationTokenSource? cts = null;
+        var cancel = U.Btn("Отмена", () => cts?.Cancel(), "Ghost", "");
+        cancel.HorizontalAlignment = HorizontalAlignment.Left; cancel.IsVisible = false; cancel.Margin = new Thickness(0, 8, 0, 0);
         btn.Click += async (_, _) =>
         {
             if (chosen.Count == 0 && Voicevox.BaseInstalled) { Shell.Toast("Выбери хотя бы один пакет", "!"); return; }
-            btn.IsEnabled = false; bar.IsVisible = true;
+            btn.IsEnabled = false; bar.IsVisible = true; cancel.IsVisible = true;
+            cts = new CancellationTokenSource();
             var prog = new Progress<(double v, string what)>(x => { bar.Value = x.v; status.Text = $"Загрузка: {x.what}… {x.v * 100:0}%"; });
             try
             {
-                await Voicevox.InstallAsync(chosen, prog, CancellationToken.None);
+                await Voicevox.InstallAsync(chosen, prog, cts.Token);
                 status.Text = "Проверяю синтез в безопасном режиме…";
                 var (ok, msg) = await Voicevox.SelfCheckAsync();
                 if (!ok) { status.Text = msg + ". Пока будет звучать системный голос."; btn.IsEnabled = true; return; }
@@ -125,9 +129,12 @@ public sealed partial class SettingsPage : UserControl, IPage
                 OnShown();
                 Speech.Say("こんにちは、一緒に日本語を勉強しましょう。");
             }
+            catch (OperationCanceledException) { status.Text = "Загрузка остановлена — продолжится с того же места."; btn.IsEnabled = true; }
             catch (Exception ex) { status.Text = "Ошибка: " + ex.Message; btn.IsEnabled = true; }
+            finally { cancel.IsVisible = false; }
         };
         sp.Children.Add(btn);
+        sp.Children.Add(cancel);
         sp.Children.Add(bar);
         sp.Children.Add(status);
         return sp;

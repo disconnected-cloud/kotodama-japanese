@@ -52,3 +52,33 @@ public class SecurityTests
         Assert.DoesNotContain("Petrov", s);
     }
 }
+
+public class DownloaderTests
+{
+    [Fact]
+    public void EveryModelAndVoicePackHasPinnedHash()
+    {
+        foreach (var m in Asr.Models) Assert.True(Downloader.Sha256.ContainsKey($"ggml-{m.id}.bin"), m.id);
+        foreach (var p in Voicevox.Catalog) Assert.True(Downloader.Sha256.ContainsKey(p.File), p.File);
+        Assert.All(Downloader.Sha256.Values, h => Assert.Matches("^[0-9a-f]{64}$", h));
+    }
+
+    [Fact]
+    public async Task UnknownFileIsRejectedWithoutDownloading()
+    {
+        var dest = Path.Combine(Path.GetTempPath(), "kd-unknown.bin");
+        await Assert.ThrowsAsync<InvalidDataException>(() => Downloader.FileAsync("https://example.invalid/unknown.bin", dest, null, CancellationToken.None));
+        Assert.False(File.Exists(dest));
+    }
+
+    [Fact]
+    public async Task VerifyDetectsTamperedFile()
+    {
+        var f = Path.GetTempFileName();
+        await File.WriteAllTextAsync(f, "abc");
+        Assert.True(await Downloader.Verify(f, "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"));
+        await File.WriteAllTextAsync(f, "abd");
+        Assert.False(await Downloader.Verify(f, "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"));
+        File.Delete(f);
+    }
+}

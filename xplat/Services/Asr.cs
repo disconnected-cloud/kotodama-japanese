@@ -1,5 +1,4 @@
 using System.IO;
-using System.Net.Http;
 using System.Text;
 using Whisper.net;
 
@@ -18,15 +17,7 @@ public static class Asr
         ("base-q5_1", "Быстрая", OperatingSystem.IsAndroid() ? "Whisper base · для слабых телефонов, втрое быстрее" : "Whisper base · для слабых ПК", 59_707_625),
     };
 
-    static string UrlFor(string id) => id == "kotoba-v2-q5"
-        ? "https://huggingface.co/kotoba-tech/kotoba-whisper-v2.0-ggml/resolve/main/ggml-kotoba-whisper-v2.0-q5_0.bin"
-        : $"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{id}.bin";
-
-    /// <summary>SHA-1 из репозитория whisper.cpp: недокачанный или подменённый файл не принимается.</summary>
-    static readonly Dictionary<string, string> Sha1 = new()
-    {
-        ["large-v3-turbo-q5_0"] = "e050f7970618a659205450ad97eb95a18d69c9ee",
-    };
+    static string UrlFor(string id) => $"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{id}.bin";
 
     /// <summary>Модель по умолчанию — первая скачанная из списка (максимальная → точная → быстрая).</summary>
     public static string BestInstalled => Models.Select(m => m.id).FirstOrDefault(id => File.Exists(PathFor(id))) ?? DefaultId;
@@ -51,36 +42,9 @@ public static class Asr
     /// <summary>Модель (~300 МБ в памяти) выгружается через 3 минуты без распознавания.</summary>
     static void ScheduleUnload() => (_idle ??= new Timer(_ => Unload(), null, Timeout.Infinite, Timeout.Infinite)).Change(TimeSpan.FromMinutes(3), Timeout.InfiniteTimeSpan);
 
-    public static async Task DownloadAsync(string id, IProgress<double> progress, CancellationToken ct)
-    {
-        Directory.CreateDirectory(Dir);
-        var url = UrlFor(id);
-        var part = PathFor(id) + ".part";
-        using var http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
-        using var resp = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
-        resp.EnsureSuccessStatusCode();
-        long total = resp.Content.Headers.ContentLength ?? Models.First(m => m.id == id).size;
-        await using (var src = await resp.Content.ReadAsStreamAsync(ct))
-        await using (var dst = File.Create(part))
-        {
-            var buf = new byte[1 << 16];
-            long done = 0; int n; long lastReport = 0;
-            while ((n = await src.ReadAsync(buf, ct)) > 0)
-            {
-                await dst.WriteAsync(buf.AsMemory(0, n), ct);
-                done += n;
-                if (done - lastReport > 1 << 20) { progress.Report((double)done / total); lastReport = done; }
-            }
-        }
-        if (Sha1.TryGetValue(id, out var want))
-        {
-            await using var f = File.OpenRead(part);
-            var got = Convert.ToHexString(await System.Security.Cryptography.SHA1.HashDataAsync(f, ct)).ToLowerInvariant();
-            if (got != want) { f.Close(); File.Delete(part); throw new InvalidDataException("файл модели повреждён (контрольная сумма не совпала), попробуй ещё раз"); }
-        }
-        File.Move(part, PathFor(id), true);
-        progress.Report(1);
-    }
+    /// <summary>Загрузка модели: потоком, с докачкой после обрыва и проверкой SHA-256 (Б2).</summary>
+    public static Task DownloadAsync(string id, IProgress<double> progress, CancellationToken ct) =>
+        Downloader.FileAsync(UrlFor(id), PathFor(id), progress, ct, Models.First(m => m.id == id).size);
 
     /// <summary>Заранее загрузить модель в память, чтобы первое распознавание было быстрым.</summary>
     public static void Warmup()
@@ -205,9 +169,13 @@ public static class Asr
         }
     }
 
-    public static void Unload()
+    /// <summary>Выгрузка из фона (таймер простоя): синхронное ожидание здесь безопасно.</summary>
+    public static void Unload() => UnloadAsync().GetAwaiter().GetResult();
+
+    /// <summary>Выгрузка из интерфейса: если идёт распознавание, окно не замирает, а выгрузка дождётся его конца (Д3).</summary>
+    public static async Task UnloadAsync()
     {
-        Gate.Wait();
+        await Gate.WaitAsync().ConfigureAwait(false);
         try { _factory?.Dispose(); _factory = null; _loaded = null; }
         finally { Gate.Release(); }
     }

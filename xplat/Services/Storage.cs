@@ -39,8 +39,8 @@ public static class Storage
     /// <summary>Удаляет данные пункта. Возвращает false, если часть файлов занята и будет удалена при следующем запуске.</summary>
     public static bool Clear(Item it)
     {
-        if (it.Key == "models") Asr.Unload();
-        if (it.Key == "voicevox") { ProgressStore.P.Flags.Remove("vv-ok"); ProgressStore.Notify(); }
+        if (it.Key == "models") _ = Asr.UnloadAsync(); // whisper.cpp держит модель в памяти, а не файл — удалять можно сразу (Д3)
+        if (it.Key == "voicevox") { Voicevox.Unload(); ProgressStore.P.Flags.Remove("vv-ok"); ProgressStore.Notify(); }
         if (it.Key == "logs")
         {
             foreach (var f in new[] { "crash.log", "warn.log", "startup.jitprofile", "progress.json.bak", "progress.json.before-import" })

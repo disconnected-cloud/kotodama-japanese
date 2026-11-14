@@ -227,26 +227,18 @@ public static class Voicevox
     // ─────────── Установка ───────────
     static readonly HttpClient Http = new() { Timeout = Timeout.InfiniteTimeSpan };
 
-    static async Task<byte[]> Get(string url, IProgress<double>? p, double from, double to, CancellationToken ct)
+    /// <summary>Скачать компонент во временный файл (с проверкой SHA-256 и докачкой) и вернуть путь к нему.</summary>
+    static async Task<string> Fetch(string url, IProgress<double>? p, CancellationToken ct)
     {
-        using var resp = await Http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
-        resp.EnsureSuccessStatusCode();
-        long total = resp.Content.Headers.ContentLength ?? 1;
-        await using var src = await resp.Content.ReadAsStreamAsync(ct);
-        var ms = new MemoryStream();
-        var buf = new byte[1 << 16]; int n; long done = 0;
-        while ((n = await src.ReadAsync(buf, ct)) > 0)
-        {
-            ms.Write(buf, 0, n); done += n;
-            p?.Report(from + (to - from) * done / Math.Max(1, total));
-        }
-        return ms.ToArray();
+        var path = Path.Combine(Dir, "download", Path.GetFileName(new Uri(url).AbsolutePath));
+        await Downloader.FileAsync(url, path, p, ct);
+        return path;
     }
 
-    static void ExtractTgz(byte[] data, string dest)
+    static void ExtractTgz(string file, string dest)
     {
         Directory.CreateDirectory(dest);
-        using var gz = new GZipStream(new MemoryStream(data), CompressionMode.Decompress);
+        using var gz = new GZipStream(File.OpenRead(file), CompressionMode.Decompress);
         TarFile.ExtractToDirectory(gz, dest, overwriteFiles: true);
     }
 
@@ -261,19 +253,19 @@ public static class Voicevox
 
         if (!BaseInstalled)
         {
-            var core = await Get(CoreUrl, P("ядро VOICEVOX"), 0, 1, ct); step++;
+            var core = await Fetch(CoreUrl, P("ядро VOICEVOX"), ct); step++;
             var coreDir = Path.Combine(Dir, "core");
             if (Directory.Exists(coreDir)) Directory.Delete(coreDir, true); // сборка от другой платформы
             Directory.CreateDirectory(coreDir);
-            using (var zip = new ZipArchive(new MemoryStream(core)))
+            using (var zip = ZipFile.OpenRead(core))
                 foreach (var e in zip.Entries.Where(e => e.Name.EndsWith(LibExt, StringComparison.OrdinalIgnoreCase)))
                     e.ExtractToFile(Path.Combine(coreDir, e.Name), true);
-            var ort = await Get(OrtUrl, P("ONNX Runtime"), 0, 1, ct); step++;
+            var ort = await Fetch(OrtUrl, P("ONNX Runtime"), ct); step++;
             if (Directory.Exists(Path.Combine(Dir, "ort"))) Directory.Delete(Path.Combine(Dir, "ort"), true);
             ExtractTgz(ort, Path.Combine(Dir, "ort"));
             if (!Directory.Exists(Path.Combine(Dir, "dict")) || DictDir == null)
             {
-                var dict = await Get(DictUrl, P("словарь произношения"), 0, 1, ct);
+                var dict = await Fetch(DictUrl, P("словарь произношения"), ct);
                 ExtractTgz(dict, Path.Combine(Dir, "dict"));
             }
             step++;
@@ -282,9 +274,11 @@ public static class Voicevox
         Directory.CreateDirectory(ModelsDir);
         foreach (var pack in list)
         {
-            var data = await Get(VvmUrl + pack, P("голоса " + pack), 0, 1, ct); step++;
-            await File.WriteAllBytesAsync(Path.Combine(ModelsDir, pack), data, ct);
+            // потоком на диск, под итоговым именем — только после проверки: прерванная загрузка не считается установленной
+            await Downloader.FileAsync(VvmUrl + pack, Path.Combine(ModelsDir, pack), P("голоса " + pack), ct, Catalog.FirstOrDefault(c => c.File == pack)?.Size ?? 0);
+            step++;
         }
+        try { Directory.Delete(Path.Combine(Dir, "download"), true); } catch { }
         progress.Report((1, "готово"));
         Reset();
     }
@@ -311,11 +305,14 @@ public static class Voicevox
     [DllImport(Lib)] static extern int voicevox_synthesizer_synthesis(IntPtr synth, byte[] query, uint style, SynthOptions options, out UIntPtr len, out IntPtr wav);
     [DllImport(Lib)] static extern void voicevox_json_free(IntPtr json);
     [DllImport(Lib)] static extern void voicevox_wav_free(IntPtr wav);
+    [DllImport(Lib)] static extern void voicevox_synthesizer_delete(IntPtr synth);
     [DllImport(Lib)] static extern IntPtr voicevox_error_result_to_message(int code);
 
     static bool _resolverSet;
     static IntPtr _synth;
     static readonly object Gate = new();
+    /// <summary>Только на сам синтез звука: разбор текста, ударения и моры не ждут, пока озвучивается длинная фраза.</summary>
+    static readonly object SynthGate = new();
     static readonly HashSet<string> _loadedPacks = new();
 
     static byte[] U8(string s) => Encoding.UTF8.GetBytes(s + "\0");
@@ -347,7 +344,9 @@ public static class Voicevox
             var opt = voicevox_make_default_load_onnxruntime_options();
             var ortPath = Marshal.StringToCoTaskMemUTF8(OrtDll!);
             opt.filename = ortPath;
-            Check(voicevox_onnxruntime_load_once(opt, out var ort), "ONNX Runtime");
+            IntPtr ort;
+            try { Check(voicevox_onnxruntime_load_once(opt, out ort), "ONNX Runtime"); }
+            finally { Marshal.FreeCoTaskMem(ortPath); }
             Check(voicevox_open_jtalk_rc_new(U8(DictDir!), out var rc), "Open JTalk");
             var init = voicevox_make_default_initialize_options();
             init.acceleration_mode = 1; // CPU: стабильно на любом ПК
@@ -373,6 +372,7 @@ public static class Voicevox
     {
         try
         {
+            string query;
             lock (Gate)
             {
                 EnsureReady(style);
@@ -384,15 +384,34 @@ public static class Voicevox
                 Set("postPhonemeLength", 0.2);
                 Set("intonationScale", 1.0);   // естественная мелодика: завышенная даёт «подвывание» на гласных
                 Set("volumeScale", 1.0);
-                Check(voicevox_synthesizer_synthesis(_synth, U8(node.ToJsonString()), style, voicevox_make_default_synthesis_options(), out var len, out var wav), "синтез");
-                var bytes = new byte[(int)len];
+                query = node.ToJsonString();
+            }
+            byte[] bytes;
+            // Синтезатор ядра потокобезопасен; общая блокировка Gate здесь не держится — подсветка ударения не ждёт
+            lock (SynthGate)
+            {
+                if (_synth == IntPtr.Zero) throw new InvalidOperationException("синтезатор выгружен");
+                Check(voicevox_synthesizer_synthesis(_synth, U8(query), style, voicevox_make_default_synthesis_options(), out var len, out var wav), "синтез");
+                bytes = new byte[(int)len];
                 Marshal.Copy(wav, bytes, 0, bytes.Length);
                 voicevox_wav_free(wav);
-                LastError = null;
-                return Clean(bytes);
             }
+            LastError = null;
+            return Clean(bytes);
         }
         catch (Exception ex) { LastError = ex.Message; return null; }
+    }
+
+    /// <summary>Выгрузить синтезатор и голоса из памяти (удаление VOICEVOX, нехватка памяти). Загрузится снова при следующей фразе.</summary>
+    public static void Unload()
+    {
+        lock (Gate) lock (SynthGate)
+        {
+            if (_synth == IntPtr.Zero) return;
+            try { voicevox_synthesizer_delete(_synth); } catch (Exception e) { CrashReport.Warn("VOICEVOX: выгрузка", e); }
+            _synth = IntPtr.Zero;
+            _loadedPacks.Clear();
+        }
     }
 
     static JsonNode RawQuery(string text, uint style)
