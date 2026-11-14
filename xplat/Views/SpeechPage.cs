@@ -228,9 +228,16 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget, IResumabl
         if (n < 0) return;
         if (n >= _l.Items.Length)
         {
-            ProgressStore.P.Flags.Add("speech:" + _l.Id);
-            ProgressStore.Notify();
-            Shell.Toast("Урок пройден! お疲れ様でした", "話");
+            // Урок засчитывается, когда сказано на зачёт не меньше 80% фраз — пролистать недостаточно
+            int ok = _l.Items.Count(it => ProgressStore.P.SpeechBest.TryGetValue(it.Id, out var b) && b >= Speech.PassScore);
+            int need = (int)Math.Ceiling(_l.Items.Length * 0.8);
+            if (ok >= need)
+            {
+                ProgressStore.P.Flags.Add("speech:" + _l.Id);
+                ProgressStore.Notify();
+                Shell.Toast("Урок пройден! お疲れ様でした", "話");
+            }
+            else Shell.Toast($"Засчитано фраз: {ok} из {_l.Items.Length}. Урок будет пройден, когда получится {need}.", "話");
             Shell.Back();
             return;
         }
@@ -275,28 +282,49 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget, IResumabl
         }
     }
 
-    /// <summary>Шэдоуинг: образец звучит, и одновременно идёт запись — затем сравнение интонации и ритма.</summary>
+    /// <summary>В наушниках ли ученик (спрашиваем один раз за запуск): без них микрофон пишет образец из динамиков.</summary>
+    static bool? _headphones;
+
+    /// <summary>
+    /// Шэдоуинг. В наушниках — образец звучит, и одновременно идёт запись. Без наушников — сначала образец,
+    /// потом запись (иначе оценивался бы голос синтезатора). Запись, совпадающая с образцом по форме, не засчитывается.
+    /// </summary>
     async void Shadow()
     {
         if (_busy || !Asr.Ready) { if (!Asr.Ready) Shell.Toast("Сначала скачай модель распознавания", "!"); return; }
+        _headphones ??= await Shell.Confirm("Шэдоуинг — говорить одновременно с носителем — работает в наушниках: иначе микрофон запишет голос из динамиков. Без наушников запись начнётся сразу после образца.", "Я в наушниках", "Без наушников");
         var p = P;
         var path = await Tts.GetAsync(p.Jp);
         if (path == null) return;
-        double dur = await Task.Run(() => Prosody.DecodeFile(path).Length / 16000.0);
+        var sample = await Task.Run(() => Prosody.DecodeFile(path));
+        double dur = sample.Length / 16000.0;
         _busy = true;
         _cts = new CancellationTokenSource();
+        bool together = _headphones == true;
         _rec = new Recorder(manual: true, maxSeconds: dur + 2.5);
-        SetMic(true);
-        _status.Text = "Говори вместе с голосом!";
         try
         {
+            if (!together)
+            {
+                _status.Text = "Слушай образец…";
+                await Speech.SayAsync(p.Jp);
+            }
+            SetMic(true);
+            _status.Text = together ? "Говори вместе с голосом!" : "Теперь повтори так же!";
             var task = _rec.RecordAsync(_cts.Token);
             await Task.Delay(120);
-            _ = Speech.SayAsync(p.Jp);
+            if (together) _ = Speech.SayAsync(p.Jp);
             await Task.Delay(TimeSpan.FromSeconds(dur + 1.0));
             _rec.Stop();
             var rec = await task;
             _last = rec;
+            if (together && await Task.Run(() => Echo.Similarity(Prosody.FromWav(rec.Wav), sample)) >= Echo.EchoThreshold)
+            {
+                _headphones = null; // спросим ещё раз
+                _status.Text = "";
+                _result.Content = U.Card(U.T("Похоже, микрофон записал голос из динамиков, а не тебя. Надень наушники или выбери «Без наушников» — тогда запись начнётся после образца.", "Body").Center());
+                return;
+            }
             _status.Text = "Распознаю…"; _mic.Set(MicButton.Mode.Thinking); _meter.Attach(null);
             var check = await SpeechUi.ScoreRecording(p.Jp, p.KanaPlain, rec, _cts.Token, s => { _status.Text = s; _mic.Set(MicButton.Mode.Thinking); _meter.Attach(null); });
             int textScore = check.Score;
