@@ -39,10 +39,26 @@ public partial class App : Application
         Dispatcher.UIThread.UnhandledException += (_, e) =>
         {
             CrashReport.Log(e.Exception);
-            ProgressStore.Save();
             e.Handled = true;
-            // Некритичные ошибки — коротким уведомлением, без модального окна
-            try { if (Shell.Main != null) Shell.Toast("Что-то пошло не так — записал в журнал, продолжаем", "!"); } catch { }
+            // Прогресс отсюда не сохраняем: сбой мог прервать изменение на полпути. Серия ошибок подряд — предлагаем отчёт.
+            var now = DateTime.Now;
+            _errors.Enqueue(now);
+            while (_errors.Count > 0 && now - _errors.Peek() > TimeSpan.FromMinutes(1)) _errors.Dequeue();
+            try
+            {
+                if (Shell.Main == null) return;
+                if (_errors.Count >= 3 && !_reportAsked)
+                {
+                    _reportAsked = true;
+                    Dispatcher.UIThread.Post(async () =>
+                    {
+                        if (await Shell.Confirm("Несколько ошибок подряд. Отправить отчёт разработчику? Откроется страница с текстом ошибки — ты увидишь всё перед отправкой.", "Отправить отчёт"))
+                            CrashReport.Open();
+                    });
+                }
+                else Shell.Toast("Что-то пошло не так — записал в журнал, продолжаем", "!"); // некритичное — коротким уведомлением
+            }
+            catch { }
         };
 
         if (ApplicationLifetime is ISingleViewApplicationLifetime single)
@@ -58,7 +74,7 @@ public partial class App : Application
         // Тяжёлое — в фоне, чтобы окно появилось сразу
         // данные курса нужны главной уже для первого кадра; словарь и акценты — после него (Perf.WarmUpAfterFirstFrame)
         Task.Run(() => { Db.Preload(); Perf.Mark("данные курса загружены"); });
-        if (Environment.GetCommandLineArgs().Length <= 1 && Voicevox.Downloaded && !ProgressStore.P.Flags.Contains("vv-ok") && !ProgressStore.P.Flags.Contains("vv-crashed"))
+        if (Environment.GetCommandLineArgs().Skip(1).All(a => a == Program.RestartArg) && Voicevox.Downloaded && !ProgressStore.P.Flags.Contains("vv-ok") && !ProgressStore.P.Flags.Contains("vv-crashed"))
             _ = Task.Run(async () =>
             {
                 var (ok, _) = await Voicevox.SelfCheckAsync();
@@ -66,6 +82,9 @@ public partial class App : Application
             });
         base.OnFrameworkInitializationCompleted();
     }
+
+    static readonly Queue<DateTime> _errors = new();
+    static bool _reportAsked;
 
     /// <summary>
     /// Запасной шрифт для всего интерфейса: значки ✓ ★ ♥ ⚠ и эмодзи 🔊 💡, которых нет в системном шрифте
