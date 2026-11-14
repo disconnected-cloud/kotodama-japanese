@@ -146,7 +146,7 @@ public sealed class WordPage : UserControl, IPage
                 var b = new Button
                 {
                     HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 0, 8, 8), Padding = Shell.Compact ? new Thickness(10, 8) : new Thickness(12, 8),
-                    Content = U.Stack(U.T(name, "Muted", 11.5), U.Jp(f, Shell.Compact ? 15.5 : 18).Also(t => t.TextWrapping = TextWrapping.NoWrap), U.T(Kana.ToRomaji(FormKana(_e.Jp, _e.Kana, f)), "Muted", 11)),
+                    Content = U.Stack(U.T(name, "Muted", 12), U.Jp(f, Shell.Compact ? 15.5 : 18).Also(t => t.TextWrapping = TextWrapping.NoWrap), U.T(Kana.ToRomaji(FormKana(_e.Jp, _e.Kana, f)), "Muted", 12)),
                 };
                 b.Click += (_, _) => Speech.Say(f);
                 grid.Children.Add(b);
@@ -212,7 +212,7 @@ public sealed class WordPage : UserControl, IPage
                 foreach (var r in rel)
                 {
                     var b = new Button { Margin = new Thickness(0, 0, 8, 8), Padding = new Thickness(12, 6),
-                        Content = U.Stack(U.Jp(r.Jp, 18), U.T(r.Ru.Split(';')[0].Trim() is var s && s.Length > 22 ? s[..22] + "…" : s, "Muted", 11.5)) };
+                        Content = U.Stack(U.Jp(r.Jp, 18), U.T(r.Ru.Split(';')[0].Trim() is var s && s.Length > 22 ? s[..22] + "…" : s, "Muted", 12)) };
                     var rr = r;
                     b.Click += (_, _) => Shell.Open(new WordPage(rr));
                     wrap.Children.Add(b);

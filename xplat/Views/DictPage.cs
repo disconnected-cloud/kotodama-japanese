@@ -178,7 +178,7 @@ public sealed class DictPage : UserControl, IPage
     {
         var top = U.Cols("*", "auto");
         top.Children.Add(U.Row(10, new TextBlock { Text = r.Jp, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 20 },
-            U.Stack(new TextBlock { Text = r.Kana, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 13, Foreground = U.B("Accent") }, new TextBlock { Text = r.Romaji, FontSize = 11, Foreground = U.B("Muted") }).CenterV()));
+            U.Stack(new TextBlock { Text = r.Kana, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 13, Foreground = U.B("Accent") }, new TextBlock { Text = r.Romaji, FontSize = 12, Foreground = U.B("Muted") }).CenterV()));
         var speak = new Button { Content = "\uE767", Width = 34, Height = 34, Classes = { "IconButton" } };
         speak.Click += (_, _) => Speech.Say(r.E.Kana);
         var add = new Button { Content = r.AddGlyph, Width = 34, Height = 34, Classes = { "IconButton" } };
@@ -198,7 +198,7 @@ public sealed class DictPage : UserControl, IPage
         left.Children.Add(new TextBlock { Text = r.Jp, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 22, TextTrimming = TextTrimming.CharacterEllipsis });
         if (r.CommonVis)
             left.Children.Add(new Border { Background = U.B("GoodSoft"), CornerRadius = new CornerRadius(6), Padding = new Thickness(6, 0), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 3, 0, 0),
-                Child = new TextBlock { Text = "частое", FontSize = 10.5, Foreground = U.B("Good") } });
+                Child = new TextBlock { Text = "частое", FontSize = 12, Foreground = U.B("Good") } });
         g.Children.Add(left);
         var mid = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         mid.Children.Add(new TextBlock { Text = r.Kana, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 14, Foreground = U.B("Accent"), TextTrimming = TextTrimming.CharacterEllipsis });

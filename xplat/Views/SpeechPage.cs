@@ -458,7 +458,7 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget, IResumabl
     {
         var g = U.Cols("70", "auto", "*", "56");
         g.Children.Add(U.T(label, "Muted", 12.5).CenterV());
-        var pb = new Button { Classes = { "IconButton" }, Content = "", Width = 30, Height = 30, FontSize = 11}.Tip("Воспроизвести");
+        var pb = new Button { Classes = { "IconButton" }, Content = "", Width = 30, Height = 30, FontSize = 12}.Tip("Воспроизвести");
         pb.Click += (_, _) => play();
         g.Children.Add(pb.Col(1));
         g.Children.Add(wave.M(8, 0, 8, 0).Col(2));
@@ -504,7 +504,7 @@ public sealed class SpeechLessonPage : UserControl, IPage, IKeyTarget, IResumabl
         var sp = new StackPanel();
         sp.Children.Add(tb);
         if (bySound && h != hk) sp.Children.Add(U.T($"Whisper записал: {heard.Trim()}", "Muted", 12).M(0, 4, 0, 0));
-        sp.Children.Add(U.T("зелёный — верно · красный — пропущено · зачёркнуто — лишнее", "Muted", 11).M(0, 4, 0, 0));
+        sp.Children.Add(U.T("зелёный — верно · красный — пропущено · зачёркнуто — лишнее", "Muted", 12).M(0, 4, 0, 0));
         return sp;
     }
 

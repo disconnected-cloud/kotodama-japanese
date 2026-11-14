@@ -45,7 +45,7 @@ public sealed class Palette : Grid
         search.Children.Add(new TextBlock { Text = "", FontFamily = U.R<FontFamily>("Icons"), FontSize = 16, Foreground = U.B("Muted"), Margin = new Thickness(16, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false });
         sp.Children.Add(search);
         sp.Children.Add(new ScrollViewer { Content = _list, MaxHeight = 440, Margin = new Thickness(0, 10, 0, 0) });
-        sp.Children.Add(U.T("↑↓ — выбор · Enter — открыть · Esc — закрыть", "Muted", 11.5).Center().M(0, 8, 0, 0));
+        sp.Children.Add(U.T("↑↓ — выбор · Enter — открыть · Esc — закрыть", "Muted", 12).Center().M(0, 8, 0, 0));
         card.Child = sp;
         Children.Add(card);
         // поиск — с небольшой задержкой: при быстром наборе список не перестраивается на каждую букву

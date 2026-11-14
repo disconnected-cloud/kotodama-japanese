@@ -112,7 +112,7 @@ public static class Report
             var st = new ScaleTransform(1, 0); bar.RenderTransform = st;
             Anim.Run((st, "sy"), 0, 1, 500, v => st.ScaleY = v, null, 420 * i / values.Length);
             col.Children.Add(bar);
-            col.Children.Add(U.T(labels[i], "Muted", 10.5).Also(t => { t.TextWrapping = TextWrapping.NoWrap; t.Margin = new Thickness(-20, 4, -20, 0); t.TextAlignment = TextAlignment.Center; }).RowAt(1));
+            col.Children.Add(U.T(labels[i], "Muted", 12).Also(t => { t.TextWrapping = TextWrapping.NoWrap; t.Margin = new Thickness(-20, 4, -20, 0); t.TextAlignment = TextAlignment.Center; }).RowAt(1));
             bars.Children.Add(col);
         }
         sp.Children.Add(bars);

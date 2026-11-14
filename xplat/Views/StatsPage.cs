@@ -114,7 +114,7 @@ public sealed class StatsPage : UserControl, IPage
         for (int w = 0; w < weeks; w++)
         {
             var monday = start.AddDays(w * 7);
-            if (monday.Day <= 7) grid.Children.Add(U.T(monday.ToString("MMM"), "Muted", 10).M(1, 0, 0, 3).Col(w, 4));
+            if (monday.Day <= 7) grid.Children.Add(U.T(monday.ToString("MMM"), "Muted", 12).M(1, 0, 0, 3).Col(w, 4));
             for (int d = 0; d < 7; d++)
             {
                 var day = monday.AddDays(d);
@@ -134,10 +134,10 @@ public sealed class StatsPage : UserControl, IPage
         }
         var head = U.Cols("*", "auto");
         head.Children.Add(U.Stack(U.T("АКТИВНОСТЬ", "Overline"), U.T($"{active} {MainView.Plural(active, "день", "дня", "дней")} занятий · {total} XP · лучшая серия {best}", "H3", 15).M(0, 4, 0, 12)));
-        var legend = U.Row(3, U.T("меньше", "Muted", 10.5).CenterV().M(0, 0, 4, 0));
+        var legend = U.Row(3, U.T("меньше", "Muted", 12).CenterV().M(0, 0, 4, 0));
         foreach (byte a in new byte[] { 0, 70, 130, 190, 255 })
             legend.Children.Add(new Border { Width = 11, Height = 11, CornerRadius = new CornerRadius(3), Background = a == 0 ? U.B("Surface2") : new SolidColorBrush(Color.FromArgb(a, accent.R, accent.G, accent.B)) }.CenterV());
-        legend.Children.Add(U.T("больше", "Muted", 10.5).CenterV().M(4, 0, 0, 0));
+        legend.Children.Add(U.T("больше", "Muted", 12).CenterV().M(4, 0, 0, 0));
         head.Children.Add(legend.DesktopOnly().Col(1));
         var sv = new ScrollViewer { HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = grid };
         sv.Loaded += (_, _) => sv.Offset = new Vector(sv.Extent.Width, 0); // на узком экране видна последняя неделя
@@ -178,7 +178,7 @@ public sealed class StatsPage : UserControl, IPage
             var row = U.Cols("auto", "*", "auto");
             row.Margin = new Thickness(0, 10, 0, 0);
             row.Children.Add(new Border { Width = 10, Height = 10, CornerRadius = new CornerRadius(3), Background = new SolidColorBrush(Color.FromArgb(s.a, info.R, info.G, info.B)) }.CenterV());
-            row.Children.Add(U.Stack(U.T(s.name, "Body", 13.5), U.T(s.tip, "Muted", 11.5).Also(t => t.TextWrapping = TextWrapping.Wrap)).M(10, 0, 8, 0).Col(1));
+            row.Children.Add(U.Stack(U.T(s.name, "Body", 13.5), U.T(s.tip, "Muted", 12).Also(t => t.TextWrapping = TextWrapping.Wrap)).M(10, 0, 8, 0).Col(1));
             row.Children.Add(U.T(s.n.ToString(), "H3", 14).CenterV().Col(2));
             sp.Children.Add(row);
         }
@@ -210,7 +210,7 @@ public sealed class StatsPage : UserControl, IPage
             g.Margin = new Thickness(0, 8, 0, 0);
             g.Children.Add(Art.Icon(r.icon, 30).CenterV());
             var head = U.Cols("*", "auto");
-            head.Children.Add(U.Row(6, U.T(r.name, "Body", 13.5), U.T(r.note, "Muted", 11.5).CenterV()));
+            head.Children.Add(U.Row(6, U.T(r.name, "Body", 13.5), U.T(r.note, "Muted", 12).CenterV()));
             head.Children.Add(U.T($"{r.done} / {r.total}", "Muted", 12).Col(1));
             g.Children.Add(U.Stack(head, new ProgressBar { Maximum = Math.Max(1, r.total), Value = r.done, Height = 6, Margin = new Thickness(0, 5, 0, 0) }).CenterV().M(12, 0, 0, 0).Col(1));
             sp.Children.Add(g);
@@ -236,7 +236,7 @@ public sealed class StatsPage : UserControl, IPage
                 Background = U.B(open ? "Surface2" : "Surface"), BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(1), Opacity = open ? 1 : 0.45,
                 Child = U.Stack(
                     open ? Emoji.Img(a.Emoji, 40).Also(i => i.HorizontalAlignment = HorizontalAlignment.Center) : U.Jp("?", 30, U.B("Faint"), true).Center(),
-                    U.T(open ? a.Title : $"Юнит {u.Num}", "Muted", 11).Also(t => { t.TextAlignment = TextAlignment.Center; t.TextWrapping = TextWrapping.Wrap; t.MaxLines = 2; }).Center().M(0, 6, 0, 0)),
+                    U.T(open ? a.Title : $"Юнит {u.Num}", "Muted", 12).Also(t => { t.TextAlignment = TextAlignment.Center; t.TextWrapping = TextWrapping.Wrap; t.MaxLines = 2; }).Center().M(0, 6, 0, 0)),
             }.Tip(open ? a.Lead : $"Сдай экзамен юнита {u.Num}: {u.Title}");
             if (open) { card.Cursor = Cursors.Hand; card.PointerReleased += (_, _) => Shell.Open(new ArticlePage(a)); }
             wrap.Children.Add(card);

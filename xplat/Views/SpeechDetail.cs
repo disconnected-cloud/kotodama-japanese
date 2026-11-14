@@ -54,8 +54,8 @@ public static class SpeechDetail
                 Text = kana, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 19, HorizontalAlignment = HorizontalAlignment.Center,
                 Foreground = U.B(op == '=' ? "Text" : fg), TextDecorations = op == '+' ? TextDecorations.Strikethrough : null,
             });
-            sp.Children.Add(new TextBlock { Text = Kana.ToRomaji(kana), FontSize = 10.5, Foreground = U.B("Muted"), HorizontalAlignment = HorizontalAlignment.Center });
-            if (op == '~') sp.Children.Add(new TextBlock { Text = "слышно: " + hm, FontSize = 10, Foreground = U.B("Bad"), HorizontalAlignment = HorizontalAlignment.Center });
+            sp.Children.Add(new TextBlock { Text = Kana.ToRomaji(kana), FontSize = 12, Foreground = U.B("Muted"), HorizontalAlignment = HorizontalAlignment.Center });
+            if (op == '~') sp.Children.Add(new TextBlock { Text = "слышно: " + hm, FontSize = 12, Foreground = U.B("Bad"), HorizontalAlignment = HorizontalAlignment.Center });
             var chip = new Border
             {
                 Child = sp, Background = U.B(bg), CornerRadius = new CornerRadius(9), Padding = new Thickness(9, 4), Margin = new Thickness(0, 0, 5, 5), MinWidth = 38,
@@ -71,7 +71,7 @@ public static class SpeechDetail
             });
             wrap.Children.Add(chip);
         }
-        return U.Stack(wrap, U.T("зелёный — верно · красный — ошибка · жёлтый — лишнее · оранжевая рамка — нечётко", "Muted", 11).M(0, 2, 0, 0));
+        return U.Stack(wrap, U.T("зелёный — верно · красный — ошибка · жёлтый — лишнее · оранжевая рамка — нечётко", "Muted", 12).M(0, 2, 0, 0));
     }
 
     /// <summary>
@@ -109,7 +109,7 @@ public static class SpeechDetail
         }
         var hint = bad == 0 ? "Все слоги верно · нажми на любой, чтобы послушать отдельно"
             : $"{bad} {MainView.Plural(bad, "слог", "слога", "слогов")} с ошибкой — нажми на подсвеченный, чтобы переслушать только его";
-        return U.Stack(wrap, U.T(hint, "Muted", 11.5).Center().M(0, 4, 0, 0));
+        return U.Stack(wrap, U.T(hint, "Muted", 12).Center().M(0, 4, 0, 0));
     }
 
     /// <summary>Проиграть одну мору образца: с VOICEVOX — точный срез по границам мор, иначе — слог отдельно.</summary>

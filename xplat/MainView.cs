@@ -94,7 +94,7 @@ public partial class MainView : UserControl
                 Orientation = Orientation.Horizontal,
                 Children =
                 {
-                    new TextBlock { Text = "", FontFamily = U.R<FontFamily>("Icons"), FontSize = 11, VerticalAlignment = VerticalAlignment.Center },
+                    new TextBlock { Text = "", FontFamily = U.R<FontFamily>("Icons"), FontSize = 12, VerticalAlignment = VerticalAlignment.Center },
                     new TextBlock { Text = "Назад", Margin = new Thickness(8, 0, 0, 0), FontSize = 13, FontWeight = FontWeight.Normal },
                 },
             },

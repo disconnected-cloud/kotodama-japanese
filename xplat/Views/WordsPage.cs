@@ -50,7 +50,7 @@ public sealed class WordsPage : UserControl, IPage
         var top = U.Cols("auto", "*", "auto");
         top.Children.Add(new Ellipse { Width = 8, Height = 8, Fill = r.StatusBrush, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) });
         top.Children.Add(U.Row(10, new TextBlock { Text = r.W.Jp, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 22 },
-            U.Stack(new TextBlock { Text = r.W.Kana, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 13, Foreground = U.B("Accent") }, new TextBlock { Text = r.W.Romaji, FontSize = 11, Foreground = U.B("Muted") }).CenterV()).Col(1));
+            U.Stack(new TextBlock { Text = r.W.Kana, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 13, Foreground = U.B("Accent") }, new TextBlock { Text = r.W.Romaji, FontSize = 12, Foreground = U.B("Muted") }).CenterV()).Col(1));
         top.Children.Add(new TextBlock { Text = "\uE767", FontFamily = U.R<FontFamily>("Icons"), FontSize = 16, Foreground = U.B("Muted"), VerticalAlignment = VerticalAlignment.Center }.Col(2));
         var sp = U.Stack(top, new TextBlock { Text = r.W.Ru, FontSize = 14, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(18, 4, 0, 0) });
         if (r.ExVis) sp.Children.Add(new TextBlock { Text = r.W.ExJp, FontFamily = U.R<FontFamily>("JpFont"), FontSize = 12.5, Foreground = U.B("Muted"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(18, 3, 0, 0) });
@@ -86,7 +86,7 @@ public sealed class WordsPage : UserControl, IPage
             ex.Inlines.Add(new Run(r.W.ExRu) { Foreground = U.B("Faint"), FontSize = 12 });
             right.Children.Add(ex);
         }
-        right.Children.Add(new TextBlock { Text = r.Status, FontSize = 11, Foreground = U.B("Faint"), Margin = new Thickness(0, 2, 0, 0) });
+        right.Children.Add(new TextBlock { Text = r.Status, FontSize = 12, Foreground = U.B("Faint"), Margin = new Thickness(0, 2, 0, 0) });
         g.Children.Add(right.Col(3));
         g.Children.Add(new TextBlock { Text = "", FontFamily = U.R<FontFamily>("Icons"), FontSize = 16, Foreground = U.B("Muted"), VerticalAlignment = VerticalAlignment.Center }.Col(4));
         var bd = new Border

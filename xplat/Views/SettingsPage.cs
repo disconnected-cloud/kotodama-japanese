@@ -60,7 +60,7 @@ public sealed partial class SettingsPage : UserControl, IPage
             bool on = key == _tab && !Shell.Compact;
             var g = U.Cols("auto", "*");
             g.Children.Add(Art.Icon(icon, 34).CenterV());
-            g.Children.Add(U.Stack(U.T(title, "H3", 14, U.B(on ? "Text" : "Muted")), U.T(sub, "Muted", 11.5)).CenterV().M(12, 0, 0, 0).Col(1));
+            g.Children.Add(U.Stack(U.T(title, "H3", 14, U.B(on ? "Text" : "Muted")), U.T(sub, "Muted", 12)).CenterV().M(12, 0, 0, 0).Col(1));
             var item = new Border
             {
                 Child = g, Padding = new Thickness(10, 8), Margin = new Thickness(0, 0, 0, 4), CornerRadius = new CornerRadius(14), Cursor = Cursors.Hand,
@@ -322,7 +322,7 @@ public sealed partial class SettingsPage : UserControl, IPage
         {
             bool got = p.Achievements.Contains(a.Id);
             var sp = U.Stack(U.Jp(a.Jp, 22, U.B(got ? "Accent" : "Faint"), true).Center(), U.T(a.Title, "H3", 12.5, U.B(got ? "Text" : "Faint")).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.TextAlignment = TextAlignment.Center; }).Center().M(0, 4, 0, 0),
-                U.T(a.Desc, "Muted", 11).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.TextAlignment = TextAlignment.Center; }).Center());
+                U.T(a.Desc, "Muted", 12).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.TextAlignment = TextAlignment.Center; }).Center());
             wrap.Children.Add(new Border { Width = 132, MinHeight = 112, Margin = new Thickness(0, 0, 8, 8), CornerRadius = new CornerRadius(12), Padding = new Thickness(8),
                 Background = U.B(got ? "AccentSoft" : "Surface2"), Child = sp.CenterV(), Opacity = got ? 1 : 0.6 });
         }
@@ -343,7 +343,7 @@ public sealed partial class SettingsPage : UserControl, IPage
             var btns = U.Row(8, buttons).Col(1);
             btns.VerticalAlignment = VerticalAlignment.Center;
             g.Children.Add(btns);
-            return new Border { Child = g, Padding = new Thickness(0, 8), BorderBrush = U.B(ok ? "Good" : "Line"), BorderThickness = new Thickness(3, 0, 0, 0) }.Also(b => b.Padding = new Thickness(12, 8, 0, 8)).M(0, 0, 0, 8);
+            return new Border { Child = g, Padding = new Thickness(0, 8), BorderBrush = U.B(ok ? "Good" : "StrokeStrong"), BorderThickness = new Thickness(3, 0, 0, 0) }.Also(b => b.Padding = new Thickness(12, 8, 0, 8)).M(0, 0, 0, 8);
         }
         var vvItem = Storage.Items.First(i => i.Key == "voicevox");
         var cacheItem = Storage.Items.First(i => i.Key == "audio");

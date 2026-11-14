@@ -25,7 +25,7 @@
     <Style Selector="TextBlock.H3"><Setter Property="FontSize" Value="15"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
     <Style Selector="TextBlock.Body"><Setter Property="FontSize" Value="14"/><Setter Property="LineHeight" Value="22"/><Setter Property="TextWrapping" Value="Wrap"/></Style>
     <Style Selector="TextBlock.MutedText"><Setter Property="FontSize" Value="13"/><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="Foreground" Value="{DynamicResource Muted}"/></Style>
-    <Style Selector="TextBlock.Overline"><Setter Property="FontSize" Value="11"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Foreground" Value="{DynamicResource Muted}"/></Style>
+    <Style Selector="TextBlock.Overline"><Setter Property="FontSize" Value="12"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Foreground" Value="{DynamicResource Muted}"/></Style>
     <Style Selector="TextBlock.Jp"><Setter Property="FontFamily" Value="{DynamicResource JpFont}"/></Style>
     <Style Selector="TextBlock.Icon"><Setter Property="FontFamily" Value="{DynamicResource Icons}"/><Setter Property="FontSize" Value="16"/><Setter Property="VerticalAlignment" Value="Center"/></Style>
 

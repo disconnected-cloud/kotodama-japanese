@@ -64,7 +64,7 @@ public sealed class HomePage : UserControl, IPage
             // телефон: шаги одним рядом — иконка и короткая подпись (длинные «таблетки» выстраивались столбиком)
             var steps = new UniformGrid { Columns = Math.Max(1, plan.Count), Rows = 1, Margin = new Thickness(-4, 0, -4, 0) };
             foreach (var st in plan)
-                steps.Children.Add(U.Stack(Art.Icon(st.Icon, 34).Center(), U.T(Short(st), "Muted", 11.5).Also(x => { x.TextAlignment = TextAlignment.Center; x.TextWrapping = TextWrapping.NoWrap; }).Center().M(0, 4, 0, 0)).M(4, 0, 4, 0).Tip(st.Title));
+                steps.Children.Add(U.Stack(Art.Icon(st.Icon, 34).Center(), U.T(Short(st), "Muted", 12).Also(x => { x.TextAlignment = TextAlignment.Center; x.TextWrapping = TextWrapping.NoWrap; }).Center().M(0, 4, 0, 0)).M(4, 0, 4, 0).Tip(st.Title));
             left.Children.Add(steps);
         }
         else
@@ -274,7 +274,7 @@ public sealed class HomePage : UserControl, IPage
         sp.Children.Add(U.Jp(w.Kana, 14, U.B("Accent")).M(0, 4, 0, 0));
         sp.Children.Add(U.T(w.Romaji, "Muted", 13));
         sp.Children.Add(U.T(w.Ru, "H3", 16).Also(x => x.TextWrapping = TextWrapping.Wrap).M(0, 10, 0, 0));
-        sp.Children.Add(U.T("Нажми — пример фразы", "Muted", 11.5).M(0, 8, 0, 0));
+        sp.Children.Add(U.T("Нажми — пример фразы", "Muted", 12).M(0, 8, 0, 0));
         var card = new Border { Classes = { "Card" }, Child = sp, Cursor = Cursors.Hand };
         card.PointerReleased += (_, e) => { if (e.Source is not Button && e.Source is not TextBlock { Parent: Button }) Services.WordOfDay.Show(force: true); };
         return card;

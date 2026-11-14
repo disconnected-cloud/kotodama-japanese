@@ -163,7 +163,7 @@ public sealed class JournalPage : UserControl, IPage
                     var entry = e;
                     var b = new Button
                     {
-                        Content = U.Stack(U.Jp(e.Jp, 15), U.T(e.Jp != e.Kana ? e.Kana : "", "Muted", 11), U.T(Short(e.Ru), "Muted", 11).Also(t => t.MaxWidth = 170)),
+                        Content = U.Stack(U.Jp(e.Jp, 15), U.T(e.Jp != e.Kana ? e.Kana : "", "Muted", 12), U.T(Short(e.Ru), "Muted", 12).Also(t => t.MaxWidth = 170)),
                         Padding = new Thickness(10, 6), Margin = new Thickness(0, 0, 8, 8), VerticalAlignment = VerticalAlignment.Top,
                     };
                     b.Click += (_, _) => Shell.Open(new WordPage(entry));

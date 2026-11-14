@@ -293,7 +293,7 @@ public sealed class PathPage : UserControl, IPage
         var card = new Border
         {
             Classes = { "Card" }, Padding = new Thickness(18, 14, 14, 14), Margin = new Thickness(12, 8, 0, 8), Child = info,
-            Cursor = unlocked ? Cursors.Hand : Cursors.Arrow, Opacity = unlocked ? 1 : 0.6,
+            Cursor = unlocked ? Cursors.Hand : Cursors.Arrow, Opacity = 1, // закрытый юнит различим по замку и серому заголовку — полупрозрачность делала его нечитаемым (7.2)
         };
         if (current) card.BorderBrush = U.B("AccentSoft");
         if (unlocked)

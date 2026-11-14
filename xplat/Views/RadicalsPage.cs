@@ -50,7 +50,7 @@ public sealed class RadicalsPage : UserControl, IPage
                 Width = 96, Height = 96, Margin = new Thickness(0, 0, 10, 10), CornerRadius = new CornerRadius(16), Cursor = Cursors.Hand,
                 Background = U.B(on ? "AccentSoft" : "Surface"), BorderBrush = U.B(on ? "Accent" : "Stroke"), BorderThickness = new Thickness(1),
                 Child = U.Stack(U.Jp(part, 32, on ? U.B("Accent") : null, true).Center(),
-                    U.T(name.Length > 12 ? name[..12] + "…" : name, "Muted", 11).Center(), U.T($"×{kanji.Count}", "Muted", 10.5, U.B("Faint")).Center()).CenterV(),
+                    U.T(name.Length > 12 ? name[..12] + "…" : name, "Muted", 12).Center(), U.T($"×{kanji.Count}", "Muted", 12, U.B("Faint")).Center()).CenterV(),
             }.Tip(name);
             var pp = part;
             tile.PointerReleased += (_, _) => { _sel = pp; OnShown(); };

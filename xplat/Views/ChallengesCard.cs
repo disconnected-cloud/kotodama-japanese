@@ -47,13 +47,13 @@ public static class ChallengesCard
             arc.Stroke = U.B(frac >= 1 ? "Good" : "GoldGradient"); arc.StrokeThickness = 9; arc.StrokeLineCap = PenLineCap.Round;
             ring.Children.Add(arc);
         }
-        ring.Children.Add(U.Stack(U.T($"{wx}", "H2", 20).Center(), U.T($"из {wt} XP", "Muted", 11).Center()).CenterV());
+        ring.Children.Add(U.Stack(U.T($"{wx}", "H2", 20).Center(), U.T($"из {wt} XP", "Muted", 12).Center()).CenterV());
         var shields = U.Row(4);
         shields.HorizontalAlignment = HorizontalAlignment.Center;
         for (int i = 0; i < Challenges.MaxShields; i++)
             shields.Children.Add(Art.Icon("shield", 26).Also(s => s.Opacity = i < p.Shields ? 1 : 0.22));
         var right = U.Stack(U.T("НЕДЕЛЬНАЯ ЦЕЛЬ", "Overline").Center(), ring.M(0, 10, 0, 10), shields,
-            U.T(p.Shields > 0 ? $"Щитов: {p.Shields} — спасут серию в пропущенный день" : "Возьми недельную цель — получишь щит серии", "Muted", 11.5)
+            U.T(p.Shields > 0 ? $"Щитов: {p.Shields} — спасут серию в пропущенный день" : "Возьми недельную цель — получишь щит серии", "Muted", 12)
                 .Also(t => { t.TextWrapping = TextWrapping.Wrap; t.TextAlignment = TextAlignment.Center; t.MaxWidth = 200; }).Center().M(0, 6, 0, 0));
         right.Tip($"Награда за неделю: щит серии (до {Challenges.MaxShields}) и значок. Значков недель: {p.Badges.Count}");
 

@@ -70,7 +70,7 @@ public sealed class NumbersPage : UserControl, IPage
             bool special = marks.Any(r.Contains);
             var b = new Button
             {
-                Content = U.Stack(U.T(label, "Muted", 11).Center(), U.Jp(r, 15, special ? U.B("Accent") : null).Center()),
+                Content = U.Stack(U.T(label, "Muted", 12).Center(), U.Jp(r, 15, special ? U.B("Accent") : null).Center()),
                 Padding = new Thickness(10, 6, 10, 6), Margin = new Thickness(0, 0, 6, 6),
             };
             b.Click += (_, _) => Speech.Say(r);

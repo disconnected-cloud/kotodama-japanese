@@ -394,7 +394,7 @@ public sealed class TextPage : UserControl, IPage, IResumable
             var stack = new StackPanel { Margin = new Thickness(0, 0, 1, 4), Cursor = Cursors.Hand, Background = Brushes.Transparent };
             bool furi = _furi && t.Reading.Length > 0 && !(unknownOnly && AllKanjiKnown(t.Surface));
             // без фуриганы — не пустая надпись, а отступ той же высоты (меньше элементов: в главе сотни токенов)
-            if (furi) stack.Children.Add(new TextBlock { Text = t.Reading, FontSize = 11, Height = FuriH, Foreground = accent, HorizontalAlignment = HorizontalAlignment.Center, FontFamily = jp });
+            if (furi) stack.Children.Add(new TextBlock { Text = t.Reading, FontSize = 12, Height = FuriH, Foreground = accent, HorizontalAlignment = HorizontalAlignment.Center, FontFamily = jp });
             var surf = new TextBlock { Text = t.Surface, FontSize = 24, FontFamily = jp, Foreground = text, HorizontalAlignment = HorizontalAlignment.Center, Margin = furi ? default : new Thickness(0, FuriH, 0, 0) };
             stack.Children.Add(surf);
             if (t.Pos != "補助記号" && t.Pos != "記号")

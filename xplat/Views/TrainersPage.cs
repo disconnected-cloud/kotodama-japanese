@@ -144,12 +144,12 @@ public static class Counters
         foreach (var (c, use, r) in Data)
         {
             var row = U.Cols("60", "*");
-            row.Children.Add(U.Stack(U.Jp(c, 26, U.B("Accent"), true), U.T(use, "Muted", 11).Also(t => t.MaxWidth = 60)).M(0, 0, 8, 0));
+            row.Children.Add(U.Stack(U.Jp(c, 26, U.B("Accent"), true), U.T(use, "Muted", 12).Also(t => t.MaxWidth = 60)).M(0, 0, 8, 0));
             var wrap = new WrapPanel();
             for (int i = 0; i < 10; i++)
             {
                 var reading = r[i];
-                var b = new Button { Content = U.Stack(U.T((i + 1) + c, "Muted", 11).Center(), U.Jp(reading, 14).Center()), Padding = new Thickness(10, 6, 10, 6), Margin = new Thickness(0, 0, 6, 6) };
+                var b = new Button { Content = U.Stack(U.T((i + 1) + c, "Muted", 12).Center(), U.Jp(reading, 14).Center()), Padding = new Thickness(10, 6, 10, 6), Margin = new Thickness(0, 0, 6, 6) };
                 b.Click += (_, _) => Speech.Say(reading.Split('/')[0]);
                 wrap.Children.Add(b);
             }
@@ -426,7 +426,7 @@ public sealed class TrainersPage : UserControl, IPage
             {
                 Width = 24, Height = 24, CornerRadius = new CornerRadius(12), BorderThickness = new Thickness(ok ? 0 : 1.5), BorderBrush = U.B("StrokeStrong"),
                 Background = ok ? U.B("Good") : Brushes.Transparent,
-                Child = ok ? new TextBlock { Text = "", FontFamily = U.R<FontFamily>("Icons"), FontSize = 11, Foreground = U.B("Bg"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } : null,
+                Child = ok ? new TextBlock { Text = "", FontFamily = U.R<FontFamily>("Icons"), FontSize = 12, Foreground = U.B("Bg"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } : null,
             }.CenterV());
             row.Children.Add(U.Stack(U.T(items[i].title, "H3", 14, U.B(ok ? "Muted" : "Text")), U.T(items[i].sub, "Muted", 12)).M(12, 0, 0, 0).Col(1));
             var go = items[i].go;

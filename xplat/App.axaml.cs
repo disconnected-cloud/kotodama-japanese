@@ -135,8 +135,8 @@ public partial class App : Application
         var dark = new Dictionary<string, string>
         {
             ["Bg"] = "#0F1014", ["Sidebar"] = "#0F1014", ["Surface"] = "#16171C", ["SurfaceSolid"] = "#16171C", ["Surface2"] = "#1D1F25",
-            ["Surface3"] = "#272A31", ["Stroke"] = "#22242B", ["StrokeStrong"] = "#33363F", ["Text"] = "#EDEDF0", ["Muted"] = "#8E919B",
-            ["Faint"] = "#5B5F69", ["Accent"] = "#F07AA0", ["AccentHover"] = "#F48DAE", ["Accent2"] = "#9D8CFF", ["AccentSoft"] = "#1FF07AA0",
+            ["Surface3"] = "#272A31", ["Stroke"] = "#22242B", ["StrokeStrong"] = "#33363F", ["Text"] = "#EDEDF0", ["Muted"] = "#A0A3AD",
+            ["Faint"] = "#8A8E98", ["Accent"] = "#F07AA0", ["AccentHover"] = "#F48DAE", ["Accent2"] = "#9D8CFF", ["AccentSoft"] = "#1FF07AA0",
             ["Gold"] = "#E8B860", ["Good"] = "#5CC99A", ["GoodSoft"] = "#1F5CC99A", ["Bad"] = "#EF6F6F", ["BadSoft"] = "#1FEF6F6F",
             ["Info"] = "#6FA8F0", ["AccentGradient"] = "#EE7AA0", ["GoldGradient"] = "#E2B15E", ["CoolGradient"] = "#6F94E8",
             ["GreenGradient"] = "#55BE90", ["GlassStroke"] = "#22242B", ["CardFill"] = "#16171C", ["HoverTint"] = "#FFFFFF",
@@ -145,8 +145,8 @@ public partial class App : Application
         var lite = new Dictionary<string, string>
         {
             ["Bg"] = "#F6F5F3", ["Sidebar"] = "#F6F5F3", ["Surface"] = "#FFFFFF", ["SurfaceSolid"] = "#FFFFFF", ["Surface2"] = "#F0EEEB",
-            ["Surface3"] = "#E4E1DD", ["Stroke"] = "#E6E3DF", ["StrokeStrong"] = "#D3CFCA", ["Text"] = "#1C1B1F", ["Muted"] = "#6B6875",
-            ["Faint"] = "#9C98A3", ["Accent"] = "#B8335F", ["AccentHover"] = "#C8406E", ["Accent2"] = "#6F5BD9", ["AccentSoft"] = "#1FD9487A",
+            ["Surface3"] = "#E4E1DD", ["Stroke"] = "#E6E3DF", ["StrokeStrong"] = "#D3CFCA", ["Text"] = "#1C1B1F", ["Muted"] = "#5C5966",
+            ["Faint"] = "#6E6A76", ["Accent"] = "#B8335F", ["AccentHover"] = "#C8406E", ["Accent2"] = "#6F5BD9", ["AccentSoft"] = "#1FD9487A",
             ["Gold"] = "#86600F", ["Good"] = "#1F7A52", ["GoodSoft"] = "#1F2E9E6E", ["Bad"] = "#BC3434", ["BadSoft"] = "#1FD64545",
             ["Info"] = "#2A63B3", ["AccentGradient"] = "#DD5584", ["GoldGradient"] = "#D19A3A", ["CoolGradient"] = "#4F7FD9",
             ["GreenGradient"] = "#3AA77A", ["GlassStroke"] = "#E6E3DF", ["CardFill"] = "#FFFFFF", ["HoverTint"] = "#000000",
@@ -156,8 +156,8 @@ public partial class App : Application
         var nightPal = new Dictionary<string, string>(dark)
         {
             ["Bg"] = "#000000", ["Sidebar"] = "#000000", ["Surface"] = "#0B0B0D", ["SurfaceSolid"] = "#0B0B0D", ["Surface2"] = "#121215",
-            ["Surface3"] = "#1A1A1F", ["Stroke"] = "#16161A", ["StrokeStrong"] = "#24242A", ["Text"] = "#C4C2C8", ["Muted"] = "#86848D",
-            ["Faint"] = "#4A4950", ["Accent"] = "#C2678A", ["AccentHover"] = "#CC7896", ["Accent2"] = "#8273CC", ["AccentSoft"] = "#1FC2678A",
+            ["Surface3"] = "#1A1A1F", ["Stroke"] = "#16161A", ["StrokeStrong"] = "#24242A", ["Text"] = "#C4C2C8", ["Muted"] = "#9C9AA3",
+            ["Faint"] = "#85838C", ["Accent"] = "#C2678A", ["AccentHover"] = "#CC7896", ["Accent2"] = "#8273CC", ["AccentSoft"] = "#1FC2678A",
             ["Gold"] = "#B8924D", ["Good"] = "#4A9F7B", ["GoodSoft"] = "#1F4A9F7B", ["Bad"] = "#BF5A5A", ["BadSoft"] = "#1FBF5A5A",
             ["Info"] = "#5A86BF", ["AccentGradient"] = "#BF6587", ["GoldGradient"] = "#B38C49", ["CoolGradient"] = "#5875B8",
             ["GreenGradient"] = "#46977A", ["GlassStroke"] = "#16161A", ["CardFill"] = "#0B0B0D", ["SelectedTint"] = "#0AFFFFFF",
