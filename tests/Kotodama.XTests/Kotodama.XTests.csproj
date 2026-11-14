@@ -24,4 +24,7 @@
     <ProjectReference Include="../../xplat/Kotodama.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="lesson_ids.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

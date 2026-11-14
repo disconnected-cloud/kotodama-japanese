@@ -119,3 +119,34 @@ public class FullResetTests
         Assert.Empty(Directory.GetFiles(ProgressStore.Folder, "progress*").Where(f => !f.EndsWith("progress.json")));
     }
 }
+
+/// <summary>Стабильность ID уроков (А7): случайная перестановка уроков ломает этот тест, а не прогресс пользователей.</summary>
+public class LessonIdTests
+{
+    [Fact]
+    public void LessonIdsMatchSnapshot()
+    {
+        var actual = Db.Grammar.Select(g => $"g{g.Id}|{g.Title}")
+            .Concat(Db.SpeechLessons.Select(l => $"s{l.Id}|{l.Title}"))
+            .Concat(Db.Dialogs.Select(d => $"d{d.Id}|{d.Title}"))
+            .Concat(Db.Course.OrderBy(u => u.Id).Select(u => $"c{u.Id}|{u.Title}")).ToHashSet();
+        var snap = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "lesson_ids.txt")).Where(l => l.Length > 0);
+        foreach (var line in snap) Assert.Contains(line, actual); // новые уроки можно добавлять, старые ID не меняются
+    }
+
+    [Fact]
+    public void EveryLessonHasExplicitUniqueId()
+    {
+        Assert.Equal(Db.Grammar.Length, Db.Grammar.Select(g => g.Id).Distinct().Count());
+        Assert.Equal(Db.SpeechLessons.Length, Db.SpeechLessons.Select(g => g.Id).Distinct().Count());
+        Assert.Equal(Db.Dialogs.Length, Db.Dialogs.Select(g => g.Id).Distinct().Count());
+        Assert.Equal(Db.Course.Length, Db.Course.Select(g => g.Id).Distinct().Count());
+        var dir = AppContext.BaseDirectory;
+        while (dir != null && !Directory.Exists(Path.Combine(dir, "Data"))) dir = Path.GetDirectoryName(dir);
+        foreach (var f in new[] { "grammar.json", "grammar_n4.json", "grammar_n3.json", "grammar_n3b.json", "grammar_more.json", "grammar_n2.json", "grammar_n1.json", "grammar_extra.json", "speech.json", "dialogs.json", "course.json" })
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(dir!, "Data", f)));
+            Assert.All(doc.RootElement.EnumerateArray(), e => Assert.True(e.TryGetProperty("id", out _), f));
+        }
+    }
+}

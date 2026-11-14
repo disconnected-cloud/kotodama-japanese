@@ -170,6 +170,18 @@ public static class Db
         return list.ToArray();
     }
 
+    /// <summary>
+    /// ID урока — явное поле "id" в данных: на нём держится прогресс (GrammarDone, «speech:N», «dialog:N», юниты пути),
+    /// поэтому вставка урока в середину файла или перестановка файлов больше не переносит прогресс на чужие уроки (А7).
+    /// Без поля — следующий номер по порядку (старое поведение), тест следит, чтобы поле было везде.
+    /// </summary>
+    static int Id(JsonElement e, ref int counter)
+    {
+        int id = Int(e, "id");
+        counter = id > 0 ? Math.Max(counter, id) : counter + 1;
+        return id > 0 ? id : counter;
+    }
+
     static GrammarLesson[] LoadGrammar()
     {
         int id = 0;
@@ -178,7 +190,7 @@ public static class Db
         {
             using var doc = Open(file);
             list.AddRange(doc.RootElement.EnumerateArray().Select(l => new GrammarLesson(
-                ++id, Str(l, "title"), Str(l, "level"), Str(l, "intro"),
+                Id(l, ref id), Str(l, "title"), Str(l, "level"), Str(l, "intro"),
                 l.GetProperty("points").EnumerateArray().Select(p => new GrammarPoint(Str(p, "p"), Str(p, "e"), Examples(p.GetProperty("ex")))).ToArray(),
                 l.GetProperty("quiz").EnumerateArray().Select(q => new GrammarQuiz(S(q, 0), S(q, 1), S(q, 2).Split('|'), S(q, 3))).ToArray()
             )).ToList());
@@ -192,7 +204,7 @@ public static class Db
         int id = 0;
         return doc.RootElement.EnumerateArray().Select(l =>
         {
-            int lid = ++id;
+            int lid = Id(l, ref id);
             var items = l.GetProperty("items").EnumerateArray().Select(p =>
             {
                 string jp = S(p, 0), kana = S(p, 1);
@@ -209,7 +221,7 @@ public static class Db
         using var doc = Open("dialogs.json");
         int id = 0;
         return doc.RootElement.EnumerateArray().Select(d => new Dialog(
-            ++id, Str(d, "title"), Str(d, "icon"), Str(d, "level"), Str(d, "desc"),
+            Id(d, ref id), Str(d, "title"), Str(d, "icon"), Str(d, "level"), Str(d, "desc"),
             d.GetProperty("roles").EnumerateArray().Select(r => r.GetString() ?? "").ToArray(),
             d.GetProperty("voices").EnumerateArray().Select(v => v.GetString() == "m").ToArray(),
             d.GetProperty("lines").EnumerateArray().Select(l => new DialogLine(l[0].GetInt32(), S(l, 1), S(l, 2), S(l, 3))).ToArray()
@@ -227,7 +239,7 @@ public static class Db
         var units = new List<(CourseUnit u, int after)>();
         foreach (var u in doc.RootElement.EnumerateArray())
             units.Add((new CourseUnit(
-                ++id, Str(u, "title"), Str(u, "level"),
+                Id(u, ref id), Str(u, "title"), Str(u, "level"),
                 u.GetProperty("theory").EnumerateArray().Select(t => t.GetString() ?? "").ToArray(),
                 Examples(u.GetProperty("examples")),
                 u.GetProperty("steps").EnumerateArray().Select(s => new CourseStep(
