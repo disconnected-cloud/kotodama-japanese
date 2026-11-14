@@ -82,3 +82,20 @@ public class DownloaderTests
         File.Delete(f);
     }
 }
+
+public class NoNetworkTests
+{
+    [Fact]
+    public async Task NoNetworkBlocksEveryRequest()
+    {
+        var saved = ProgressStore.P.NoNetwork;
+        try
+        {
+            ProgressStore.P.NoNetwork = true;
+            Assert.Null(await Updater.CheckAsync());
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Downloader.FileAsync("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base-q5_1.bin", Path.Combine(Path.GetTempPath(), "kd-x.bin"), null, CancellationToken.None));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Matsubakira.Views.ReaderPage.FetchJapanese(new Uri("https://example.com")));
+        }
+        finally { ProgressStore.P.NoNetwork = saved; }
+    }
+}

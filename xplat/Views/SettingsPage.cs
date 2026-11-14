@@ -178,6 +178,8 @@ public sealed partial class SettingsPage : UserControl, IPage
                     U.Btn($"Весь уровень {p.Level}", () => ExportAnki(AnkiExport.Set.Level), "", ""),
                     U.Btn("Тетрадь ошибок", () => ExportAnki(AnkiExport.Set.Mistakes), "", "")));
                 yield return Section("Автокопии", "Каждый день при запуске прогресс копируется сам — хранятся последние 14 дней. Если что-то пошло не так, можно вернуться к копии.", AutoBackupBlock());
+                yield return Section("Без сети", "Программа не обращается в интернет: не проверяет обновления, не скачивает модели и голоса, не открывает статьи по ссылке. Всё остальное работает как обычно.",
+                    Toggle("Режим «Без сети»", p.NoNetwork, v => p.NoNetwork = v));
                 yield return Section("Обновления", $"Установлена версия {Updater.Current.ToString(3)}. Новые версии берутся из github.com/{Updater.Repo}.", UpdateBlock());
                 yield return Section("Хранилище", $"Всего занято: {Storage.Format(Storage.Total)} · папка: {ProgressStore.Folder}", StorageBlock());
                 var reset = U.Btn("Сбросить весь прогресс", () => { }, "", "");

@@ -235,6 +235,7 @@ public sealed class ReaderPage : UserControl, IPage
     /// <summary>Японский текст со страницы по ссылке.</summary>
     public static async Task<string> FetchJapanese(Uri url)
     {
+        ProgressStore.EnsureNetworkAllowed();
         using var req = new HttpRequestMessage(HttpMethod.Get, url);
         req.Headers.UserAgent.ParseAdd("Mozilla/5.0 Kotodama");
         using var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);

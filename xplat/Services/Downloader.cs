@@ -67,6 +67,7 @@ public static class Downloader
     /// </summary>
     public static async Task FileAsync(string url, string dest, IProgress<double>? progress, CancellationToken ct, long expectedSize = 0)
     {
+        ProgressStore.EnsureNetworkAllowed();
         var name = Path.GetFileName(new Uri(url).AbsolutePath);
         if (!Sha256.TryGetValue(name, out var want)) throw new InvalidDataException($"нет контрольной суммы для {name}");
         Directory.CreateDirectory(Path.GetDirectoryName(dest)!);

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
@@ -35,6 +35,7 @@ public static class Updater
 
     public static async Task<Release?> CheckAsync()
     {
+        if (ProgressStore.P.NoNetwork) return null;
         try
         {
             using var req = new HttpRequestMessage(HttpMethod.Get, $"https://api.github.com/repos/{Repo}/releases/latest");
@@ -108,6 +109,7 @@ public static class Updater
         if (Directory.Exists(work)) Directory.Delete(work, true);
         Directory.CreateDirectory(work);
         var pkg = Path.Combine(work, OperatingSystem.IsLinux() ? "pkg.tar.gz" : "pkg.zip");
+        ProgressStore.EnsureNetworkAllowed();
         // Без контрольной суммы не ставим: архив целиком заменит программу
         if (r.SumsUrl == null) throw new InvalidDataException("в релизе нет файла контрольных сумм — скачай новую версию вручную со страницы релиза");
         var want = HashFor(await Http.GetStringAsync(r.SumsUrl), AssetName) ?? throw new InvalidDataException("в SHA256SUMS нет строки для " + AssetName);

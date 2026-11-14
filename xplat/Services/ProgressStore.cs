@@ -92,6 +92,7 @@ public sealed class Progress
     public int StudySeconds { get; set; }
     public int StudyXpStart { get; set; }
     public bool PrefetchVoice { get; set; } = true;
+    public bool NoNetwork { get; set; }                            // «Без сети»: никаких обращений в интернет
     public bool SystemTheme { get; set; }                          // тема как в Windows (светлая/тёмная по системной настройке)
     public bool HideMascot { get; set; }                           // не показывать маскота на главной               // готовить озвучку сессии заранее (VOICEVOX в фоне)
     public int Schema { get; set; }                                // номер схемы прогресса: применённые миграции (ProgressStore.Migrations)
@@ -336,6 +337,15 @@ public static class ProgressStore
         try { File.Copy(FilePath, FilePath + ".before-restore", true); } catch { } // копия на всякий случай: без неё прогресс всё равно восстанавливается
         Replace(p);
         return true;
+    }
+
+    /// <summary>
+    /// «Без сети» (8.1): после перехода на офлайн-озвучку в интернет ходят только проверка обновлений, загрузка моделей
+    /// и голосов и статья по ссылке. Один переключатель запрещает всё это сразу — вызывать перед любым запросом.
+    /// </summary>
+    public static void EnsureNetworkAllowed()
+    {
+        if (P.NoNetwork) throw new InvalidOperationException("включён режим «Без сети» (Настройки → Данные)");
     }
 
     /// <summary>Озвучивать автоматически: включено и не «тихий режим».</summary>
