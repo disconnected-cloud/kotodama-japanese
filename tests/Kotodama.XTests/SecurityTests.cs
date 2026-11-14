@@ -58,7 +58,7 @@ public class DownloaderTests
     [Fact]
     public void EveryModelAndVoicePackHasPinnedHash()
     {
-        foreach (var m in Asr.Models) Assert.True(Downloader.Sha256.ContainsKey($"ggml-{m.id}.bin"), m.id);
+        foreach (var m in Asr.Models) Assert.True(Downloader.Sha256.ContainsKey(m.id.StartsWith("kotoba") ? "ggml-kotoba-whisper-v2.0-q5_0.bin" : $"ggml-{m.id}.bin"), m.id);
         foreach (var p in Voicevox.Catalog) Assert.True(Downloader.Sha256.ContainsKey(p.File), p.File);
         Assert.All(Downloader.Sha256.Values, h => Assert.Matches("^[0-9a-f]{64}$", h));
     }

@@ -50,7 +50,8 @@ public class V41Tests
     [Fact]
     public void MaxModelIsListedFirst()
     {
-        Assert.Equal("large-v3-turbo-q5_0", Asr.Models[0].id);
+        Assert.Equal("kotoba-v2-q5_0", Asr.Models[0].id);
+        Assert.Equal("small-q5_1", Asr.DefaultId);
         Assert.Equal(3, Asr.Models.Length);
     }
 }

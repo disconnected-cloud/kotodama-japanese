@@ -18,6 +18,7 @@ public static class Downloader
     public static readonly Dictionary<string, string> Sha256 = new()
     {
         ["ggml-large-v3-turbo-q5_0.bin"] = "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2",
+        ["ggml-kotoba-whisper-v2.0-q5_0.bin"] = "4a3b92192b5d3578ff854a5876213e2e27af0c2d357492c2d14271e82c303658",
         ["ggml-small-q5_1.bin"] = "ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb",
         ["ggml-base-q5_1.bin"] = "422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898",
         ["voicevox_core-windows-x64-0.17.1.zip"] = "7e6a4f6d39c0a083e694a9191289df3b09725abfa676027228a72c01a2ae565b",

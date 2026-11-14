@@ -12,20 +12,21 @@ public static class Asr
 {
     public static readonly (string id, string title, string desc, long size)[] Models =
     {
-        ("large-v3-turbo-q5_0", "Максимальная", "Whisper large-v3-turbo · лучше всех понимает речь с акцентом и ошибками; для ПК с 8 ГБ памяти и больше", 574_041_195),
-        ("small-q5_1", "Точная", "Whisper small · хороший баланс скорости и точности", 190_085_487),
+        // Выбор по замерам (docs/asr-benchmark.md): small — меньше всего ошибок и быстрее больших; kotoba — лучшая из двух больших
+        ("kotoba-v2-q5_0", "Максимальная", "Kotoba-Whisper v2.0 · обучена на японской речи; медленнее, для мощных ПК с 8 ГБ памяти и больше", 537_819_875),
+        ("small-q5_1", "Точная", "Whisper small · рекомендуем: лучшая точность на замерах при умеренной скорости", 190_085_487),
         ("base-q5_1", "Быстрая", OperatingSystem.IsAndroid() ? "Whisper base · для слабых телефонов, втрое быстрее" : "Whisper base · для слабых ПК", 59_707_625),
     };
 
-    static string UrlFor(string id) => $"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{id}.bin";
+    static string UrlFor(string id) => id == "kotoba-v2-q5_0"
+        ? "https://huggingface.co/kotoba-tech/kotoba-whisper-v2.0-ggml/resolve/main/ggml-kotoba-whisper-v2.0-q5_0.bin" // Apache 2.0
+        : $"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{id}.bin";
 
     /// <summary>Модель по умолчанию — первая скачанная из списка (максимальная → точная → быстрая).</summary>
-    public static string BestInstalled => Models.Select(m => m.id).FirstOrDefault(id => File.Exists(PathFor(id))) ?? DefaultId;
+    public static string BestInstalled => Models.Select(m => m.id).OrderBy(id => id == DefaultId ? 0 : 1).FirstOrDefault(id => File.Exists(PathFor(id))) ?? DefaultId;
 
-    /// <summary>Что предложить скачать, пока пользователь не выбрал сам: большая модель — только для ПК с 8 ГБ памяти и больше,
-    /// на слабом телефоне даже точная думает слишком долго.</summary>
-    public static string DefaultId => Anim.LowEndDevice ? "base-q5_1" : BigOk ? Models[0].id : "small-q5_1";
-    static bool BigOk => !OperatingSystem.IsAndroid() && GC.GetGCMemoryInfo().TotalAvailableMemoryBytes >= 7L << 30;
+    /// <summary>Что предложить скачать, пока пользователь не выбрал сам: «Точная» (по замерам — лучшая), на слабом устройстве — «Быстрая».</summary>
+    public static string DefaultId => Anim.LowEndDevice ? "base-q5_1" : "small-q5_1";
 
     static string Dir => Path.Combine(ProgressStore.Folder, "models");
     public static string ModelId => Models.Any(m => m.id == ProgressStore.P.AsrModel) && File.Exists(PathFor(ProgressStore.P.AsrModel)) ? ProgressStore.P.AsrModel
