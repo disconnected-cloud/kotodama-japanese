@@ -6,13 +6,13 @@
 
 ### 🎬 Видео
 
-**[▶ Kotodama 3.0 — японский на компьютере](https://disconnected-cloud.github.io/kotodama-japanese/)** — новый ролик о версии для ПК (81 секунда, 1080p, 60 к/с, с озвучкой и музыкой)
+**[▶ Kotodama 3.0 — японский на компьютере](https://disconnected-cloud.github.io/kotodama-japanese/kotodama-3.0.mp4)** — новый ролик о версии для ПК (81 секунда, 1080p, 60 к/с, с озвучкой и музыкой)
 
-**[▶ Kotodama 2.1 — японский в твоём кармане](https://disconnected-cloud.github.io/kotodama-japanese/)** — новый вертикальный ролик о телефонной версии (48 секунд, 1080×1920, 60 к/с, стерео)
+**[▶ Kotodama 2.1 — японский в твоём кармане](https://disconnected-cloud.github.io/kotodama-japanese/kotodama-2.1.mp4)** — новый вертикальный ролик о телефонной версии (48 секунд, 1080×1920, 60 к/с, стерео)
 
 [![Видео-обзор Kotodama 2.0 — нажми, чтобы смотреть со звуком](docs/preview.webp)](https://disconnected-cloud.github.io/kotodama-japanese/)
 
-**[▶ Обзор Kotodama 2.0](https://disconnected-cloud.github.io/kotodama-japanese/)** (40 секунд, 1080p, 60 к/с)
+**[▶ Обзор Kotodama 2.0](https://disconnected-cloud.github.io/kotodama-japanese/kotodama-2.0.mp4)** (40 секунд, 1080p, 60 к/с)
 
 ## Новое в 4.0 — компьютер
 
@@ -78,7 +78,7 @@
 
 | Архив | Для кого |
 |---|---|
-| `Kotodama-Setup-3.1.0.exe` | Обычная установка: ярлык в «Пуске», удаление через «Приложения». Права администратора не нужны. |
+| `Kotodama-Setup-<версия>.exe` | Обычная установка: ярлык в «Пуске», удаление через «Приложения». Права администратора не нужны. |
 | `Kotodama-portable-win-x64.zip` | Распакуй и запусти `Kotodama.exe`. Ничего устанавливать не нужно. |
 | `Kotodama-win-x64.zip` | Архив для автообновления; .NET 10 встроен, ставить ничего не нужно. |
 | `Kotodama-linux-x64.tar.gz` | **Linux** (x64): распакуй, запусти `./Kotodama` или `./install.sh` — появится в меню приложений. |
