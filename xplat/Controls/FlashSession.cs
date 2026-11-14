@@ -248,7 +248,8 @@ public sealed class FlashSession : Grid, IPage, IKeyTarget
     {
         Id = w.Id, Front = w.Jp, FrontSize = w.Jp.Length > 5 ? 64 : 92, Hint = w.Topic,
         Reading = w.Kana, Romaji = w.Romaji, Meaning = w.Ru, Speak = w.Kana,
-        Examples = w.ExJp.Length > 0 ? new[] { new Example(w.ExJp, "", w.ExRu) } : Array.Empty<Example>(),
+        // кана примера нужна для латиницы: без неё в строке ромадзи оставались кандзи (Г6)
+        Examples = w.ExJp.Length > 0 ? new[] { new Example(w.ExJp, Db.KanaFor(w.ExJp) ?? Reading.Of(w.ExJp), w.ExRu) } : Array.Empty<Example>(),
         IsNew = ProgressStore.Card(w.Id) == null,
         Art = Emoji.ForTopic(w.Topic),
     };
