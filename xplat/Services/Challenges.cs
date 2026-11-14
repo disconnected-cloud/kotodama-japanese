@@ -17,28 +17,31 @@ public static class Challenges
     public const int MaxShields = 3;
 
     // ─────────── Счётчики дня ───────────
-    static Dictionary<string, int> Day
+    /// <summary>Счётчики сегодняшнего дня. Чтение ничего не меняет: вчерашний день сегодня — это просто нули.</summary>
+    static IReadOnlyDictionary<string, int> Day => ProgressStore.P.DayDate == DateTime.Today.ToString("yyyy-MM-dd") ? ProgressStore.P.DayCounts : Empty;
+    static readonly Dictionary<string, int> Empty = new();
+
+    /// <summary>
+    /// Смена дня: вчерашние счётчики — в архив (итоги недели, храним два месяца), сегодняшние с нуля.
+    /// Вызывается при запуске, перед изменением счётчиков и по минутному таймеру (полночь) — А13.
+    /// </summary>
+    public static bool RollDay(Progress p)
     {
-        get
-        {
-            var p = ProgressStore.P;
-            var today = DateTime.Today.ToString("yyyy-MM-dd");
-            if (p.DayDate != today)
-            {
-                // вчерашние счётчики — в архив (итоги недели), храним два месяца
-                if (p.DayDate.Length > 0 && p.DayCounts.Count > 0) p.DayLog[p.DayDate] = new Dictionary<string, int>(p.DayCounts);
-                foreach (var old in p.DayLog.Keys.Where(k => string.CompareOrdinal(k, DateTime.Today.AddDays(-60).ToString("yyyy-MM-dd")) < 0).ToList()) p.DayLog.Remove(old);
-                p.DayDate = today; p.DayCounts.Clear();
-            }
-            return p.DayCounts;
-        }
+        var today = DateTime.Today.ToString("yyyy-MM-dd");
+        if (p.DayDate == today) return false;
+        if (p.DayDate.Length > 0 && p.DayCounts.Count > 0) p.DayLog[p.DayDate] = new Dictionary<string, int>(p.DayCounts);
+        var cutoff = DateTime.Today.AddDays(-60).ToString("yyyy-MM-dd");
+        foreach (var old in p.DayLog.Keys.Where(k => string.CompareOrdinal(k, cutoff) < 0).ToList()) p.DayLog.Remove(old);
+        p.DayDate = today; p.DayCounts.Clear();
+        return true;
     }
 
     /// <summary>Отметить действие (повторение, верный ответ, фраза вслух…). Вызывать из потока интерфейса.</summary>
     public static void Bump(string kind, int n = 1)
     {
         if (!Dispatcher.UIThread.CheckAccess()) { Dispatcher.UIThread.Post(() => Bump(kind, n)); return; }
-        Day[kind] = Day.GetValueOrDefault(kind) + n;
+        RollDay(ProgressStore.P);
+        ProgressStore.P.DayCounts[kind] = ProgressStore.P.DayCounts.GetValueOrDefault(kind) + n;
         ProgressStore.Notify();
     }
 

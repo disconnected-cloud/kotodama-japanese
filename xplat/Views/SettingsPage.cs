@@ -268,11 +268,19 @@ public sealed partial class SettingsPage : UserControl, IPage
         if (sp == null) return;
         var file = await sp.SaveFilePickerAsync(new() { SuggestedFileName = $"kotodama-{DateTime.Today:yyyy-MM-dd}.json", FileTypeChoices = new[] { JsonType }, DefaultExtension = "json" });
         if (file == null) return;
-        ProgressStore.Save();
-        await using (var dst = await file.OpenWriteAsync())
-        await using (var src = System.IO.File.OpenRead(System.IO.Path.Combine(ProgressStore.Folder, "progress.json")))
-            await src.CopyToAsync(dst);
-        Shell.Toast("Прогресс сохранён в файл", "保存");
+        try
+        {
+            // из памяти, а не копией progress.json: файла может ещё не быть, а в памяти — самые свежие изменения
+            var bytes = ProgressStore.Serialize();
+            await using (var dst = await file.OpenWriteAsync())
+                await dst.WriteAsync(bytes);
+            Shell.Toast("Прогресс сохранён в файл", "保存");
+        }
+        catch (Exception e)
+        {
+            CrashReport.Warn("Экспорт прогресса", e);
+            Shell.Toast("Не удалось сохранить файл: " + e.Message, "!");
+        }
     }
 
     static async void ExportAnki(AnkiExport.Set set)

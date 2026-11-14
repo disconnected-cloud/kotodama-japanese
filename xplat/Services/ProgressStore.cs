@@ -91,6 +91,7 @@ public sealed class Progress
     public List<string> StudySkipped { get; set; } = new();
     public int StudySeconds { get; set; }
     public int StudyXpStart { get; set; }
+    public int Schema { get; set; }                                // номер схемы прогресса: применённые миграции (ProgressStore.Migrations)
     public int StudySessions { get; set; }                         // всего пройдено сессий            // длина сессии «Учиться»: 0 — 5 мин, 1 — 15, 2 — 30
 }
 
@@ -133,6 +134,7 @@ public static class ProgressStore
         P = ReadMain() ?? new();
         Prepare(P);
         DailyBackup();
+        Challenges.RollDay(P);
         // Серия сгорает, если пропущен день — если нет щита
         ShieldsUsedOnLoad = Challenges.UseShields(P);
         if (P.LastStudy.Date < DateTime.Today.AddDays(-1)) P.Streak = 0;
@@ -223,20 +225,32 @@ public static class ProgressStore
         p.AsrModel ??= ""; p.Level ??= "N5"; p.DayDate ??= ""; p.StudyDay ??= "";
     }
 
-    /// <summary>Миграции старых версий прогресса (каждая — один раз, по флагу).</summary>
+    /// <summary>
+    /// Пронумерованные миграции схемы прогресса (А11): каждая применяется один раз, номер хранится в Progress.Schema.
+    /// Новую миграцию дописывай в конец — порядок и номера не меняются. Старые флаги mig-* читаются ради совместимости.
+    /// </summary>
+    static readonly Action<Progress>[] Migrations =
+    {
+        // 1 — v0.3: декор по умолчанию выключен (лепестки заметно нагружали CPU)
+        p => { if (p.Flags.Add("mig-v3")) p.Petals = false; },
+        // 2 — голоса 女声/男声 звучали с придыханием: чёткий голос по умолчанию
+        p => { if (p.Flags.Add("mig-vv2") && p.OfflineStyleId >= 10000) p.OfflineStyleId = -1; },
+        // 3 — 4.1: онлайн-голоса убраны, «Авто» и «Онлайн» становятся офлайн-режимом
+        p => p.TtsEngine = "offline",
+    };
+
+    public static int SchemaVersion => Migrations.Length;
+
+    /// <summary>Миграции старых версий прогресса и ежедневная уборка.</summary>
     static void Migrate(Progress p)
     {
-        // v0.3: декор по умолчанию выключен (лепестки заметно нагружали CPU) — сбрасываем один раз
-        if (p.Flags.Add("mig-v3")) p.Petals = false;
-        // Голоса 女声/男声 звучали с придыханием — переключаем на чёткий голос по умолчанию
-        if (p.Flags.Add("mig-vv2") && p.OfflineStyleId >= 10000) p.OfflineStyleId = -1;
+        for (int i = Math.Max(0, p.Schema); i < Migrations.Length; i++) Migrations[i](p);
+        p.Schema = Math.Max(p.Schema, Migrations.Length);
         if (p.Xp > 0) p.Flags.Add("onboarded"); // у кого уже есть прогресс — помощник первого запуска не нужен
         // 2.0: число сессий — счётчиком; дневные флаги старше двух недель больше не нужны (файл не растёт)
         if (p.StudySessions == 0) p.StudySessions = p.Flags.Count(f => f.StartsWith("study:"));
         DropOldDayFlags(p, DateTime.Today.AddDays(-14));
         ApplyIdAliases(p, Db.IdAliases);
-        // 4.1: онлайн-голоса убраны — «Авто» и «Онлайн» становятся офлайн-режимом
-        if (p.TtsEngine != "offline") p.TtsEngine = "offline";
     }
 
     /// <summary>
@@ -323,6 +337,9 @@ public static class ProgressStore
 
     /// <summary>Озвучивать автоматически: включено и не «тихий режим».</summary>
     public static bool AutoSpeakOn => P.AutoSpeak && !P.QuietMode;
+
+    /// <summary>Текущий прогресс в JSON (для экспорта).</summary>
+    public static byte[] Serialize() => JsonSerializer.SerializeToUtf8Bytes(P, ProgressJson.Default.Progress);
 
     public static void Save()
     {

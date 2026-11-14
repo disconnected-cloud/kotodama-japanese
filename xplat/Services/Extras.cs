@@ -211,6 +211,7 @@ public static class Mistakes
         var m = ProgressStore.P.Mistakes;
         if (!m.TryGetValue(key, out var c)) return;
         if (c <= 1) m.Remove(key); else m[key] = c - 1;
+        ProgressStore.Notify();
     }
 
     public static int Count => ProgressStore.P.Mistakes.Count;

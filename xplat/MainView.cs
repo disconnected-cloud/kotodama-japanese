@@ -233,7 +233,7 @@ public partial class MainView : UserControl
             if (CrashReport.HasNew()) { CrashReport.MarkSeen(); Shell.Toast("В прошлый раз была ошибка — отправить отчёт можно в Настройках → «Обратная связь»", "!"); }
         }
         var remind = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
-        remind.Tick += (_, _) => { if (!Shell.TestRun) Tray.Tick(); };
+        remind.Tick += (_, _) => { if (Challenges.RollDay(ProgressStore.P)) ProgressStore.Notify(); if (!Shell.TestRun) Tray.Tick(); }; // полночь: новый день испытаний
         remind.Start();
         int pi = Array.IndexOf(args, "--page");
         if (pi > 0 && pi + 1 < args.Length) NavigateRoot(args[pi + 1]);

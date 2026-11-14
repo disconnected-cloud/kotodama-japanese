@@ -150,3 +150,40 @@ public class LessonIdTests
         }
     }
 }
+
+public class DataRobustnessTests
+{
+    [Fact]
+    public void MigrationsRunOnceAndRecordSchema()
+    {
+        var p = new Progress { TtsEngine = "auto", Petals = true };
+        ProgressStore.Prepare(p);
+        Assert.Equal(ProgressStore.SchemaVersion, p.Schema);
+        Assert.False(p.Petals);
+        p.Petals = true;               // пользователь включил лепестки снова
+        ProgressStore.Prepare(p);      // повторная загрузка не сбрасывает
+        Assert.True(p.Petals);
+    }
+
+    [Fact]
+    public void ReadingChallengeCountersDoesNotChangeState()
+    {
+        var saved = ProgressStore.P;
+        try
+        {
+            var y = DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd");
+            var p = new Progress { DayDate = y };
+            p.DayCounts["review"] = 5;
+            typeof(ProgressStore).GetProperty("P")!.SetValue(null, p);
+            _ = Challenges.Today().Select(c => c.Done).ToList();
+            Assert.Equal(y, p.DayDate);  // чтение не архивирует вчерашний день
+            Assert.True(Challenges.RollDay(p));
+            Assert.Equal(5, p.DayLog[y]["review"]);
+            Assert.Empty(p.DayCounts);
+        }
+        finally { typeof(ProgressStore).GetProperty("P")!.SetValue(null, saved); }
+    }
+
+    [Fact]
+    public void ExportSerializesCurrentProgress() => Assert.Contains("\"Xp\"", System.Text.Encoding.UTF8.GetString(ProgressStore.Serialize()));
+}

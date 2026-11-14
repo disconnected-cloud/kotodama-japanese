@@ -130,7 +130,15 @@ public sealed class DictPage : UserControl, IPage
         if (!JDict.Loaded)
         {
             _info.Text = "Загружаю словарь…";
-            await JDict.LoadAsync();
+            try { await JDict.LoadAsync(); }
+            catch
+            {
+                _info.Text = "Словарь не загрузился. Подробности — в журнале (Настройки → «Обратная связь»).";
+                _plain.Children.Clear();
+                _plain.Children.Add(U.Btn("Попробовать ещё раз", OnShown, "Primary", "").Also(b => b.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left));
+                _empty.IsVisible = false;
+                return;
+            }
         }
         FillRecent();
         Search();

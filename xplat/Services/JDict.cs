@@ -36,13 +36,25 @@ public static class JDict
     static byte[] _eng = Array.Empty<byte>();
     static int[] _engAt = Array.Empty<int>();   // начало перевода статьи в _eng (у русских статей -1)
     // Lazy: при одновременном первом обращении из разных потоков загрузка запускается ровно один раз
-    static readonly Lazy<Task> _load = new(() => Task.Run(Load));
+    static Task? _load;
+    static readonly object LoadLock = new();
     public static int Count => _kana.Length;
     /// <summary>Размер словаря для подписей: точное число статей, если словарь уже загружен.</summary>
     public static string CountLabel => Loaded && Count > 0 ? $"{Count / 1000 * 1000:N0}+".Replace(' ', ' ') : "219 000+";
-    public static bool Loaded => _load.IsValueCreated && _load.Value.IsCompletedSuccessfully;
+    public static bool Loaded => _load is { IsCompletedSuccessfully: true };
+    /// <summary>Словарь не загрузился (испорченный ресурс, нехватка памяти) — поиск показывает сообщение и кнопку повтора.</summary>
+    public static bool Failed => _load is { IsFaulted: true };
 
-    public static Task LoadAsync() => _load.Value;
+    /// <summary>Загрузка словаря (один раз; после сбоя — заново при следующем вызове).</summary>
+    public static Task LoadAsync()
+    {
+        lock (LoadLock)
+        {
+            if (_load == null || _load.IsFaulted)
+                _load = Task.Run(Load).ContinueWith(t => { if (t.Exception != null) { CrashReport.Warn("Словарь: загрузка", t.Exception); throw t.Exception.InnerException!; } });
+            return _load;
+        }
+    }
 
     static void Load()
     {

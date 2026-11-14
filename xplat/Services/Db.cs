@@ -60,14 +60,15 @@ public sealed record CourseUnit(int Id, string Title, string Level, string[] The
 /// <summary>Учебные материалы из встроенных JSON. Грузятся один раз, лениво и потокобезопасно.</summary>
 public static class Db
 {
-    static readonly Lazy<Word[]> _words = new(LoadWords);
-    static readonly Lazy<KanjiInfo[]> _kanji = new(LoadKanji);
-    static readonly Lazy<GrammarLesson[]> _grammar = new(LoadGrammar);
-    static readonly Lazy<SpeechLesson[]> _speech = new(LoadSpeech);
-    static readonly Lazy<Dialog[]> _dialogs = new(LoadDialogs);
-    static readonly Lazy<CourseUnit[]> _course = new(LoadCourse);
-    static readonly Lazy<Dictionary<string, string[]>> _strokes = new(LoadStrokes);
-    static readonly Lazy<Dictionary<string, string>> _romaji = new(LoadRomaji);
+    // PublicationOnly: сбой загрузки не запоминается навсегда — следующее обращение загрузит заново (А9)
+    static readonly Lazy<Word[]> _words = new(LoadWords, LazyThreadSafetyMode.PublicationOnly);
+    static readonly Lazy<KanjiInfo[]> _kanji = new(LoadKanji, LazyThreadSafetyMode.PublicationOnly);
+    static readonly Lazy<GrammarLesson[]> _grammar = new(LoadGrammar, LazyThreadSafetyMode.PublicationOnly);
+    static readonly Lazy<SpeechLesson[]> _speech = new(LoadSpeech, LazyThreadSafetyMode.PublicationOnly);
+    static readonly Lazy<Dialog[]> _dialogs = new(LoadDialogs, LazyThreadSafetyMode.PublicationOnly);
+    static readonly Lazy<CourseUnit[]> _course = new(LoadCourse, LazyThreadSafetyMode.PublicationOnly);
+    static readonly Lazy<Dictionary<string, string[]>> _strokes = new(LoadStrokes, LazyThreadSafetyMode.PublicationOnly);
+    static readonly Lazy<Dictionary<string, string>> _romaji = new(LoadRomaji, LazyThreadSafetyMode.PublicationOnly);
 
     sealed record Merged(List<string[]> Custom, int Count, Word[] Words);
     static volatile Merged? _merged;
@@ -119,7 +120,7 @@ public static class Db
     public static SpeechLesson[] SpeechLessons => _speech.Value;
     public static Dialog[] Dialogs => _dialogs.Value;
     public static CourseUnit[] Course => _course.Value;
-    static readonly Lazy<Quest[]> _quests = new(LoadQuests);
+    static readonly Lazy<Quest[]> _quests = new(LoadQuests, LazyThreadSafetyMode.PublicationOnly);
     public static Quest[] Quests => _quests.Value;
 
     public static IEnumerable<Word> WordsOf(string level) => Words.Where(w => w.Level == level);
@@ -190,7 +191,7 @@ public static class Db
         foreach (var (file, level) in new[] { ("kanji.json", "N5"), ("kanji_n4.json", "N4"), ("kanji_n3.json", "N3"), ("kanji_n2.json", "N2"), ("kanji_n1.json", "N1") })
         {
             using var doc = Open(file);
-            list.AddRange(doc.RootElement.EnumerateArray().Select(k =>
+            list.AddRange(Each(doc.RootElement, file, k =>
                 new KanjiInfo("k:" + S(k, 0), S(k, 0), S(k, 1), S(k, 2), S(k, 3), k[4].GetInt32(), Examples(k[5]), level)));
         }
         return list.ToArray();
@@ -208,6 +209,20 @@ public static class Db
         return id > 0 ? id : counter;
     }
 
+    /// <summary>Разбор записей по одной: испорченная запись пропускается и пишется в журнал, а не выключает весь раздел (А9).</summary>
+    static IEnumerable<T> Each<T>(JsonElement arr, string file, Func<JsonElement, T> parse)
+    {
+        int i = 0;
+        foreach (var e in arr.EnumerateArray())
+        {
+            T? v = default; bool ok = true;
+            try { v = parse(e); }
+            catch (Exception ex) { ok = false; CrashReport.Warn($"Данные {file}: запись {i} пропущена", ex); }
+            i++;
+            if (ok) yield return v!;
+        }
+    }
+
     static GrammarLesson[] LoadGrammar()
     {
         int id = 0;
@@ -215,7 +230,7 @@ public static class Db
         foreach (var file in new[] { "grammar.json", "grammar_n4.json", "grammar_n3.json", "grammar_n3b.json", "grammar_more.json", "grammar_n2.json", "grammar_n1.json", "grammar_extra.json" })
         {
             using var doc = Open(file);
-            list.AddRange(doc.RootElement.EnumerateArray().Select(l => new GrammarLesson(
+            list.AddRange(Each(doc.RootElement, file, l => new GrammarLesson(
                 Id(l, ref id), Str(l, "title"), Str(l, "level"), Str(l, "intro"),
                 l.GetProperty("points").EnumerateArray().Select(p => new GrammarPoint(Str(p, "p"), Str(p, "e"), Examples(p.GetProperty("ex")))).ToArray(),
                 l.GetProperty("quiz").EnumerateArray().Select(q => new GrammarQuiz(S(q, 0), S(q, 1), S(q, 2).Split('|'), S(q, 3))).ToArray()
@@ -228,7 +243,7 @@ public static class Db
     {
         using var doc = Open("speech.json");
         int id = 0;
-        return doc.RootElement.EnumerateArray().Select(l =>
+        return Each(doc.RootElement, "speech.json", l =>
         {
             int lid = Id(l, ref id);
             var items = l.GetProperty("items").EnumerateArray().Select(p =>
@@ -246,7 +261,7 @@ public static class Db
     {
         using var doc = Open("dialogs.json");
         int id = 0;
-        return doc.RootElement.EnumerateArray().Select(d => new Dialog(
+        return Each(doc.RootElement, "dialogs.json", d => new Dialog(
             Id(d, ref id), Str(d, "title"), Str(d, "icon"), Str(d, "level"), Str(d, "desc"),
             d.GetProperty("roles").EnumerateArray().Select(r => r.GetString() ?? "").ToArray(),
             d.GetProperty("voices").EnumerateArray().Select(v => v.GetString() == "m").ToArray(),
