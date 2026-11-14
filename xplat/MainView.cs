@@ -58,6 +58,7 @@ public partial class MainView : UserControl
     {
         Perf.Mark("построение интерфейса");
         Shell.Main = this;
+        ProgressStore.Replaced += () => Avalonia.Threading.Dispatcher.UIThread.Post(() => { _roots.Clear(); NavigateRoot(_rootKey); });
         Background = U.B("Bg");
         _host.RenderTransform = _hostShift;
 
@@ -228,6 +229,7 @@ public partial class MainView : UserControl
             // итоги прошлой недели — один раз в начале новой (не поверх знакомства с приложением)
             // после обновления — «Что нового» (тогда итоги недели подождут до следующего запуска)
             if (ProgressStore.P.Flags.Contains("onboarded")) DispatcherTimer.RunOnce(() => { if (!WhatsNew.MaybeShow()) WeekSummary.MaybeShow(); }, TimeSpan.FromSeconds(2.5));
+            if (ProgressStore.LoadProblem is { } problem) DispatcherTimer.RunOnce(() => _ = Shell.Confirm(problem, "Понятно", "Закрыть"), TimeSpan.FromSeconds(1));
             if (CrashReport.HasNew()) { CrashReport.MarkSeen(); Shell.Toast("В прошлый раз была ошибка — отправить отчёт можно в Настройках → «Обратная связь»", "!"); }
         }
         var remind = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
