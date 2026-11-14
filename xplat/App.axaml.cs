@@ -74,6 +74,21 @@ public partial class App : Application
             desktop.Exit += (_, _) => ProgressStore.Save();
         }
 #endif
+        // Установщик отметил компонент «Голоса VOICEVOX» — ставим рекомендуемый набор в фоне после показа окна
+        var vvMark = System.IO.Path.Combine(ProgressStore.Folder, "install-voicevox");
+        if (System.IO.File.Exists(vvMark) && !ProgressStore.P.NoNetwork && !Voicevox.Installed && Environment.GetCommandLineArgs().Length <= 2)
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(TimeSpan.FromSeconds(5));
+                try
+                {
+                    await Voicevox.InstallAsync(Voicevox.Recommended, new Progress<(double, string)>(), CancellationToken.None);
+                    var (ok, _) = await Voicevox.SelfCheckAsync();
+                    System.IO.File.Delete(vvMark);
+                    if (ok) Dispatcher.UIThread.Post(() => { ProgressStore.Notify(); Shell.Toast("Голоса VOICEVOX установлены", "声"); });
+                }
+                catch (Exception e) { CrashReport.Warn("Установка голосов из установщика", e); } // метка остаётся — попробуем в следующий запуск
+            });
         // Тяжёлое — в фоне, чтобы окно появилось сразу
         // данные курса нужны главной уже для первого кадра; словарь и акценты — после него (Perf.WarmUpAfterFirstFrame)
         Task.Run(() => { Db.Preload(); Perf.Mark("данные курса загружены"); });
