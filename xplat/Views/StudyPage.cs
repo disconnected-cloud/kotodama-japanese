@@ -55,7 +55,7 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget, IFocusPage
     /// </summary>
     public static void Prefetch(int mode)
     {
-        if (!_prefetch.IsCompleted || Platform.AudioPlayer.Muted || !Tts.UseOffline) return; // системный голос быстр и без предзагрузки
+        if (!_prefetch.IsCompleted || Platform.AudioPlayer.Muted || !Tts.UseOffline || !ProgressStore.P.PrefetchVoice) return; // системный голос быстр и без предзагрузки
         var p = ProgressStore.P;
         int cap = mode switch { 0 => 12, 1 => 30, _ => 60 };
         var texts = new List<string>();
@@ -68,10 +68,15 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget, IFocusPage
         if (todo.Count == 0) return;
         _prefetch = Task.Run(async () =>
         {
-            // по одной фразе: живая озвучка (нажал «повторить») не ждёт в очереди за всей пачкой
+            // в простое: после запуска даём окну и данным загрузиться, между фразами — пауза, пока что-то звучит — ждём
+            await Task.Delay(TimeSpan.FromSeconds(15));
             foreach (var t in todo)
+            {
+                while (Speech.IsPlaying) await Task.Delay(500);
                 try { if (await Tts.GetAsync(t) == null) return; } // VOICEVOX сломался — дальше не пробуем
                 catch (Exception e) { CrashReport.Warn("Предзагрузка озвучки", e); return; }
+                await Task.Delay(250);
+            }
             Perf.Mark($"озвучка сессии готова ({todo.Count})");
         });
     }

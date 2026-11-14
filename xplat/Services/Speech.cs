@@ -22,6 +22,7 @@ public static class Speech
     static bool _playing;
 
     public static event Action<bool>? PlayingChanged;
+    public static bool IsPlaying => _playing;
 
 
 

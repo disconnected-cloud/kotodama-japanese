@@ -379,6 +379,7 @@ public sealed partial class SettingsPage : UserControl, IPage
             voices.Children.Add(rb);
         }
         sp.Children.Add(voices);
+        sp.Children.Add(Toggle("Готовить озвучку следующей сессии заранее (VOICEVOX в фоне, когда компьютер свободен)", p.PrefetchVoice, v => p.PrefetchVoice = v).M(0, 8, 0, 0));
 
         // Озвучка курса заранее: в фоне, с паузой и ограничением размера кэша
         var info = U.T($"Кэш озвучки: {Storage.Format(Storage.Size(cacheItem))}", "Muted").M(0, 14, 0, 6);
