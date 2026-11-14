@@ -68,9 +68,15 @@ jobs:
       - name: Снимки экранов
         if: always()
         run: |
-          for page in home path words grammar speech settings; do
+          for page in home path words grammar speech settings dict kanji dialogs reader stats; do
             timeout 60 ./build/Kotodama.exe --page $page --snap snaps/$page.png || true
             KOTODAMA_PHONE=360x780 timeout 60 ./build/Kotodama.exe --phone --page $page --snap snaps/phone-$page.png || true
+          done
+          # те же главные экраны во всех темах: светлая, «Ночь», высокий контраст (Е3)
+          for theme in light night contrast; do
+            for page in home path words speech dict stats; do
+              timeout 60 ./build/Kotodama.exe --$theme --page $page --snap snaps/$theme-$page.png || true
+            done
           done
           ls -la snaps
           cat "$APPDATA/Matsubakira/crash.log" 2>/dev/null || true

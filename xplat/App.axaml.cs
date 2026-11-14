@@ -177,7 +177,7 @@ public partial class App : Application
             pal["Accent"] = pal["AccentGradient"] = pal["AccentHover"] = c.ToString();
             pal["AccentSoft"] = Color.FromArgb(0x1F, c.R, c.G, c.B).ToString();
         }
-        if (ProgressStore.P.HighContrast)
+        if (ProgressStore.P.HighContrast || Environment.GetCommandLineArgs().Contains("--contrast")) // --contrast — снимки экранов в CI
         {
             // контраст текста ≥ 7:1 (WCAG AAA): подписи и второстепенный текст почти как основной, границы заметнее
             if (light) { pal["Text"] = "#000000"; pal["Muted"] = "#3A3842"; pal["Faint"] = "#5A5763"; pal["Stroke"] = "#9C98A3"; pal["StrokeStrong"] = "#6B6875"; }

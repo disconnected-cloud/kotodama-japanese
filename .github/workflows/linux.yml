@@ -41,15 +41,25 @@ jobs:
         run: |
           dotnet build xplat/Kotodama.csproj -c Debug
           mkdir -p snaps
-          for page in home words speech kanji settings; do
-            xvfb-run -a -s "-screen 0 1400x900x24" dotnet xplat/bin/Debug/net10.0/Kotodama.dll --page $page --snap snaps/$page.png || true
+          # каждый экран: код возврата 0 и непустой снимок — падение при запуске роняет сборку (Е2)
+          fail=0
+          for page in home words speech kanji settings path grammar dialogs; do
+            timeout 120 xvfb-run -a -s "-screen 0 1400x900x24" dotnet xplat/bin/Debug/net10.0/Kotodama.dll --page $page --snap snaps/$page.png || { echo "::error::экран $page: код $?"; fail=1; }
+            test -s snaps/$page.png || { echo "::error::нет снимка $page"; fail=1; }
           done
           for what in flash writing pairs; do
-            xvfb-run -a -s "-screen 0 1400x900x24" dotnet xplat/bin/Debug/net10.0/Kotodama.dll --open $what --snap snaps/open-$what.png || true
+            timeout 120 xvfb-run -a -s "-screen 0 1400x900x24" dotnet xplat/bin/Debug/net10.0/Kotodama.dll --open $what --snap snaps/open-$what.png || { echo "::error::$what: код $?"; fail=1; }
+            test -s snaps/open-$what.png || { echo "::error::нет снимка $what"; fail=1; }
           done
           ls -la snaps
-          test -f snaps/home.png
-          cat ~/.config/Matsubakira/crash.log 2>/dev/null || true
+          cat ~/.config/Matsubakira/crash.log 2>/dev/null && fail=1
+          exit $fail
+
+      - name: Сравнение с эталонами Linux (tests/snapshots-linux)
+        run: |
+          pip install --quiet pillow
+          # эталоны Linux отдельные: шрифты и сглаживание отличаются от Windows. Нет папки — первый прогон их создаёт (артефакт)
+          if [ -d tests/snapshots-linux ]; then python3 -X utf8 tools/snapdiff.py snaps tests/snapshots-linux 2.0; else echo "эталонов Linux пока нет — возьми их из артефакта linux-snapshots"; fi
 
       - uses: actions/upload-artifact@v4
         with:
