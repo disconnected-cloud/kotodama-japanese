@@ -109,10 +109,8 @@ public sealed partial class SettingsPage : UserControl, IPage
                 break;
 
             case "voice":
-                yield return Section("Движок озвучки", "Авто: офлайн-голос VOICEVOX, если установлен, иначе нейро-голос онлайн.",
-                    ChoiceS(new[] { "auto", "online", "offline" }, p.TtsEngine, v => { p.TtsEngine = v; OnShown(); }, v => v switch { "auto" => "Авто", "online" => "Онлайн (Microsoft)", _ => "Офлайн (VOICEVOX)" }));
-                yield return Section("Голос онлайн", "Нейросетевая озвучка Microsoft Neural. Каждая фраза сохраняется на диск — повторно звучит мгновенно и без интернета.", VoiceBlock());
-                yield return Section("Офлайн-голоса VOICEVOX", "Бесплатный японский синтез без интернета. Отобраны чёткие голоса с ровной дикцией, а звук чистится: без гула, щелчков и придыхания. При публикации озвучки указывай «VOICEVOX:имя персонажа».", VoicevoxBlock());
+                yield return Section("Голоса", "Вся озвучка работает без интернета. Порядок: VOICEVOX, затем системный голос.", VoiceBlock());
+                yield return Section("Офлайн-голоса VOICEVOX", "Бесплатный японский синтез без интернета. Отобраны чёткие голоса с ровной дикцией, а звук чистится: без гула, щелчков и придыхания. У каждого персонажа свои условия: при публикации озвучки указывай «VOICEVOX:имя персонажа».", VoicevoxBlock());
                 break;
 
             case "mic":
@@ -212,6 +210,7 @@ public sealed partial class SettingsPage : UserControl, IPage
                     U.T("Иллюстрации: Microsoft Fluent Emoji (MIT); иконки — собственные.", "Muted"),
                     U.T("Аниме-маскот Википе-тан: Wikimedia Commons, CC BY-SA 3.0/4.0 — художники Kasuga, David Revoy, 燃灯, Di, SunRuikang, Tommyang.", "Muted"),
                     U.T("Офлайн-синтез: VOICEVOX (голоса — по условиям персонажей). Примеры фраз: Tatoeba (CC BY 2.0 FR).", "Muted"),
+                    U.T(Voicevox.Credits() is { Length: > 0 } cr ? "Озвучка: " + cr : "Голоса VOICEVOX не установлены.", "Muted"),
                     U.T("Морфологический разбор при подготовке латиницы: MeCab + UniDic.", "Muted")));
                 break;
         }
@@ -322,44 +321,92 @@ public sealed partial class SettingsPage : UserControl, IPage
         return wrap;
     }
 
+    CancellationTokenSource? _prefetchCts;
+
+    /// <summary>Экран «Голоса»: что установлено, сколько занимает, «Прослушать» и «Удалить»; озвучка курса заранее.</summary>
     Control VoiceBlock()
     {
         var p = ProgressStore.P;
         var sp = new StackPanel();
-        var voices = new WrapPanel { Orientation = Orientation.Horizontal };
-        foreach (var (male, name) in new[] { (false, "Nanami · женский"), (true, "Keita · мужской") })
+        Control Row(string title, string state, bool ok, params Control[] buttons)
+        {
+            var g = U.Cols("*", "auto");
+            g.Children.Add(U.Stack(U.T(title, "Body", 14), U.T(state, "Muted", 12.5).Also(t => t.TextWrapping = TextWrapping.Wrap)).Also(x => x.Margin = new Thickness(0, 0, 12, 0)));
+            var btns = U.Row(8, buttons).Col(1);
+            btns.VerticalAlignment = VerticalAlignment.Center;
+            g.Children.Add(btns);
+            return new Border { Child = g, Padding = new Thickness(0, 8), BorderBrush = U.B(ok ? "Good" : "Line"), BorderThickness = new Thickness(3, 0, 0, 0) }.Also(b => b.Padding = new Thickness(12, 8, 0, 8)).M(0, 0, 0, 8);
+        }
+        var vvItem = Storage.Items.First(i => i.Key == "voicevox");
+        var cacheItem = Storage.Items.First(i => i.Key == "audio");
+        sp.Children.Add(Row("VOICEVOX — основной японский голос",
+            Voicevox.Installed ? $"Установлен · {Storage.Format(Storage.Size(vvItem))} · {VoiceNames.Name(Voicevox.InstalledStyles().FirstOrDefault(s => s.Id == Voicevox.PickStyle(false))?.Character ?? "")}"
+            : Voicevox.Downloaded ? "Скачан, но проверка синтеза не пройдена — ниже кнопка проверки" : "Не установлен — установить можно ниже",
+            Voicevox.Installed,
+            U.Btn("Прослушать", () => Speech.Say("こんにちは、一緒に日本語を勉強しましょう。"), "Ghost", "").Also(b => b.IsEnabled = Voicevox.Installed),
+            U.Btn("Удалить", async () =>
+            {
+                if (!await Shell.Confirm($"Удалить VOICEVOX ({Storage.Format(Storage.Size(vvItem))})? Озвучка перейдёт на системный голос.", "Удалить")) return;
+                Shell.Toast(Storage.Clear(vvItem) ? "VOICEVOX удалён" : "Файлы заняты — удалятся при следующем запуске", "削");
+                OnShown();
+            }, "Ghost", "").Also(b => b.IsEnabled = Voicevox.Downloaded)));
+        sp.Children.Add(Row("Системный японский голос — запасной",
+            Platform.SystemVoice.JaName is { Length: > 0 } ja ? ja : "Нет. " + Platform.SystemVoice.HowToInstallJa,
+            Platform.SystemVoice.HasJa));
+        sp.Children.Add(Row("Русский голос — перевод в аудиоплеере",
+            Platform.SystemVoice.RuName is { Length: > 0 } ru ? ru : OperatingSystem.IsWindows()
+                ? "Нет. Параметры → Время и язык → Речь → Добавить голоса → Русский. Без голоса плеер показывает перевод текстом."
+                : "Нет. Установи RHVoice или espeak-ng. Без голоса плеер показывает перевод текстом.",
+            Platform.SystemVoice.HasRu,
+            U.Btn("Прослушать", async () => { if (await Tts.GetRuAsync("Привет! Это русский голос.") is { } f) await Speech.PlayFileAsync(f); }, "Ghost", "").Also(b => b.IsEnabled = Platform.SystemVoice.HasRu)));
+        if (!Tts.HasVoice)
+            sp.Children.Add(U.T("Сейчас японский звучит только из кэша. Установи VOICEVOX ниже — это лучший вариант.", "Body", 13, U.B("Gold")).M(0, 4, 0, 8));
+
+        var voices = new WrapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
+        voices.Children.Add(U.T("Голос по умолчанию:", "Muted").CenterV().M(0, 0, 10, 0));
+        foreach (var (male, name) in new[] { (false, "женский"), (true, "мужской") })
         {
             var rb = new RadioButton { Classes = { "ChipRadio" }, Content = name, GroupName = "voice", IsChecked = p.MaleVoice == male };
             rb.Checked += (_, _) => { p.MaleVoice = male; ProgressStore.Notify(); Speech.Say("こんにちは、よろしくお願いします。"); };
             voices.Children.Add(rb);
         }
-        voices.Children.Add(U.Btn("Проверить", () => Speech.Say("日本語の勉強、頑張りましょう！"), "Ghost", ""));
         sp.Children.Add(voices);
 
-        var info = U.T($"Кэш озвучки: {Tts.CacheSizeBytes() / 1_048_576.0:0.0} МБ", "Muted").M(0, 14, 0, 6);
+        // Озвучка курса заранее: в фоне, с паузой и ограничением размера кэша
+        var info = U.T($"Кэш озвучки: {Storage.Format(Storage.Size(cacheItem))}", "Muted").M(0, 14, 0, 6);
         var bar = new ProgressBar { Maximum = 1, IsVisible = false, Margin = new Thickness(0, 4, 0, 4) };
-        var btn = U.Btn("Скачать озвучку всего курса (офлайн)", () => { }, "", "");
-        btn.HorizontalAlignment = HorizontalAlignment.Left;
+        var limits = new long[] { 500L << 20, 1L << 30, 2L << 30 };
+        int limit = 1;
+        var limitPick = ChoiceS(new[] { "0", "1", "2" }, "1", v => limit = int.Parse(v), v => "до " + Storage.Format(limits[int.Parse(v)]));
+        var btn = U.Btn(_prefetchCts != null ? "Пауза" : "Озвучить весь курс заранее", () => { }, "", "");
+        btn.IsEnabled = Tts.UseOffline;
         btn.Click += async (_, _) =>
         {
-            btn.IsEnabled = false; bar.IsVisible = true;
+            if (_prefetchCts != null) { _prefetchCts.Cancel(); return; }
+            _prefetchCts = new CancellationTokenSource();
+            btn.Content = "Пауза"; bar.IsVisible = true;
             var texts = Db.Words.Select(w => w.Kana)
                 .Concat(Db.SpeechLessons.SelectMany(l => l.Items).Select(i => i.Jp))
                 .Concat(Db.Grammar.SelectMany(g => g.Points).SelectMany(pt => pt.Examples).Select(e => e.Jp))
                 .Concat(Db.Course.SelectMany(u => u.Examples).Select(e => e.Jp))
                 .Concat(Db.Kanji.SelectMany(k => k.Examples).Select(e => e.Kana))
+                .Concat(Db.Dialogs.SelectMany(d => d.Lines).Select(l => l.Jp))
                 .Distinct().ToList();
             var prog = new Progress<(int done, int total)>(v => { bar.Value = (double)v.done / v.total; info.Text = $"Озвучено {v.done} из {v.total}…"; });
-            int ok = await Tts.PrefetchAsync(texts, prog, CancellationToken.None);
-            // Голоса для диалогов (свой голос у каждого персонажа)
-            foreach (var d in Db.Dialogs) foreach (var l in d.Lines) await Tts.GetAsync(l.Jp, false, d.Male[l.Speaker]);
-            info.Text = ok == texts.Count ? $"Готово! Весь курс озвучен ({Tts.CacheSizeBytes() / 1_048_576.0:0.0} МБ) — работает без интернета."
-                                          : $"Озвучено {ok} из {texts.Count}. Остальное докачается при следующем подключении.";
-            btn.IsEnabled = true; bar.IsVisible = false;
+            int ok = await Tts.PrefetchAsync(texts, prog, _prefetchCts.Token, limits[limit]);
+            bool paused = _prefetchCts.IsCancellationRequested;
+            _prefetchCts = null;
+            info.Text = paused ? $"Пауза: озвучено {ok}. Нажми ещё раз, чтобы продолжить."
+                : Tts.CacheSizeBytes() > limits[limit] ? $"Достигнут предел кэша. Озвучено {ok} из {texts.Count}."
+                : $"Готово! Курс озвучен ({Storage.Format(Storage.Size(cacheItem))}).";
+            btn.Content = "Озвучить весь курс заранее"; bar.IsVisible = false;
         };
+        var clear = U.Btn("Очистить кэш", () => { Storage.Clear(cacheItem); info.Text = "Кэш озвучки очищен."; }, "Ghost", "");
         sp.Children.Add(info);
+        if (!Tts.UseOffline) sp.Children.Add(U.T("Озвучка курса заранее работает с VOICEVOX.", "Muted", 12.5));
+        sp.Children.Add(limitPick);
         sp.Children.Add(bar);
-        sp.Children.Add(btn);
+        sp.Children.Add(U.Row(8, btn, clear).M(0, 6, 0, 0));
         return sp;
     }
 

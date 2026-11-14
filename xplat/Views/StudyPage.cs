@@ -55,7 +55,7 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
     /// </summary>
     public static void Prefetch(int mode)
     {
-        if (!_prefetch.IsCompleted || Platform.AudioPlayer.Muted) return;
+        if (!_prefetch.IsCompleted || Platform.AudioPlayer.Muted || !Tts.UseOffline) return; // системный голос быстр и без предзагрузки
         var p = ProgressStore.P;
         int cap = mode switch { 0 => 12, 1 => 30, _ => 60 };
         var texts = new List<string>();
@@ -64,13 +64,13 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
         texts.AddRange(Db.Words.Where(w => ProgressStore.Card(w.Id)?.Reps > 0).OrderBy(w => ProgressStore.Card(w.Id)!.Stability).Take(12).Select(w => w.Kana));
         var lesson = Db.SpeechLessons.OrderBy(l => l.Items.Count(it => p.SpeechBest.ContainsKey(it.Id)) / (double)Math.Max(1, l.Items.Length)).ThenBy(l => l.Id).FirstOrDefault();
         if (lesson != null) texts.AddRange(lesson.Items.Take(8).Select(it => it.Jp));
-        var todo = texts.Where(t => !string.IsNullOrWhiteSpace(t)).Distinct().Take(Tts.UseOffline ? 50 : 25).Where(t => !Tts.IsCached(t)).ToList();
+        var todo = texts.Where(t => !string.IsNullOrWhiteSpace(t)).Distinct().Take(50).Where(t => !Tts.IsCached(t)).ToList();
         if (todo.Count == 0) return;
         _prefetch = Task.Run(async () =>
         {
             // по одной фразе: живая озвучка (нажал «повторить») не ждёт в очереди за всей пачкой
             foreach (var t in todo)
-                try { if (await Tts.GetAsync(t) == null) return; } // нет сети и VOICEVOX — не долбим сервис дальше
+                try { if (await Tts.GetAsync(t) == null) return; } // VOICEVOX сломался — дальше не пробуем
                 catch (Exception e) { CrashReport.Warn("Предзагрузка озвучки", e); return; }
             Perf.Mark($"озвучка сессии готова ({todo.Count})");
         });

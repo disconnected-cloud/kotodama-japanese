@@ -11,7 +11,7 @@ public sealed record SpeechCheck(bool Ok, int Score, string Heard, string Verdic
 }
 
 /// <summary>
-/// Единая точка для звука: озвучка фраз (нейро-голос с кэшем или офлайн VOICEVOX), воспроизведение своих записей
+/// Единая точка для звука: озвучка фраз (VOICEVOX или системный голос, с кэшем), воспроизведение своих записей
 /// и оценка произношения. Звук играется через свой плеер (Windows — winmm, Linux — PulseAudio/PipeWire/ALSA),
 /// медленный режим — замедление без изменения высоты голоса.
 /// </summary>
@@ -59,14 +59,14 @@ public static class Speech
     {
         if (string.IsNullOrWhiteSpace(text)) return false;
         int my = ++_gen;
-        // Онлайн-сервис игнорирует темп, поэтому медленный режим делает плеер; VOICEVOX синтезирует медленную речь сам.
+        // Системный голос и старый кэш — медленный режим делает плеер; VOICEVOX синтезирует медленную речь сам.
         bool synthSlow = slow && Tts.UseOffline;
         var path = await Tts.GetAsync(text, synthSlow, male);
         if (my != _gen || path == null) return false;
         return await PlayFileAsync(path, my, slow && !synthSlow ? 0.72 : 1.0);
     }
 
-    /// <summary>Произнести по-русски (перевод в аудиоплеере). false — нет сети или прервано.</summary>
+    /// <summary>Произнести по-русски (перевод в аудиоплеере). false — нет русского голоса или прервано.</summary>
     public static async Task<bool> SayRuAsync(string text)
     {
         if (string.IsNullOrWhiteSpace(text) || Platform.AudioPlayer.Muted) return false;

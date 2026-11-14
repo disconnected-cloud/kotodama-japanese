@@ -37,6 +37,7 @@ public sealed partial class SettingsPage : UserControl, IPage
             var styles = Voicevox.InstalledStyles();
             int clear = styles.Count(x => Voicevox.Clear.Contains(x.Id));
             sp.Children.Add(U.T($"Установлено пакетов: {installed.Count} · голосов: {styles.Count}, из них чётких: {clear}", "Body", 13.5, U.B("Good")));
+            sp.Children.Add(U.T("Озвучка: " + Voicevox.Credits(), "Muted", 12).Also(t => t.TextWrapping = TextWrapping.Wrap).M(0, 4, 0, 0));
             uint cur = Voicevox.PickStyle(false);
             Control Group(string caption, IEnumerable<VoiceStyle> list)
             {
@@ -48,6 +49,7 @@ public sealed partial class SettingsPage : UserControl, IPage
                     var rb = new RadioButton { Classes = { "ChipRadio" }, Content = st.Title, GroupName = "vvstyle", IsChecked = st.Id == cur, Margin = new Thickness(0, 0, 6, 6) }.Tip(st.Original);
                     var id = st.Id;
                     rb.Checked += (_, _) => { p.OfflineStyleId = (int)id; ProgressStore.Notify(); if (Tts.UseOffline) Speech.Say("こんにちは、一緒に日本語を勉強しましょう。"); };
+                    rb.Tip($"{st.Original}\nVOICEVOX:{st.Character}");
                     wrap.Children.Add(rb);
                 }
                 box.Children.Add(wrap);
@@ -117,8 +119,7 @@ public sealed partial class SettingsPage : UserControl, IPage
                 await Voicevox.InstallAsync(chosen, prog, CancellationToken.None);
                 status.Text = "Проверяю синтез в безопасном режиме…";
                 var (ok, msg) = await Voicevox.SelfCheckAsync();
-                if (!ok) { status.Text = msg + ". Онлайн-голос продолжит работать."; btn.IsEnabled = true; return; }
-                if (p.TtsEngine == "online") p.TtsEngine = "auto";
+                if (!ok) { status.Text = msg + ". Пока будет звучать системный голос."; btn.IsEnabled = true; return; }
                 ProgressStore.Notify();
                 Shell.Toast("Офлайн-голоса установлены!", "声");
                 OnShown();

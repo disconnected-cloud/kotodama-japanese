@@ -23,7 +23,7 @@ public sealed class DialogsPage : UserControl, IPage
     public void OnShown()
     {
         var root = new StackPanel();
-        root.Children.Add(U.Header("対", "Диалоги", "Живые сценки: собеседника озвучивает нейро-голос, свою роль ты говоришь вслух."));
+        root.Children.Add(U.Header("対", "Диалоги", "Живые сценки: собеседника озвучивает офлайн-голос, свою роль ты говоришь вслух."));
         if (!Asr.Ready) root.Children.Add(SpeechUi.ModelCard(OnShown).M(0, 0, 0, 20));
         foreach (var level in new[] { "N5", "N4", "N3", "N2", "N1" })
         {

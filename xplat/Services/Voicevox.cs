@@ -182,6 +182,9 @@ public static class Voicevox
     });
     public static VoicePack[] Catalog => _catalog.Value;
 
+    /// <summary>Указание авторства по условиям персонажей: «VOICEVOX:春日部つむぎ, VOICEVOX:玄野武宏».</summary>
+    public static string Credits() => string.Join(", ", InstalledStyles().Select(s => s.Character).Distinct().Select(c => "VOICEVOX:" + c));
+
     public static List<VoiceStyle> InstalledStyles()
     {
         var inst = InstalledPacks;

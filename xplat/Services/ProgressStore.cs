@@ -43,7 +43,7 @@ public sealed class Progress
     public bool Sounds { get; set; } = true;
     public bool NotifySound { get; set; } = true;
     public string NotifyTone { get; set; } = "bell";    // bell | drop | koto | furin      // мягкий колокольчик у уведомлений и напоминаний
-    public string TtsEngine { get; set; } = "auto";   // auto | online | offline
+    public string TtsEngine { get; set; } = "offline"; // 4.1: только офлайн (VOICEVOX → системный голос); auto/online — старые значения
     public int OfflineStyleId { get; set; } = -1;      // выбранный стиль VOICEVOX, -1 — лучший чёткий из установленных
     public string SpeechMode { get; set; } = "easy";     // easy — как в Duolingo, normal, strict
     public string MicMode { get; set; } = "auto";      // auto — стоп по паузе, manual — стоп кнопкой
@@ -218,7 +218,7 @@ public static class ProgressStore
         p.DailyGoal = Math.Clamp(p.DailyGoal, 10, 1000); p.NewPerSession = Math.Clamp(p.NewPerSession, 1, 100);
         p.UiScale = double.IsNaN(p.UiScale) ? 1 : Math.Clamp(p.UiScale, 0.7, 2); p.JpScale = double.IsNaN(p.JpScale) ? 1 : Math.Clamp(p.JpScale, 0.7, 2.5);
         p.MicPause = double.IsNaN(p.MicPause) ? 1.5 : Math.Clamp(p.MicPause, 0.5, 5);
-        p.JpFontName ??= ""; p.NotifyTone ??= "bell"; p.TtsEngine ??= "auto"; p.SpeechMode ??= "easy"; p.MicMode ??= "auto";
+        p.JpFontName ??= ""; p.NotifyTone ??= "bell"; p.TtsEngine ??= "offline"; p.SpeechMode ??= "easy"; p.MicMode ??= "auto";
         p.AccentColor ??= "sakura"; p.Goal ??= ""; p.WordOfDayTime ??= "09:00"; p.LastPlace ??= ""; p.LastPlaceTitle ??= "";
         p.AsrModel ??= ""; p.Level ??= "N5"; p.DayDate ??= ""; p.StudyDay ??= "";
     }
@@ -234,6 +234,8 @@ public static class ProgressStore
         // 2.0: число сессий — счётчиком; дневные флаги старше двух недель больше не нужны (файл не растёт)
         if (p.StudySessions == 0) p.StudySessions = p.Flags.Count(f => f.StartsWith("study:"));
         DropOldDayFlags(p, DateTime.Today.AddDays(-14));
+        // 4.1: онлайн-голоса убраны — «Авто» и «Онлайн» становятся офлайн-режимом
+        if (p.TtsEngine != "offline") p.TtsEngine = "offline";
     }
 
     /// <summary>Убрать дневные флаги («study:2026-01-01», «ch:…») старше даты; флаги без даты и короткие не трогаются.</summary>

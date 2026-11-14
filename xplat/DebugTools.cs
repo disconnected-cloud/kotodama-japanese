@@ -31,7 +31,6 @@ public partial class MainView
         {
             var outRu = args[ru + 1];
             ProgressStore.ReadOnly = true;
-            ProgressStore.P.TtsEngine = "online"; // проверяем именно Edge, не VOICEVOX
             Task.Run(async () =>
             {
                 var r = await Tts.GetRuAsync("Проверка русского голоса");
