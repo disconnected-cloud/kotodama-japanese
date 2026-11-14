@@ -74,7 +74,7 @@ public partial class App : Application
         // Тяжёлое — в фоне, чтобы окно появилось сразу
         // данные курса нужны главной уже для первого кадра; словарь и акценты — после него (Perf.WarmUpAfterFirstFrame)
         Task.Run(() => { Db.Preload(); Perf.Mark("данные курса загружены"); });
-        if (Environment.GetCommandLineArgs().Skip(1).All(a => a == Program.RestartArg) && Voicevox.Downloaded && !ProgressStore.P.Flags.Contains("vv-ok") && !ProgressStore.P.Flags.Contains("vv-crashed"))
+        if (Environment.GetCommandLineArgs().Skip(1).All(a => a == SingleInstance.RestartArg) && Voicevox.Downloaded && !ProgressStore.P.Flags.Contains("vv-ok") && !ProgressStore.P.Flags.Contains("vv-crashed"))
             _ = Task.Run(async () =>
             {
                 var (ok, _) = await Voicevox.SelfCheckAsync();

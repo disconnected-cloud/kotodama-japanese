@@ -14,6 +14,9 @@ public static class SingleInstance
 {
     static Mutex? _mutex;
 
+    /// <summary>Аргумент перезапуска из настроек: новая копия ждёт, пока закроется прежняя.</summary>
+    public const string RestartArg = "--restarted";
+
     static string Key(string folder)
     {
         var norm = Path.GetFullPath(folder).TrimEnd('\\', '/');

@@ -242,7 +242,7 @@ public sealed partial class SettingsPage : UserControl, IPage
         ProgressStore.Save();
         if (await Shell.Confirm("Изменение применится после перезапуска. Перезапустить сейчас?", "Перезапустить"))
         {
-            System.Diagnostics.Process.Start(Environment.ProcessPath!, Program.RestartArg);
+            System.Diagnostics.Process.Start(Environment.ProcessPath!, SingleInstance.RestartArg);
             (Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.Shutdown();
         }
     }

@@ -25,7 +25,7 @@ static class Program
         if (!tool)
         {
             // перезапуск из настроек: прежняя копия ещё закрывается — ждём её, а не показываем её окно
-            if (!SingleInstance.Acquire(ProgressStore.Folder, args.Contains(RestartArg) ? 20000 : 0))
+            if (!SingleInstance.Acquire(ProgressStore.Folder, args.Contains(SingleInstance.RestartArg) ? 20000 : 0))
             {
                 if (SingleInstance.SignalFirst(ProgressStore.Folder)) return 0;
                 // первая копия не отвечает (закрывается) — дождаться её выхода
@@ -42,9 +42,6 @@ static class Program
 
         return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
-
-    /// <summary>Аргумент перезапуска из настроек: новая копия ждёт, пока закроется прежняя.</summary>
-    public const string RestartArg = "--restarted";
 
     /// <summary>Вторая копия попросила показать окно: разворачиваем и выводим на передний план (в т.ч. из трея).</summary>
     static void ShowMainWindow()
