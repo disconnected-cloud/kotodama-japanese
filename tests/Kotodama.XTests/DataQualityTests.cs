@@ -152,3 +152,23 @@ public class FreeAnswerTests
     [Fact]
     public void UnrelatedAnswerFails() => Assert.True(Matsubakira.Services.FreeAnswer.Check("コーヒーをください。", "おみずをください").score < 60);
 }
+
+/// <summary>9.13: новые уроки (с 4.2) — по правилам раздела 9.3.</summary>
+public class NewLessonRulesTests
+{
+    [Fact]
+    public void NewGrammarLessonsFollowTheFormat()
+    {
+        var onPath = Db.Course.SelectMany(u => u.Steps).Where(s => s.T == "grammar").Select(s => s.Id).ToHashSet();
+        foreach (var g in Db.Grammar.Where(g => g.Id >= 89))
+        {
+            Assert.True(g.Points.Length >= 3, $"{g.Title}: мало пунктов");
+            Assert.Contains(g.Points, p => p.Pattern.StartsWith("Частые ошибки"));
+            Assert.All(g.Points, p => Assert.True(p.Examples.Length >= 3, $"{g.Title}/{p.Pattern}: меньше 3 примеров"));
+            Assert.All(g.Points.SelectMany(p => p.Examples), e => Assert.True(e.Jp.Length > 0 && e.Kana.Length > 0 && e.Ru.Length > 0, $"{g.Title}: пустой пример"));
+            Assert.True(g.Quiz.Length >= 8, $"{g.Title}: меньше 8 вопросов");
+            Assert.Contains(g.Id, onPath);
+            Assert.Contains(g.Level, new[] { "N5", "N4", "N3", "N2", "N1" });
+        }
+    }
+}
