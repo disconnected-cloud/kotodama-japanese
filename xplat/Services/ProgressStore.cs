@@ -92,7 +92,8 @@ public sealed class Progress
     public int StudySeconds { get; set; }
     public int StudyXpStart { get; set; }
     public bool PrefetchVoice { get; set; } = true;
-    public bool NoNetwork { get; set; }                            // «Без сети»: никаких обращений в интернет
+    public bool NoNetwork { get; set; }
+    public string SyncFolder { get; set; } = "";                  // папка синхронизации между компьютерами ("" — выключена)                            // «Без сети»: никаких обращений в интернет
     public bool SystemTheme { get; set; }                          // тема как в Windows (светлая/тёмная по системной настройке)
     public bool HideMascot { get; set; }                           // не показывать маскота на главной               // готовить озвучку сессии заранее (VOICEVOX в фоне)
     public int Schema { get; set; }                                // номер схемы прогресса: применённые миграции (ProgressStore.Migrations)
@@ -101,7 +102,7 @@ public sealed class Progress
 
 [JsonSerializable(typeof(Progress))]
 [JsonSourceGenerationOptions(WriteIndented = false)]
-internal partial class ProgressJson : JsonSerializerContext { }
+public partial class ProgressJson : JsonSerializerContext { }
 
 public enum Rating { Again = 1, Hard = 2, Good = 3, Easy = 4 }
 
@@ -226,7 +227,7 @@ public static class ProgressStore
         p.MicPause = double.IsNaN(p.MicPause) ? 1.5 : Math.Clamp(p.MicPause, 0.5, 5);
         p.JpFontName ??= ""; p.NotifyTone ??= "bell"; p.TtsEngine ??= "offline"; p.SpeechMode ??= "easy"; p.MicMode ??= "auto";
         p.AccentColor ??= "sakura"; p.Goal ??= ""; p.WordOfDayTime ??= "09:00"; p.LastPlace ??= ""; p.LastPlaceTitle ??= "";
-        p.AsrModel ??= ""; p.Level ??= "N5"; p.DayDate ??= ""; p.StudyDay ??= "";
+        p.AsrModel ??= ""; p.SyncFolder ??= ""; p.Level ??= "N5"; p.DayDate ??= ""; p.StudyDay ??= "";
     }
 
     /// <summary>

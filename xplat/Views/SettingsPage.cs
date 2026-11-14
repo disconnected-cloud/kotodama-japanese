@@ -178,6 +178,13 @@ public sealed partial class SettingsPage : UserControl, IPage
                     U.Btn($"Весь уровень {p.Level}", () => ExportAnki(AnkiExport.Set.Level), "", ""),
                     U.Btn("Тетрадь ошибок", () => ExportAnki(AnkiExport.Set.Mistakes), "", "")));
                 yield return Section("Автокопии", "Каждый день при запуске прогресс копируется сам — хранятся последние 14 дней. Если что-то пошло не так, можно вернуться к копии.", AutoBackupBlock());
+                yield return Section("Синхронизация между компьютерами", p.SyncFolder.Length > 0
+                        ? $"Папка: {p.SyncFolder}. Прогресс сливается при запуске и закрытии: у карточки побеждает более позднее повторение."
+                        : "Выбери папку облачного диска (OneDrive, Яндекс Диск, Dropbox), которая есть на всех компьютерах. Прогресс будет сливаться автоматически.",
+                    U.Row(10,
+                        U.Btn(p.SyncFolder.Length > 0 ? "Другая папка" : "Выбрать папку", PickSyncFolder, "", ""),
+                        U.Btn("Синхронизировать сейчас", () => Shell.Toast(Sync.Run() ? "Прогресс синхронизирован" : "Папка недоступна", "同"), "", "").Also(b => b.IsEnabled = p.SyncFolder.Length > 0),
+                        U.Btn("Выключить", () => { p.SyncFolder = ""; ProgressStore.Notify(); OnShown(); }, "Ghost", "").Also(b => b.IsVisible = p.SyncFolder.Length > 0)));
                 yield return Section("Без сети", "Программа не обращается в интернет: не проверяет обновления, не скачивает модели и голоса, не открывает статьи по ссылке. Всё остальное работает как обычно.",
                     Toggle("Режим «Без сети»", p.NoNetwork, v => p.NoNetwork = v));
                 yield return Section("Обновления", $"Установлена версия {Updater.Current.ToString(3)}. Новые версии берутся из github.com/{Updater.Repo}.", UpdateBlock());
@@ -264,6 +271,18 @@ public sealed partial class SettingsPage : UserControl, IPage
     }
 
     static readonly Avalonia.Platform.Storage.FilePickerFileType JsonType = new("Прогресс Kotodama") { Patterns = new[] { "*.json" } };
+
+    async void PickSyncFolder()
+    {
+        var sp = TopLevel.GetTopLevel(Shell.Main)?.StorageProvider;
+        if (sp == null) return;
+        var dirs = await sp.OpenFolderPickerAsync(new() { Title = "Папка для синхронизации" });
+        if (dirs.Count == 0 || Avalonia.Platform.Storage.StorageProviderExtensions.TryGetLocalPath(dirs[0]) is not { } path) return;
+        ProgressStore.P.SyncFolder = path;
+        ProgressStore.Notify();
+        Shell.Toast(Sync.Run() ? "Синхронизация включена" : "В эту папку нельзя записать", "同");
+        OnShown();
+    }
 
     static async void ExportProgress()
     {

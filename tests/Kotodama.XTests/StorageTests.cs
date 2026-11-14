@@ -187,3 +187,25 @@ public class DataRobustnessTests
     [Fact]
     public void ExportSerializesCurrentProgress() => Assert.Contains("\"Xp\"", System.Text.Encoding.UTF8.GetString(ProgressStore.Serialize()));
 }
+
+public class SyncTests
+{
+    [Fact]
+    public void MergeKeepsNewestCardsAndBestScores()
+    {
+        var a = new Progress(); var b = new Progress();
+        a.Cards["w:a|a"] = new SrsCard { Reps = 1, LastReview = new DateTime(2026, 1, 1) };
+        b.Cards["w:a|a"] = new SrsCard { Reps = 5, LastReview = new DateTime(2026, 2, 1) };
+        a.Cards["w:b|b"] = new SrsCard { Reps = 3, LastReview = new DateTime(2026, 3, 1) };
+        b.Cards["w:b|b"] = new SrsCard { Reps = 9, LastReview = new DateTime(2026, 1, 1) };
+        a.SpeechBest["s:x"] = 60; b.SpeechBest["s:x"] = 80;
+        b.GrammarDone.Add(7); b.Journal["2026-01-01"] = "日記"; b.Xp = 500; a.Xp = 100;
+        Sync.Merge(a, b);
+        Assert.Equal(5, a.Cards["w:a|a"].Reps);   // у другого компьютера повторение позже
+        Assert.Equal(3, a.Cards["w:b|b"].Reps);   // своё позже
+        Assert.Equal(80, a.SpeechBest["s:x"]);
+        Assert.Contains(7, a.GrammarDone);
+        Assert.Equal("日記", a.Journal["2026-01-01"]);
+        Assert.Equal(500, a.Xp);
+    }
+}

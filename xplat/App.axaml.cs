@@ -70,7 +70,7 @@ public partial class App : Application
         else if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow();
-            desktop.ShutdownRequested += (_, _) => ProgressStore.Save();
+            desktop.ShutdownRequested += (_, _) => { Sync.Run(); ProgressStore.Save(); };
             desktop.Exit += (_, _) => ProgressStore.Save();
         }
 #endif
@@ -89,6 +89,7 @@ public partial class App : Application
                 }
                 catch (Exception e) { CrashReport.Warn("Установка голосов из установщика", e); } // метка остаётся — попробуем в следующий запуск
             });
+        if (Sync.Enabled) Dispatcher.UIThread.Post(() => Sync.Run(), DispatcherPriority.Background); // прогресс с другого компьютера
         // Тяжёлое — в фоне, чтобы окно появилось сразу
         // данные курса нужны главной уже для первого кадра; словарь и акценты — после него (Perf.WarmUpAfterFirstFrame)
         Task.Run(() => { Db.Preload(); Perf.Mark("данные курса загружены"); });
