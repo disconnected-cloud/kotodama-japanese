@@ -92,6 +92,8 @@ public sealed partial class SettingsPage : UserControl, IPage
             case "learn":
                 yield return Section("Дневная цель", "Сколько XP набирать в день. 50 XP ≈ 15 минут занятий.",
                     Choice(new[] { 20, 50, 100, 150 }, p.DailyGoal, v => p.DailyGoal = v, v => $"{v} XP"));
+                yield return Section("Надёжность памяти", "Какую долю карточек ты должен помнить к моменту повторения. Выше — повторений больше, зато забываешь реже.",
+                    Choice(new[] { 85, 90, 95 }, (int)Math.Round(p.Retention * 100), v => p.Retention = v / 100.0, v => v switch { 85 => "85 % — меньше повторений", 90 => "90 % — стандарт", _ => "95 % — максимум" }));
                 yield return Section("Новых слов за раз", "Сколько новых слов показывать в одном уроке-знакомстве.",
                     Choice(new[] { 5, 10, 15, 20 }, p.NewPerSession, v => p.NewPerSession = v, v => v.ToString()));
                 yield return Section("Проверка произношения", "Лёгкая — как в Duolingo: засчитывается, если фразу можно понять. Строгая — для отработки акцента.",

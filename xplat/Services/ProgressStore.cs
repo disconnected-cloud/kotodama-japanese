@@ -92,6 +92,7 @@ public sealed class Progress
     public int StudySeconds { get; set; }
     public int StudyXpStart { get; set; }
     public bool PrefetchVoice { get; set; } = true;
+    public double Retention { get; set; } = 0.9;                   // FSRS: какую долю карточек помнить к повторению
     public bool NoNetwork { get; set; }
     public string SyncFolder { get; set; } = "";                  // папка синхронизации между компьютерами ("" — выключена)                            // «Без сети»: никаких обращений в интернет
     public bool SystemTheme { get; set; }                          // тема как в Windows (светлая/тёмная по системной настройке)
@@ -224,6 +225,7 @@ public static class ProgressStore
         p.Xp = Math.Max(0, p.Xp); p.Streak = Math.Max(0, p.Streak); p.Shields = Math.Clamp(p.Shields, 0, 10);
         p.DailyGoal = Math.Clamp(p.DailyGoal, 10, 1000); p.NewPerSession = Math.Clamp(p.NewPerSession, 1, 100);
         p.UiScale = double.IsNaN(p.UiScale) ? 1 : Math.Clamp(p.UiScale, 0.7, 2); p.JpScale = double.IsNaN(p.JpScale) ? 1 : Math.Clamp(p.JpScale, 0.7, 2.5);
+        p.Retention = double.IsNaN(p.Retention) || p.Retention == 0 ? 0.9 : Math.Clamp(p.Retention, 0.8, 0.97);
         p.MicPause = double.IsNaN(p.MicPause) ? 1.5 : Math.Clamp(p.MicPause, 0.5, 5);
         p.JpFontName ??= ""; p.NotifyTone ??= "bell"; p.TtsEngine ??= "offline"; p.SpeechMode ??= "easy"; p.MicMode ??= "auto";
         p.AccentColor ??= "sakura"; p.Goal ??= ""; p.WordOfDayTime ??= "09:00"; p.LastPlace ??= ""; p.LastPlaceTitle ??= "";

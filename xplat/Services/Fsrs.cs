@@ -9,7 +9,9 @@ public static class Fsrs
 {
     // Параметры по умолчанию FSRS-4.5 (обучены на миллионах повторений)
     static readonly double[] W = { 0.4872, 1.4003, 3.7145, 13.8206, 5.1618, 1.2298, 0.8975, 0.031, 1.6474, 0.1367, 1.0461, 2.1072, 0.0793, 0.3246, 1.587, 0.2272, 2.8755 };
-    const double Decay = -0.5, Factor = 19.0 / 81.0, Retention = 0.9;
+    const double Decay = -0.5, Factor = 19.0 / 81.0;
+    /// <summary>Целевая удерживаемость (8.2): 0,9 — стандарт; выше — чаще повторения, но память надёжнее.</summary>
+    static double Retention => Math.Clamp(ProgressStore.P.Retention, 0.8, 0.97);
 
     static double InitS(int g) => Math.Max(0.1, W[g - 1]);
     static double InitD(int g) => Math.Clamp(W[4] - (g - 3) * W[5], 1, 10);
