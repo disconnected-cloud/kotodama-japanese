@@ -71,10 +71,27 @@ jobs:
           dotnet publish xplat/Kotodama.csproj -c Release -r linux-x64 --self-contained true -o out/Kotodama-linux
           python3 tools/pack_linux.py out/Kotodama-linux Kotodama-linux-x64.tar.gz
 
+      - name: AppImage — один файл, запускается на любом дистрибутиве, со значком и ярлыком (8.1)
+        run: |
+          set -e
+          APP=Kotodama.AppDir
+          mkdir -p $APP/usr/lib/kotodama
+          cp -r out/Kotodama-linux/. $APP/usr/lib/kotodama/
+          cp packaging/linux/kotodama.png $APP/kotodama.png
+          sed 's|^Exec=.*|Exec=kotodama|; s|^Icon=.*|Icon=kotodama|' packaging/linux/kotodama.desktop > $APP/kotodama.desktop
+          printf '%s\n' '#!/bin/sh' 'HERE="$(dirname "$(readlink -f "$0")")"' 'exec "$HERE/usr/lib/kotodama/Kotodama" "$@"' > $APP/AppRun
+          chmod +x $APP/AppRun $APP/usr/lib/kotodama/Kotodama
+          wget -q https://github.com/AppImage/appimagetool/releases/download/1.9.0/appimagetool-x86_64.AppImage -O appimagetool
+          chmod +x appimagetool
+          ARCH=x86_64 ./appimagetool --appimage-extract-and-run $APP Kotodama-x86_64.AppImage
+          ls -la Kotodama-x86_64.AppImage
+
       - uses: actions/upload-artifact@v4
         with:
           name: Kotodama-linux-x64
-          path: Kotodama-linux-x64.tar.gz
+          path: |
+            Kotodama-linux-x64.tar.gz
+            Kotodama-x86_64.AppImage
 
       - name: Прикрепить к релизу
         if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.tag != '')
@@ -83,9 +100,9 @@ jobs:
           TAG: ${{ github.event.release.tag_name || inputs.tag }}
         # архив пересобран — строку в SHA256SUMS обновляем, иначе автообновление на Linux отвергнет его
         run: |
-          gh release upload "$TAG" Kotodama-linux-x64.tar.gz --clobber
+          gh release upload "$TAG" Kotodama-linux-x64.tar.gz Kotodama-x86_64.AppImage --clobber
           gh release download "$TAG" -p SHA256SUMS --clobber || touch SHA256SUMS
-          grep -v " Kotodama-linux-x64.tar.gz$" SHA256SUMS > SHA256SUMS.new || true
-          sha256sum Kotodama-linux-x64.tar.gz >> SHA256SUMS.new
+          grep -v " Kotodama-linux-x64.tar.gz$\| Kotodama-x86_64.AppImage$" SHA256SUMS > SHA256SUMS.new || true
+          sha256sum Kotodama-linux-x64.tar.gz Kotodama-x86_64.AppImage >> SHA256SUMS.new
           mv SHA256SUMS.new SHA256SUMS
           gh release upload "$TAG" SHA256SUMS --clobber
