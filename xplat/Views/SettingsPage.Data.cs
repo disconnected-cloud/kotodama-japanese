@@ -86,8 +86,9 @@ public sealed partial class SettingsPage : UserControl, IPage
         sp.Children.Add(all);
         var full = U.Btn("Полный сброс: удалить вообще всё, включая прогресс", async () =>
         {
-            if (!await Shell.Confirm("Будут удалены ВСЕ данные приложения: прогресс, настройки, скачанные модели и голоса. Продолжить?")) return;
+            if (!await Shell.Confirm("Будут удалены ВСЕ данные приложения:\n• прогресс, настройки, дневник и заметки;\n• автокопии прогресса (папка backups) и копии перед восстановлением и импортом;\n• скачанные модели распознавания и голоса VOICEVOX;\n• кэш озвучки, свои записи и журналы ошибок.\nЭто необратимо. Продолжить?", "Удалить всё")) return;
             foreach (var it in Storage.Items) Storage.Clear(it);
+            ProgressStore.DeleteAllCopies();
             ProgressStore.Reset();
             ProgressStore.P.Flags.Add("mig-v3");
             foreach (var it in Storage.Items) if (System.IO.Directory.Exists(it.Path) && it.IsDir) ProgressStore.P.Flags.Add("pending-delete:" + it.Key);

@@ -103,3 +103,19 @@ public class StorageTests : IDisposable
         Assert.Equal(new[] { "ch:", "ch:2099-01-01", "ch:x", "mig-v3", "study:2020-01-01" }, p.Flags.OrderBy(f => f, StringComparer.Ordinal));
     }
 }
+
+[Collection("progress-file")]
+public class FullResetTests
+{
+    [Fact]
+    public void FullResetRemovesBackupsAndCopies()
+    {
+        Directory.CreateDirectory(ProgressStore.BackupDir);
+        File.WriteAllText(Path.Combine(ProgressStore.BackupDir, "progress-2026-01-01.json"), "{}");
+        foreach (var n in new[] { "progress.json.before-restore", "progress.json.before-import", "progress.json.bak", "progress.corrupt-1.json" })
+            File.WriteAllText(Path.Combine(ProgressStore.Folder, n), "{}");
+        ProgressStore.DeleteAllCopies();
+        Assert.False(Directory.Exists(ProgressStore.BackupDir));
+        Assert.Empty(Directory.GetFiles(ProgressStore.Folder, "progress*").Where(f => !f.EndsWith("progress.json")));
+    }
+}

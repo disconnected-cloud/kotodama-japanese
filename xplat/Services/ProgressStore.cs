@@ -408,6 +408,14 @@ public static class ProgressStore
         catch (Exception e) { CrashReport.Warn("Импорт прогресса", e); return false; }
     }
 
+    /// <summary>Полный сброс: удалить автокопии и все служебные копии прогресса (в них есть и дневник) — А6.</summary>
+    public static void DeleteAllCopies()
+    {
+        try { if (Directory.Exists(BackupDir)) Directory.Delete(BackupDir, true); } catch (Exception e) { CrashReport.Warn("Сброс: автокопии", e); }
+        foreach (var f in Directory.Exists(Folder) ? Directory.GetFiles(Folder, "progress*") : Array.Empty<string>())
+            if (!f.EndsWith("progress.json")) try { File.Delete(f); } catch { }
+    }
+
     public static void Reset() { P = new Progress(); Touch(); Replaced?.Invoke(); }
     public static void Notify() => Touch();
 }
