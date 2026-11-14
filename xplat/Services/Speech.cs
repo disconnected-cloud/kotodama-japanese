@@ -156,7 +156,7 @@ public static class Speech
         var hKana = Reading.Of(heard, Reading.Align(targetJp, targetKana), tKana);
         double surface = Similarity(heard, Normalize(targetJp));
         string ph = Reading.Phon(hKana), pt = Reading.Phon(tKana);
-        double sound = Reading.SoundSimilarity(ph, pt);
+        double sound = Reading.SoundSimilarity(ph, pt, ProgressStore.P.SpeechMode != "strict"); // акцент прощается везде, кроме строгого режима
         // Whisper любит дописывать частицу или междометие в конце («ここ» → «ここは»): фраза целиком внутри — почти зачёт
         if (pt.Length >= 2 && ph.Contains(pt, StringComparison.Ordinal))
         {

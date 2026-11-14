@@ -13,6 +13,7 @@ public static class Asr
 {
     public static readonly (string id, string title, string desc, long size)[] Models =
     {
+        ("large-v3-turbo-q5_0", "Максимальная", "Whisper large-v3-turbo · лучше всех понимает речь с акцентом и ошибками; для ПК с 8 ГБ памяти и больше", 574_041_195),
         ("small-q5_1", "Точная", "Whisper small · хороший баланс скорости и точности", 190_085_487),
         ("base-q5_1", "Быстрая", OperatingSystem.IsAndroid() ? "Whisper base · для слабых телефонов, втрое быстрее" : "Whisper base · для слабых ПК", 59_707_625),
     };
@@ -21,11 +22,19 @@ public static class Asr
         ? "https://huggingface.co/kotoba-tech/kotoba-whisper-v2.0-ggml/resolve/main/ggml-kotoba-whisper-v2.0-q5_0.bin"
         : $"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{id}.bin";
 
-    /// <summary>Модель по умолчанию — первая скачанная из списка (японская → точная → быстрая).</summary>
+    /// <summary>SHA-1 из репозитория whisper.cpp: недокачанный или подменённый файл не принимается.</summary>
+    static readonly Dictionary<string, string> Sha1 = new()
+    {
+        ["large-v3-turbo-q5_0"] = "e050f7970618a659205450ad97eb95a18d69c9ee",
+    };
+
+    /// <summary>Модель по умолчанию — первая скачанная из списка (максимальная → точная → быстрая).</summary>
     public static string BestInstalled => Models.Select(m => m.id).FirstOrDefault(id => File.Exists(PathFor(id))) ?? DefaultId;
 
-    /// <summary>Что предложить скачать, пока пользователь не выбрал сам: на слабом телефоне точная модель думает слишком долго.</summary>
-    public static string DefaultId => Anim.LowEndDevice ? "base-q5_1" : Models[0].id;
+    /// <summary>Что предложить скачать, пока пользователь не выбрал сам: большая модель — только для ПК с 8 ГБ памяти и больше,
+    /// на слабом телефоне даже точная думает слишком долго.</summary>
+    public static string DefaultId => Anim.LowEndDevice ? "base-q5_1" : BigOk ? Models[0].id : "small-q5_1";
+    static bool BigOk => !OperatingSystem.IsAndroid() && GC.GetGCMemoryInfo().TotalAvailableMemoryBytes >= 7L << 30;
 
     static string Dir => Path.Combine(ProgressStore.Folder, "models");
     public static string ModelId => Models.Any(m => m.id == ProgressStore.P.AsrModel) && File.Exists(PathFor(ProgressStore.P.AsrModel)) ? ProgressStore.P.AsrModel
@@ -62,6 +71,12 @@ public static class Asr
                 done += n;
                 if (done - lastReport > 1 << 20) { progress.Report((double)done / total); lastReport = done; }
             }
+        }
+        if (Sha1.TryGetValue(id, out var want))
+        {
+            await using var f = File.OpenRead(part);
+            var got = Convert.ToHexString(await System.Security.Cryptography.SHA1.HashDataAsync(f, ct)).ToLowerInvariant();
+            if (got != want) { f.Close(); File.Delete(part); throw new InvalidDataException("файл модели повреждён (контрольная сумма не совпала), попробуй ещё раз"); }
         }
         File.Move(part, PathFor(id), true);
         progress.Report(1);
@@ -119,6 +134,8 @@ public static class Asr
                 .WithNoContext()
                 .WithProbabilities()
                 .WithTemperatureInc(0);
+            // На ПК — поиск лучом: короткие фразы с акцентом распознаются заметно точнее, а время для 2–3 секунд записи почти то же
+            if (!OperatingSystem.IsAndroid()) b = b.WithBeamSearchSamplingStrategy(s => s.WithBeamSize(4));
             if (!string.IsNullOrWhiteSpace(prompt)) b = b.WithPrompt(prompt);
             using var proc = b.Build();
             var sb = new StringBuilder();

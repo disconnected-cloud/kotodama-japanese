@@ -120,8 +120,8 @@ public sealed partial class SettingsPage : UserControl, IPage
                     U.Btn("Проверка и настройка микрофона", () => Shell.Open(new MicCheckPage()), "", "").Also(b => b.HorizontalAlignment = HorizontalAlignment.Left));
                 yield return SpeechUi.ModelCard(OnShown).M(0, 0, 0, 16);
                 if (Asr.Ready)
-                    yield return Section("Модель распознавания", "Точная лучше слышит ошибки, быстрая — для слабых компьютеров. Переключение скачает выбранную модель.",
-                        Choice(new[] { 0, 1 }, Asr.ModelId == Asr.Models[0].id ? 0 : 1, v => { ProgressStore.P.AsrModel = Asr.Models[v].id; Asr.Unload(); OnShown(); }, v => Asr.Models[v].title));
+                    yield return Section("Модель распознавания", "Максимальная лучше всех понимает речь с акцентом (нужно 8 ГБ памяти), быстрая — для слабых компьютеров. Переключение скачает выбранную модель. Модели обучены на речи носителей, поэтому оценка акцента приблизительная.",
+                        Choice(Enumerable.Range(0, Asr.Models.Length).ToArray(), Math.Max(0, Array.FindIndex(Asr.Models, m => m.id == Asr.ModelId)), v => { ProgressStore.P.AsrModel = Asr.Models[v].id; Task.Run(Asr.Unload); OnShown(); }, v => Asr.Models[v].title));
                 break;
 
             case "look":

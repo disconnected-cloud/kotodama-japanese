@@ -239,13 +239,16 @@ public static class Reading
     /// <summary>
     /// Схожесть звучания (латиница после Phon). Как Левенштейн, но лишняя/пропущенная долгота гласной
     /// и удвоение согласного (っ) стоят половину: Whisper сам плохо их различает, а ритм проверяется отдельно.
+    /// lenient — ошибки, которые не мешают пониманию (звонкий/глухой: か/が, た/だ; гласные え/い, お/う; ん перед м; лишняя «й» в きょ/こ),
+    /// тоже стоят половину: так фраза засчитывается, даже если сказана с типичным акцентом.
     /// </summary>
-    public static double SoundSimilarity(string a, string b)
+    public static double SoundSimilarity(string a, string b, bool lenient = false)
     {
         if (a.Length == 0 && b.Length == 0) return 1;
         if (a.Length == 0 || b.Length == 0) return 0;
         // повтор предыдущей буквы = долгота или っ (но не «nn»: пропущенное ん — полноценная ошибка)
-        static double Indel(string s, int i) => i > 0 && s[i] == s[i - 1] && s[i] != 'n' ? 0.5 : 1;
+        double Indel(string s, int i) => i > 0 && ((s[i] == s[i - 1] && s[i] != 'n') || (lenient && s[i] is 'y' or 'h' && s[i - 1] is not ('a' or 'i' or 'u' or 'e' or 'o'))) ? 0.5 : 1;
+        double Sub(char x, char y) => x == y ? 0 : lenient && Close(x, y) ? 0.5 : 1;
         var prev = new double[b.Length + 1];
         var cur = new double[b.Length + 1];
         prev[0] = 0;
@@ -254,11 +257,14 @@ public static class Reading
         {
             cur[0] = prev[0] + Indel(a, i - 1);
             for (int j = 1; j <= b.Length; j++)
-                cur[j] = Math.Min(Math.Min(cur[j - 1] + Indel(b, j - 1), prev[j] + Indel(a, i - 1)), prev[j - 1] + (a[i - 1] == b[j - 1] ? 0 : 1));
+                cur[j] = Math.Min(Math.Min(cur[j - 1] + Indel(b, j - 1), prev[j] + Indel(a, i - 1)), prev[j - 1] + Sub(a[i - 1], b[j - 1]));
             (prev, cur) = (cur, prev);
         }
         return Math.Max(0, 1.0 - prev[b.Length] / Math.Max(a.Length, b.Length));
     }
+
+    static readonly string[] ClosePairs = { "kg", "sz", "td", "hb", "hp", "bp", "fh", "fb", "jz", "cj", "rd", "nm", "ei", "ou" };
+    static bool Close(char x, char y) => ClosePairs.Any(p => p[0] == x && p[1] == y || p[0] == y && p[1] == x);
 
     /// <summary>Подсказки по типичным ошибкам: っ, долгие гласные, ん, звонкие/глухие.</summary>
     public static List<string> Hints(string targetHira, string heardHira)

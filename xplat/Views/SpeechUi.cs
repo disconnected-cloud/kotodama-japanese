@@ -35,8 +35,8 @@ public static class SpeechUi
     /// <summary>
     /// Два прохода Whisper. Первый — без подсказки (честно: что модель слышит сама). Если совпадение
     /// неполное, второй проход получает целевую фразу как подсказку: короткие слова и правильная речь
-    /// с акцентом распознаются намного надёжнее. Чтобы подсказка не «дорисовала» ошибку, второй балл
-    /// не может уйти далеко от первого, если первый проход услышал совсем другое.
+    /// с акцентом распознаются намного надёжнее. Подсказка не должна «дорисовать» зачёт: если первый проход
+    /// услышал совсем другую фразу или второй проход не уверен в себе, балл ниже порога зачёта.
     /// </summary>
     public static async Task<SpeechCheck> ScoreRecording(string jp, string kana, Recording r, CancellationToken ct, Action<string>? status = null)
     {
@@ -49,12 +49,24 @@ public static class SpeechUi
         if (s1.Score >= 88) return s1;
         status?.Invoke("Уточняю распознавание…");
         var a2 = await Asr.TranscribeDetailedAsync(r.Wav, ct, jp);
-        var (t2, c2) = (a2.Text, a2.Confidence);
-        // Без подсказки Whisper часто слышит ерунду на гласных и коротких словах («あいうえお», «こうこう»),
-        // поэтому потолок щадящий: правильно сказанное проходит, а явная подмена всё же не получает высший балл.
-        int cap = s1.Heard.Length == 0 ? 90 : Math.Max(s1.Score + 45, 86);
-        var s2 = Speech.Score(t2, c2, jp, kana, cap) with { Tokens = a2.Tokens };
+        int cap = HintCap(s1.Heard.Length == 0, Similar(s1.HeardKana, jp, kana), a2.Confidence);
+        var s2 = Speech.Score(a2.Text, a2.Confidence, jp, kana, cap) with { Tokens = a2.Tokens };
         return s2.Score > s1.Score ? s2 : s1;
+    }
+
+    /// <summary>Насколько услышанное без подсказки похоже на цель по звучанию (0..1), с прощением акцента.</summary>
+    static double Similar(string heardKana, string jp, string kana) =>
+        heardKana.Length == 0 ? 0 : Reading.SoundSimilarity(Reading.Phon(heardKana), Reading.Phon(kana.Length > 0 ? kana : jp), true);
+
+    /// <summary>
+    /// Потолок балла для прохода с подсказкой. Первый проход ничего не разобрал (тихо, короткое слово) — верим
+    /// уверенному второму. Первый услышал похожее (≥ 0,4) — акцент и ошибки прощаются. Услышал другое — зачёта нет.
+    /// </summary>
+    public static int HintCap(bool firstEmpty, double firstSimilarity, float hintConfidence)
+    {
+        if (firstEmpty) return hintConfidence >= 0.45f ? 90 : Speech.PassScore - 1;
+        if (firstSimilarity >= 0.4) return 90;
+        return Speech.PassScore - 1;
     }
 
     /// <summary>Сравнение интонации и ритма с образцом (тот же голос, что звучит в приложении).</summary>
@@ -144,14 +156,18 @@ public static class SpeechUi
             var status = U.T("", "Muted").M(0, 6, 0, 0);
             var btn = U.Btn("Скачать модель", () => { }, "Primary", "");
             btn.HorizontalAlignment = HorizontalAlignment.Left; btn.Margin = new Thickness(0, 14, 0, 0);
+            CancellationTokenSource? cts = null;
+            var cancel = U.Btn("Отмена", () => cts?.Cancel(), "", "");
+            cancel.HorizontalAlignment = HorizontalAlignment.Left; cancel.Margin = new Thickness(0, 8, 0, 0); cancel.IsVisible = false;
             btn.Click += async (_, _) =>
             {
-                btn.IsEnabled = false; choose.IsEnabled = false; bar.IsVisible = true;
+                btn.IsEnabled = false; choose.IsEnabled = false; bar.IsVisible = true; cancel.IsVisible = true;
+                cts = new CancellationTokenSource();
                 var id = Asr.ModelId; long size = Asr.Models.First(x => x.id == id).size;
                 var prog = new Progress<double>(v => { bar.Value = v; status.Text = $"Скачано {v * size / 1_000_000:0} из {size / 1_000_000} МБ"; });
                 try
                 {
-                    await Asr.DownloadAsync(id, prog, CancellationToken.None);
+                    await Asr.DownloadAsync(id, prog, cts.Token);
                     Shell.Toast("Модель распознавания установлена", "完了");
                     Asr.Warmup();
                     Render();
@@ -159,11 +175,12 @@ public static class SpeechUi
                 }
                 catch (Exception ex)
                 {
-                    status.Text = "Ошибка загрузки: " + ex.Message;
-                    btn.IsEnabled = true; choose.IsEnabled = true;
+                    status.Text = ex is OperationCanceledException ? "Загрузка отменена." : "Ошибка загрузки: " + ex.Message;
+                    btn.IsEnabled = true; choose.IsEnabled = true; cancel.IsVisible = false; bar.IsVisible = false;
                 }
             };
             sp.Children.Add(btn);
+            sp.Children.Add(cancel);
             sp.Children.Add(bar);
             sp.Children.Add(status);
         }
