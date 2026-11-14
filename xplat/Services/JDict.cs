@@ -105,7 +105,16 @@ public static class JDict
     }
 
     /// <summary>Поиск. Язык запроса определяется автоматически: кириллица, латиница (ромадзи) или японский.</summary>
-    public static List<DictEntry> Search(string query, int limit = 120)
+    /// <summary>Есть ли форма среди «食べる、喰べる» — без Split: раньше на каждый запрос делилось 219 тысяч строк.</summary>
+    static bool HasForm(string forms, string q)
+    {
+        if (q.Length == 0 || forms.Length < q.Length) return false;
+        for (int at = forms.IndexOf(q, StringComparison.Ordinal); at >= 0; at = forms.IndexOf(q, at + 1, StringComparison.Ordinal))
+            if ((at == 0 || forms[at - 1] == '、') && (at + q.Length == forms.Length || forms[at + q.Length] == '、')) return true;
+        return false;
+    }
+
+    public static List<DictEntry> Search(string query, int limit = 120, CancellationToken ct = default)
     {
         var res = new List<DictEntry>();
         if (!Loaded) return res;
@@ -126,6 +135,7 @@ public static class JDict
             var q = query.ToLowerInvariant();
             for (int i = 0; i < _ruLower.Length; i++)
             {
+                if ((i & 4095) == 0) ct.ThrowIfCancellationRequested();
                 var ru = _ruLower[i];
                 if (ru == null) continue; // английская статья
                 int pos = ru.IndexOf(q, StringComparison.Ordinal);
@@ -140,9 +150,10 @@ public static class JDict
             string qRaw = query;
             for (int i = 0; i < _kana.Length; i++)
             {
+                if ((i & 4095) == 0) ct.ThrowIfCancellationRequested();
                 string kana = _hira[i];
                 int rank;
-                if (kana == q || _kanji[i] == qRaw || _kanji[i].Split('、').Contains(qRaw)) rank = 0;
+                if (kana == q || _kanji[i] == qRaw || HasForm(_kanji[i], qRaw)) rank = 0;
                 else if (kana.StartsWith(q, StringComparison.Ordinal) || (!latin && _kanji[i].StartsWith(qRaw, StringComparison.Ordinal))) rank = 1;
                 else if (!latin && q.Length >= 1 && (_kanji[i].Contains(qRaw, StringComparison.Ordinal) || (q.Length >= 2 && kana.Contains(q, StringComparison.Ordinal)))) rank = 2;
                 else continue;

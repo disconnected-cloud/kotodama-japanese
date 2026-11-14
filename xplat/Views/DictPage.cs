@@ -144,6 +144,8 @@ public sealed class DictPage : UserControl, IPage
         Search();
     }
 
+    CancellationTokenSource? _searchCts;
+
     async void Search()
     {
         int id = ++_searchId;
@@ -157,7 +159,11 @@ public sealed class DictPage : UserControl, IPage
             return;
         }
         _empty.IsVisible = false;
-        var res = await Task.Run(() => JDict.Search(q));
+        _searchCts?.Cancel(); // прежний запрос ещё ищет — останавливаем, не тратим процессор
+        var cts = _searchCts = new CancellationTokenSource();
+        List<DictEntry> res;
+        try { res = await Task.Run(() => JDict.Search(q, ct: cts.Token)); }
+        catch (OperationCanceledException) { return; }
         if (id != _searchId) return; // пришёл более новый запрос
         if (Shell.Compact) { _rows = res.Select(e => new DictRow(e)).ToList(); _shown = 30; RenderPlain(); }
         else _list.ItemsSource = res.Select(e => new DictRow(e)).ToList();
