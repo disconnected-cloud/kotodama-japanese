@@ -39,6 +39,9 @@ public static class Emoji
         ["Природа и погода"] = "cherry_blossom", ["Глаголы"] = "rocket", ["Прилагательные"] = "artist_palette", ["Вопросы и указатели"] = "red_question_mark",
         ["Работа и учёба"] = "briefcase", ["Быт и дом"] = "couch_and_lamp", ["Город и поездки"] = "world_map", ["Здоровье и тело"] = "pill",
         ["Чувства и характер"] = "smiling_face_with_hearts", ["Глаголы N4"] = "gear", ["Наречия и связки"] = "link", ["Мои слова"] = "bookmark_tabs",
+        ["Ещё слова N5"] = "japanese_symbol_for_beginner", ["Ещё слова N4"] = "school",
+        ["Ономатопея"] = "speaking_head", ["Разговорная речь"] = "speech_balloon", ["Ёдзи-дзюкуго (идиомы из 4 кандзи)"] = "scroll",
+        ["Пословицы"] = "light_bulb", ["Японская кухня"] = "sushi", ["Культура и традиции"] = "red_paper_lantern", ["Люди и обращения"] = "name_badge",
     };
 
     public static string ForTopic(string topic) =>
@@ -53,7 +56,7 @@ public static class Emoji
         ["В гостинице"] = "hotel", ["У врача"] = "stethoscope", ["Приглашение"] = "clapper_board", ["По телефону"] = "mobile_phone",
         ["В конбини"] = "convenience_store", ["На вокзале"] = "station", ["В такси"] = "taxi", ["В аптеке"] = "pill", ["На почте"] = "post_office",
         ["В онсэне"] = "hot_springs", ["Бюро находок"] = "umbrella_with_rain_drops", ["Собеседование"] = "man_office_worker", ["У соседей"] = "house",
-        ["Совещание"] = "office_building", ["Вежливый отказ"] = "briefcase",
+        ["Совещание"] = "office_building", ["Вежливый отказ"] = "briefcase", ["В музее"] = "red_paper_lantern", ["Что случилось?"] = "thought_balloon", ["Хобби"] = "artist_palette", ["Отгул"] = "man_office_worker",
         // говорение
         ["Первые звуки"] = "musical_note", ["Приветствия"] = "sunrise", ["Вежливость"] = "wrapped_gift", ["В кафе и магазине"] = "shortcake",
         ["Дорога и транспорт"] = "station", ["Выручалочки"] = "light_bulb", ["Повседневные фразы"] = "calendar",
@@ -62,6 +65,7 @@ public static class Emoji
         ["Экстренные ситуации"] = "alarm_clock", ["Время и планы"] = "spiral_calendar", ["Семья и о себе"] = "house_with_garden",
         ["Погода и сезоны"] = "umbrella_with_rain_drops", ["Телефон и сообщения"] = "mobile_phone", ["На работе"] = "briefcase",
         ["Мнение и споры"] = "thought_balloon", ["В гостях"] = "teacup_without_handle", ["Комплименты и поддержка"] = "party_popper",
+        ["Можно? Нельзя?"] = "red_question_mark", ["Разговорный японский"] = "speaking_head", ["Объяснения и сочувствие"] = "light_bulb", ["Позвольте мне"] = "wrapped_gift",
         // чтение
         ["Мой день"] = "sun_with_face", ["Моя семья"] = "house", ["Весна в Японии"] = "cherry_blossom", ["Первый день в Токио"] = "tokyo_tower",
         ["Японский язык"] = "books",

@@ -105,7 +105,7 @@ public sealed class WordPage : UserControl, IPage
         var tags = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
         if (_e.Common) tags.Children.Add(U.Pill("частое слово", U.B("GoodSoft"), U.B("Good")).M(0, 0, 6, 0));
         var lvl = Db.Words.FirstOrDefault(w => w.Jp == _e.Jp && w.Kana == _e.Kana)?.Level;
-        if (lvl != null) tags.Children.Add(U.Pill(lvl == "1000" ? "1000 частых" : "JLPT " + lvl).M(0, 0, 6, 0));
+        if (lvl != null) tags.Children.Add(U.Pill(lvl == "1000" ? "1000 частых" : lvl == "Живой" ? "Живой язык" : "JLPT " + lvl).M(0, 0, 6, 0));
         if (_e.Kanji.Contains('、')) tags.Children.Add(U.Pill("варианты: " + _e.Kanji.Replace("、", ", "), U.B("Surface2"), U.B("Muted")));
         title.Children.Add(tags);
         head.Children.Add(title);

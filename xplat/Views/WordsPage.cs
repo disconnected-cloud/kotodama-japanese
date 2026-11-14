@@ -27,6 +27,9 @@ public sealed class WordsPage : UserControl, IPage
     string? _topic;
     string _search = "";
     string _level = ProgressStore.P.Level;
+    static string? _pending;
+    /// <summary>Открыть «Слова» сразу на нужном уровне (например «Живой язык» из тренажёров).</summary>
+    public static void OpenLevel(string level) { _pending = level; Shell.Go("words"); }
     readonly ListBox _list;
     // Телефон: вся страница прокручивается, список — порциями (вложенный список в узком экране получал нулевую высоту)
     readonly StackPanel _plainList = new();
@@ -99,6 +102,7 @@ public sealed class WordsPage : UserControl, IPage
 
     public void OnShown()
     {
+        if (_pending != null) { _level = _pending; _topic = null; _pending = null; }
         var g = new Grid { Margin = Shell.Compact ? new Thickness(12, 8, 12, 12) : new Thickness(40, 12, 40, 16), MaxWidth = 1240 };
         for (int i = 0; i < 3; i++) g.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         g.RowDefinitions.Add(Shell.Compact ? new RowDefinition { Height = GridLength.Auto } : new RowDefinition());
@@ -108,15 +112,15 @@ public sealed class WordsPage : UserControl, IPage
         int learning = words.Count(w => ProgressStore.Card(w.Id)?.Reps > 0);
         int mastered = words.Count(w => ProgressStore.Card(w.Id)?.Mastered == true);
         var lv = new WrapPanel { Orientation = Orientation.Horizontal };
-        foreach (var l in new[] { "N5", "N4", "N3", "N2", "N1", "1000", "Темы", "Мои" })
+        foreach (var l in new[] { "N5", "N4", "N3", "N2", "N1", "1000", "Живой", "Темы", "Мои" })
         {
-            var rb = new RadioButton { Classes = { "ChipRadio" }, Content = l == "Мои" ? "Мои слова" : l == "1000" ? "1000+ частых" : l, GroupName = "wlevel", IsChecked = _level == l };
+            var rb = new RadioButton { Classes = { "ChipRadio" }, Content = l == "Мои" ? "Мои слова" : l == "1000" ? "1000+ частых" : l == "Живой" ? "Живой язык" : l, GroupName = "wlevel", IsChecked = _level == l };
             var ll = l;
-            rb.Checked += (_, _) => { _level = ll; _topic = null; if (ll is not ("Мои" or "Темы" or "1000")) { ProgressStore.P.Level = ll; ProgressStore.Notify(); } OnShown(); };
+            rb.Checked += (_, _) => { _level = ll; _topic = null; if (ll is not ("Мои" or "Темы" or "1000" or "Живой")) { ProgressStore.P.Level = ll; ProgressStore.Notify(); } OnShown(); };
             lv.Children.Add(rb);
         }
         if (_topic != null) { var art = Emoji.Img(Emoji.ForTopic(_topic), 64); art.HorizontalAlignment = HorizontalAlignment.Right; art.VerticalAlignment = VerticalAlignment.Top; art.Margin = new Thickness(0, 0, 330, 0); g.Children.Add(art); }
-        g.Children.Add(U.Header("語", "Слова", _level == "Мои" ? $"{words.Length} слов, добавленных из словаря" : themes ? $"Сквозные темы для всех уровней — {words.Length} слов: выбери тему ниже" : _level == "1000" ? $"{words.Length} частых слов из живой речи — у каждого пример фразы" : _level == "N3" ? $"{words.Length} слов уровня N3 (частотные 1001–1600) с примерами фраз" : _level == "N2" ? $"{words.Length} слов начала N2 (частотные 1601–2200) с примерами фраз" : _level == "N1" ? $"{words.Length} слов продвинутого уровня (частотные 2201–2800) с примерами фраз" : $"{words.Length} учебных слов уровня {_level} с озвучкой и карточками  ·  {learning} в изучении  ·  {mastered} выучено", lv));
+        g.Children.Add(U.Header("語", "Слова", _level == "Мои" ? $"{words.Length} слов, добавленных из словаря" : themes ? $"Сквозные темы для всех уровней — {words.Length} слов: выбери тему ниже" : _level == "Живой" ? $"{words.Length} слов, которых нет в учебниках: ономатопея, разговорные словечки, идиомы из 4 кандзи, пословицы, кухня и традиции" : _level == "1000" ? $"{words.Length} частых слов из живой речи — у каждого пример фразы" : _level == "N3" ? $"{words.Length} слов уровня N3 (частотные 1001–1600) с примерами фраз" : _level == "N2" ? $"{words.Length} слов начала N2 (частотные 1601–2200) с примерами фраз" : _level == "N1" ? $"{words.Length} слов продвинутого уровня (частотные 2201–2800) с примерами фраз" : $"{words.Length} учебных слов уровня {_level} с озвучкой и карточками  ·  {learning} в изучении  ·  {mastered} выучено", lv));
 
         // Действия
         int due = words.Count(w => ProgressStore.IsDue(w.Id));

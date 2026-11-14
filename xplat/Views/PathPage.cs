@@ -45,7 +45,10 @@ public static class Course
     public static bool Complete(CourseUnit u) => F.Contains("skip:" + u.Id) || DoneCount(u) == Total(u);
     /// <summary>Открыт, если пройден предыдущий — или если ученик уже начинал этот юнит
     /// (в 2.0 в старые юниты добавились уроки: пройденное дальше не должно закрыться).</summary>
-    public static bool Unlocked(CourseUnit u) => u.Id == 1 || Complete(Db.Course[u.Id - 2]) || F.Contains(TheoryKey(u)) || (u.Id < Db.Course.Length && F.Contains(TheoryKey(Db.Course[u.Id])));
+    public static bool Unlocked(CourseUnit u) => Prev(u) is not { } p || Complete(p) || F.Contains(TheoryKey(u)) || (Next(u) is { } n && F.Contains(TheoryKey(n)));
+    /// <summary>Соседи по порядку «Пути» (Num), а не по Id: новые юниты вставлены внутрь уровней.</summary>
+    public static CourseUnit? Prev(CourseUnit u) => u.Num > 1 ? Db.Course[u.Num - 2] : null;
+    public static CourseUnit? Next(CourseUnit u) => u.Num < Db.Course.Length ? Db.Course[u.Num] : null;
     public static CourseUnit Current => Db.Course.FirstOrDefault(u => !Complete(u) && Unlocked(u)) ?? Db.Course[^1];
 
     public static string StepTitle(CourseStep s) => s.Title ?? s.T switch
@@ -90,7 +93,7 @@ public static class Course
         var rnd = new Random(u.Id * 7919 + DateTime.Today.DayOfYear);
         var qs = ExamQuestions(u, rnd);
         if (qs.Count < 4) return null;
-        return new QuizSession($"Экзамен: юнит {u.Id}", qs.OrderBy(_ => rnd.Next()).Take(16), (ok, total) =>
+        return new QuizSession($"Экзамен: юнит {u.Num}", qs.OrderBy(_ => rnd.Next()).Take(16), (ok, total) =>
         {
             if (total > 0 && ok * 100 / total >= 80)
             {
@@ -308,15 +311,15 @@ public sealed class UnitPage : UserControl, IPage, IResumable
 {
     readonly CourseUnit _u;
     public string ResumeKey => $"unit:{_u.Id}";
-    public string ResumeTitle => $"Юнит {_u.Id} · {_u.Title}";
-    public string Title => $"Юнит {_u.Id}";
+    public string ResumeTitle => $"Юнит {_u.Num} · {_u.Title}";
+    public string Title => $"Юнит {_u.Num}";
     public UnitPage(CourseUnit u) => _u = u;
 
     public void OnShown()
     {
         var u = _u;
         var root = new StackPanel { MaxWidth = 760, HorizontalAlignment = HorizontalAlignment.Center };
-        root.Children.Add(U.T($"ЮНИТ {u.Id} · {u.Level}", "Overline"));
+        root.Children.Add(U.T($"ЮНИТ {u.Num} · {u.Level}", "Overline"));
         root.Children.Add(U.T(u.Title, "H1").M(0, 4, 0, 18));
 
         // ─────────── Теория ───────────
@@ -375,9 +378,8 @@ public sealed class UnitPage : UserControl, IPage, IResumable
             root.Children.Add(ec);
         }
 
-        if (Course.Complete(u) && u.Id < Db.Course.Length)
+        if (Course.Complete(u) && Course.Next(u) is { } next)
         {
-            var next = Db.Course[u.Id];
             var nb = U.Btn($"Следующий юнит: {next.Title}", () => { Shell.Back(); Shell.Open(new UnitPage(next)); }, "Primary", "");
             nb.HorizontalAlignment = HorizontalAlignment.Left; nb.Margin = new Thickness(0, 16, 0, 0);
             root.Children.Add(nb);

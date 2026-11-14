@@ -258,6 +258,8 @@ public partial class MainView : UserControl
         ["trainers"] = () => new TrainersPage(),
         ["reader"] = () => new ReaderPage(),
         ["japan"] = () => new JapanPage(),
+        ["quests"] = () => new QuestsPage(),
+        ["journal"] = () => new JournalPage(),
         ["more"] = () => new MorePage(),
     };
 

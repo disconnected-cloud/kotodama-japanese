@@ -159,7 +159,7 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
             int next = Enumerable.Range(0, u.Steps.Length).FirstOrDefault(i => !Course.StepDone(u, i), -1);
             bool theory = !p.Flags.Contains(Course.TheoryKey(u));
             string what = theory ? "теория юнита" : next >= 0 ? Course.StepTitle(u.Steps[next]) : u.Title;
-            list.Add(new("path", "Новое по пути", $"Юнит {u.Id}: {what}", 5, () =>
+            list.Add(new("path", "Новое по пути", $"Юнит {u.Num}: {what}", 5, () =>
             {
                 var uu = Course.Current;
                 int i = Enumerable.Range(0, uu.Steps.Length).FirstOrDefault(k => !Course.StepDone(uu, k), -1);

@@ -11,7 +11,7 @@ rom = json.load(open(D("romaji.json"), encoding="utf8"))
 want = {}
 def add(jp, kana=None):
     if jp and jp not in want: want[jp] = kana
-GF = ("grammar.json", "grammar_n4.json", "grammar_n3.json", "grammar_n3b.json", "grammar_more.json", "grammar_n2.json", "grammar_n1.json")
+GF = ("grammar.json", "grammar_n4.json", "grammar_n3.json", "grammar_n3b.json", "grammar_more.json", "grammar_n2.json", "grammar_n1.json", "grammar_extra.json")
 for f in GF:
     for l in load(f):
         for p in l["points"]:
@@ -19,10 +19,17 @@ for f in GF:
         for q in l["quiz"]: add(re.sub("＿+", q[1], q[0]))   # пропуск «＿＿＿» — один ответ, а не три
 for u in load("course.json"):
     for ex in u["examples"]: add(ex[0], ex[1])
-for vf in ("vocab.json", "vocab_n4.json", "vocab_plus.json", "vocab_n3.json", "vocab_n2.json", "vocab_n1.json"):
+for vf in ("vocab.json", "vocab_n4.json", "vocab_plus.json", "vocab_n3.json", "vocab_n2.json", "vocab_n1.json", "vocab_live.json"):
     for topic in load(vf).values():
         for w in topic:
             if len(w) > 3 and w[3]: add(w[3])
+for q in load("quests.json"):             # «Приключения»: реплики и варианты ответов (латиница и чтение для проверки речи)
+    for sc in q["scenes"]:
+        add(sc["jp"], sc["kana"])
+        for c in sc["choices"]: add(c[0])
+pt = load("particles.json")                # тренажёр частиц: примеры правил и предложения с ответом
+for r in pt["rules"]: add(r[4])
+for it in pt["items"]: add(it[0].replace("＿", it[1]))
 for kf in ("kanji.json", "kanji_n4.json", "kanji_n3.json", "kanji_n2.json", "kanji_n1.json"):
     for k in load(kf):
         for e in k[5]: add(e[0], e[1])

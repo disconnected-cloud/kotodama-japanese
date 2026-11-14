@@ -40,7 +40,22 @@ public sealed record DialogLine(int Speaker, string Jp, string Kana, string Ru)
 public sealed record Dialog(int Id, string Title, string Icon, string Level, string Desc, string[] Roles, bool[] Male, DialogLine[] Lines);
 
 public sealed record CourseStep(string T, string? Title, string? Script, int[]? Rows, string? Group, int Id, string? Topic, string? Level, int Count);
-public sealed record CourseUnit(int Id, string Title, string Level, string[] Theory, Example[] Examples, CourseStep[] Steps);
+public sealed record QuestChoice(string Jp, string Ru, bool Ok, string Why)
+{
+    public string Romaji => Db.RomajiFor(Jp, Db.KanaFor(Jp) ?? Jp);
+}
+public sealed record QuestScene(string? Place, string? Narr, string Who, bool Male, string Jp, string Kana, string Ru, QuestChoice[] Choices)
+{
+    public string Romaji => Db.RomajiFor(Jp, Kana);
+}
+/// <summary>«Приключение»: история из сцен, в каждой — реплика собеседника и варианты ответа (один верный).</summary>
+public sealed record Quest(string Id, string Title, string Level, string Emoji, string Desc, QuestScene[] Scenes);
+
+/// <summary>Id — постоянный ключ прогресса (позиция в course.json), Num — номер на «Пути» (порядок показа).</summary>
+public sealed record CourseUnit(int Id, string Title, string Level, string[] Theory, Example[] Examples, CourseStep[] Steps)
+{
+    public int Num { get; set; }
+}
 
 /// <summary>Учебные материалы из встроенных JSON. Грузятся один раз, лениво и потокобезопасно.</summary>
 public static class Db
@@ -75,6 +90,8 @@ public static class Db
     public static SpeechLesson[] SpeechLessons => _speech.Value;
     public static Dialog[] Dialogs => _dialogs.Value;
     public static CourseUnit[] Course => _course.Value;
+    static readonly Lazy<Quest[]> _quests = new(LoadQuests);
+    public static Quest[] Quests => _quests.Value;
 
     public static IEnumerable<Word> WordsOf(string level) => Words.Where(w => w.Level == level);
     public static IEnumerable<KanjiInfo> KanjiOf(string level) => Kanji.Where(k => k.Level == level);
@@ -122,7 +139,7 @@ public static class Db
     {
         var list = new List<Word>(1024);
         var seen = new HashSet<string>();
-        foreach (var (file, level) in new[] { ("vocab.json", "N5"), ("vocab_n4.json", "N4"), ("vocab_plus.json", "1000"), ("vocab_n3.json", "N3"), ("vocab_n2.json", "N2"), ("vocab_n1.json", "N1") })
+        foreach (var (file, level) in new[] { ("vocab.json", "N5"), ("vocab_n4.json", "N4"), ("vocab_plus.json", "1000"), ("vocab_n3.json", "N3"), ("vocab_n2.json", "N2"), ("vocab_n1.json", "N1"), ("vocab_live.json", "Живой") })
         {
             using var doc = Open(file);
             foreach (var topic in doc.RootElement.EnumerateObject())
@@ -154,7 +171,7 @@ public static class Db
     {
         int id = 0;
         var list = new List<GrammarLesson>();
-        foreach (var file in new[] { "grammar.json", "grammar_n4.json", "grammar_n3.json", "grammar_n3b.json", "grammar_more.json", "grammar_n2.json", "grammar_n1.json" })
+        foreach (var file in new[] { "grammar.json", "grammar_n4.json", "grammar_n3.json", "grammar_n3b.json", "grammar_more.json", "grammar_n2.json", "grammar_n1.json", "grammar_extra.json" })
         {
             using var doc = Open(file);
             list.AddRange(doc.RootElement.EnumerateArray().Select(l => new GrammarLesson(
@@ -196,18 +213,49 @@ public static class Db
         )).ToArray();
     }
 
+    /// <summary>
+    /// Юниты в порядке «Пути». Новые юниты дописываются в конец course.json (Id = позиция в файле, на нём держится прогресс),
+    /// а поле "after": N ставит юнит на «Пути» сразу после юнита N — так уроки встают на свой уровень, не сбивая прогресс.
+    /// </summary>
     static CourseUnit[] LoadCourse()
     {
         using var doc = Open("course.json");
         int id = 0;
-        return doc.RootElement.EnumerateArray().Select(u => new CourseUnit(
-            ++id, Str(u, "title"), Str(u, "level"),
-            u.GetProperty("theory").EnumerateArray().Select(t => t.GetString() ?? "").ToArray(),
-            Examples(u.GetProperty("examples")),
-            u.GetProperty("steps").EnumerateArray().Select(s => new CourseStep(
-                Str(s, "t"), Str(s, "title") is { Length: > 0 } t ? t : null, Str(s, "script"),
-                s.TryGetProperty("rows", out var r) ? r.EnumerateArray().Select(x => x.GetInt32()).ToArray() : null,
-                Str(s, "group") is { Length: > 0 } g ? g : null, Int(s, "id"), Str(s, "topic"), Str(s, "level"), Int(s, "count"))).ToArray()
+        var units = new List<(CourseUnit u, int after)>();
+        foreach (var u in doc.RootElement.EnumerateArray())
+            units.Add((new CourseUnit(
+                ++id, Str(u, "title"), Str(u, "level"),
+                u.GetProperty("theory").EnumerateArray().Select(t => t.GetString() ?? "").ToArray(),
+                Examples(u.GetProperty("examples")),
+                u.GetProperty("steps").EnumerateArray().Select(s => new CourseStep(
+                    Str(s, "t"), Str(s, "title") is { Length: > 0 } t ? t : null, Str(s, "script"),
+                    s.TryGetProperty("rows", out var r) ? r.EnumerateArray().Select(x => x.GetInt32()).ToArray() : null,
+                    Str(s, "group") is { Length: > 0 } g ? g : null, Int(s, "id"), Str(s, "topic"), Str(s, "level"), Int(s, "count"))).ToArray()),
+                Int(u, "after")));
+        var order = units.Where(x => x.after == 0).Select(x => x.u).ToList();
+        // вставляем по цепочке: юнит после 14, затем следующий «after: 14» встаёт уже за ним
+        var last = new Dictionary<int, int>();
+        foreach (var (u, after) in units.Where(x => x.after > 0))
+        {
+            int anchor = last.TryGetValue(after, out var a) ? a : after;
+            int at = order.FindIndex(x => x.Id == anchor);
+            order.Insert(at < 0 ? order.Count : at + 1, u);
+            last[after] = u.Id;
+        }
+        for (int i = 0; i < order.Count; i++) order[i].Num = i + 1;
+        return order.ToArray();
+    }
+
+    static Quest[] LoadQuests()
+    {
+        using var doc = Open("quests.json");
+        string? Opt(JsonElement o, string p) => Str(o, p) is { Length: > 0 } v ? v : null;
+        return doc.RootElement.EnumerateArray().Select(q => new Quest(
+            Str(q, "id"), Str(q, "title"), Str(q, "level"), Str(q, "emoji"), Str(q, "desc"),
+            q.GetProperty("scenes").EnumerateArray().Select(sc => new QuestScene(
+                Opt(sc, "place"), Opt(sc, "narr"), Str(sc, "who"), sc.TryGetProperty("male", out var m) && m.GetBoolean(),
+                Str(sc, "jp"), Str(sc, "kana"), Str(sc, "ru"),
+                sc.GetProperty("choices").EnumerateArray().Select(c => new QuestChoice(S(c, 0), S(c, 1), c[2].GetBoolean(), S(c, 3))).ToArray())).ToArray()
         )).ToArray();
     }
 

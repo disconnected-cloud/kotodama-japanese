@@ -236,8 +236,8 @@ public sealed class StatsPage : UserControl, IPage
                 Background = U.B(open ? "Surface2" : "Surface"), BorderBrush = U.B("Stroke"), BorderThickness = new Thickness(1), Opacity = open ? 1 : 0.45,
                 Child = U.Stack(
                     open ? Emoji.Img(a.Emoji, 40).Also(i => i.HorizontalAlignment = HorizontalAlignment.Center) : U.Jp("?", 30, U.B("Faint"), true).Center(),
-                    U.T(open ? a.Title : $"Юнит {u.Id}", "Muted", 11).Also(t => { t.TextAlignment = TextAlignment.Center; t.TextWrapping = TextWrapping.Wrap; t.MaxLines = 2; }).Center().M(0, 6, 0, 0)),
-            }.Tip(open ? a.Lead : $"Сдай экзамен юнита {u.Id}: {u.Title}");
+                    U.T(open ? a.Title : $"Юнит {u.Num}", "Muted", 11).Also(t => { t.TextAlignment = TextAlignment.Center; t.TextWrapping = TextWrapping.Wrap; t.MaxLines = 2; }).Center().M(0, 6, 0, 0)),
+            }.Tip(open ? a.Lead : $"Сдай экзамен юнита {u.Num}: {u.Title}");
             if (open) { card.Cursor = Cursors.Hand; card.PointerReleased += (_, _) => Shell.Open(new ArticlePage(a)); }
             wrap.Children.Add(card);
         }

@@ -91,7 +91,9 @@ public class DataQualityTests
     [Fact]
     public void CourseUnitsAreNumberedAndHaveTheory()
     {
-        Assert.Equal(Enumerable.Range(1, Db.Course.Length), Db.Course.Select(u => u.Id));
+        // Id — ключ прогресса (позиция в файле), Num — порядок на «Пути» (с 4.0 новые юниты вставлены внутрь уровней)
+        Assert.Equal(Enumerable.Range(1, Db.Course.Length), Db.Course.Select(u => u.Id).OrderBy(i => i));
+        Assert.Equal(Enumerable.Range(1, Db.Course.Length), Db.Course.Select(u => u.Num));
         Assert.All(Db.Course, u =>
         {
             Assert.NotEmpty(u.Theory);

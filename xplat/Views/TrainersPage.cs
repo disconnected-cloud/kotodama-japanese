@@ -281,8 +281,13 @@ public sealed class TrainersPage : UserControl, IPage
             Tile("組", "Собери предложение", "Расставь слова по порядку", () => Shell.Open(new BuilderSession())));
         var grammar = Group(
             Tile("活", "Спряжение глаголов", "11 форм: ます, て, ない, потенциальная…", () => Shell.Open(Conj.Quiz())),
+            Tile("助", "Частицы", "は или が? に или で? Вставь частицу — с разбором правила", () => Shell.Open(new ParticlesPage())),
             Tile("時", "Числа, время, цены", "Цифры на слух, よじ, はっせん, ついたち", () => Shell.Open(new NumbersPage())),
-            Tile("数", "Счётные суффиксы", "本・枚・匹・人… с особыми чтениями", () => Shell.Open(new CountersPage())),
+            Tile("数", "Счётные суффиксы", "本・枚・匹・人… с особыми чтениями", () => Shell.Open(new CountersPage())));
+        var live = Group(
+            Tile("旅", "Приключения", "Истории в Японии: отвечай собеседнику по-японски", () => Shell.Go("quests")),
+            Tile("記", "Дневник", "Пара фраз в день по теме — с разбором и озвучкой", () => Shell.Go("journal")),
+            Tile("擬", "Живой язык", "ドキドキ, マジで, 一期一会 — слова не из учебника", () => { WordsPage.OpenLevel("Живой"); }),
             Tile("誤", "Тетрадь ошибок", Mistakes.Count > 0 ? $"{Mistakes.Count} ошибок ждут исправления" : "Ошибок нет — отлично!", () => { var q = MistakesQuiz(); if (q != null) Shell.Open(q); else Shell.Toast("Ошибок пока нет", "完璧"); }));
         // пробный экзамен — широкой карточкой под группами
         var exam = U.Cols("auto", "*", "auto");
@@ -303,7 +308,7 @@ public sealed class TrainersPage : UserControl, IPage
         root.Children.Add(PlanCard().M(0, 24, 0, 0));
         root.Children.Add(U.T("Упражнения", "H2").M(0, 26, 0, 4));
         root.Children.Add(U.T("Каждое — 5–10 минут. Ошибки попадают в тетрадь и вернутся на повторении.", "Muted").M(0, 0, 0, 6));
-        foreach (var (title, icon, g) in new[] { ("Слух и речь", "headphones", listen), ("Письмо и чтение", "write", write), ("Грамматика и счёт", "grammar", grammar) })
+        foreach (var (title, icon, g) in new[] { ("Слух и речь", "headphones", listen), ("Письмо и чтение", "write", write), ("Грамматика и счёт", "grammar", grammar), ("Живая практика", "quest", live) })
         {
             root.Children.Add(U.Row(10, Art.Icon(icon, 26), U.T(title, "H3", 16).CenterV()).M(0, 14, 0, 4));
             root.Children.Add(g);
@@ -316,7 +321,7 @@ public sealed class TrainersPage : UserControl, IPage
     static readonly Dictionary<string, string> TileArt = new()
     {
         ["誤"] = "memo", ["耳"] = "ear", ["時"] = "alarm_clock", ["打"] = "keyboard", ["似"] = "eyes", ["播"] = "radio", ["活"] = "gear", ["数"] = "input_numbers", ["聞"] = "headphone", ["組"] = "puzzle_piece", ["試"] = "graduation_cap",
-        ["書"] = "writing_hand", ["雨"] = "cloud_with_rain", ["対"] = "game_die", ["速"] = "stopwatch",
+        ["書"] = "writing_hand", ["助"] = "link", ["旅"] = "world_map", ["記"] = "memo", ["擬"] = "speaking_head", ["雨"] = "cloud_with_rain", ["対"] = "game_die", ["速"] = "stopwatch",
     };
 
     /// <summary>Плитка игры: своя иконка, описание и рекорд.</summary>
@@ -387,7 +392,7 @@ public sealed class TrainersPage : UserControl, IPage
                 var fresh = Db.Words.Where(w => w.Level == p.Level && ProgressStore.Card(w.Id) == null).Take(5).ToList();
                 if (fresh.Count > 0) Shell.Open(LearnSession.Words("Новые слова", fresh));
             }),
-            ("Шаг пути", $"Юнит {unit.Id}: {unit.Title}", () => Shell.Open(new UnitPage(unit))),
+            ("Шаг пути", $"Юнит {unit.Num}: {unit.Title}", () => Shell.Open(new UnitPage(unit))),
             ("Говорение", "Одна фраза вслух с проверкой", () => Shell.Open(new SpeechLessonPage(Db.SpeechLessons[DateTime.Today.DayOfYear % Db.SpeechLessons.Length]))),
             (DateTime.Today.DayOfYear % 2 == 0 ? "Спряжение" : "Счётные слова", "Тренажёр дня", () => Shell.Open(DateTime.Today.DayOfYear % 2 == 0 ? Conj.Quiz() : Counters.Quiz())),
         };

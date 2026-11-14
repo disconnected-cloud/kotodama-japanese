@@ -98,9 +98,11 @@ public partial class MainView : UserControl
         Header("ГОВОРИТЬ");
         Item("speech", "speech", "Говорение");
         Item("dialogs", "dialogs", "Диалоги");
+        Item("quests", "quest", "Приключения");
         Header("ЧИТАТЬ И ИГРАТЬ");
         Item("reader", "books", "Книги и тексты");
         Item("japan", "torii", "Япония");
+        Item("journal", "journal", "Дневник");
         Item("dict", "dict", "Словарь");
         Item("trainers", "trainers", "Тренажёры и игры");
         Item("settings", "settings", "Настройки");

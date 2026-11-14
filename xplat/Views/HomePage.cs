@@ -82,7 +82,7 @@ public sealed class HomePage : UserControl, IPage
         // телефон: главная кнопка во всю ширину, остальные — рядом под ней
         if (Shell.Compact) { go.HorizontalAlignment = HorizontalAlignment.Stretch; go.HorizontalContentAlignment = HorizontalAlignment.Center; left.Children.Add(go.M(0, 14, 0, 0)); }
         else acts.Children.Add(go.M(0, 0, 10, 6));
-        acts.Children.Add(U.Btn($"Путь: юнит {u.Id}", () => { Shell.Go("path"); Shell.Open(new UnitPage(u)); }, "", "").M(0, 0, 10, 6).Tip($"{u.Title} · {d}/{t}"));
+        acts.Children.Add(U.Btn($"Путь: юнит {u.Num}", () => { Shell.Go("path"); Shell.Open(new UnitPage(u)); }, "", "").M(0, 0, 10, 6).Tip($"{u.Title} · {d}/{t}"));
         if (due > 0) acts.Children.Add(U.Btn($"Повторить ({due})", () => Shell.Go("review"), "", "").M(0, 0, 10, 6));
         // «Продолжить, где остановился» — последний открытый урок, текст или диалог
         if (Resume.Opener() is { } reopen)

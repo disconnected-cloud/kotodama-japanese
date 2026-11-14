@@ -88,6 +88,9 @@ public sealed class Palette : Grid
         yield return new Item("耳", "Аудиоплеер", "Слушать слова и фразы без экрана", () => Shell.Open(new PlayerPage()));
         yield return new Item("似", "Похожие кандзи", "Тренажёр · 未 или 末", () => Shell.Open(SimilarKanji.Quiz()));
         yield return new Item("時", "Числа, время, цены", "Тренажёр", () => Shell.Open(new NumbersPage()));
+        yield return new Item("旅", "Приключения", "Истории: отвечай по-японски", () => Shell.Go("quests"));
+        yield return new Item("記", "Дневник", "Пиши по-японски каждый день", () => Shell.Go("journal"));
+        yield return new Item("助", "Частицы", "Тренажёр は・が・を・に・で…", () => Shell.Open(new ParticlesPage()));
         yield return new Item("打", "Набор на японском", "Тренажёр · ромадзи → кана", () => Shell.Open(new TypingPage()));
         yield return new Item("雨", "Кана-дождь", "Игра", () => Shell.Open(new KanaRainGame(false)));
         yield return new Item("対", "Найди пару", "Игра", () => Shell.Open(new MemoryGame()));
@@ -97,7 +100,7 @@ public sealed class Palette : Grid
         foreach (var a in JapanPage.All) yield return new Item("日", a.Title, "Япония", () => Shell.Open(new ArticlePage(a)));
         yield return new Item("組", "Собери слово", "Игра", () => Shell.Open(new WordBuilderGame()));
         yield return new Item("聞", "Ловец звуков", "Игра", () => Shell.Open(new ListenCatchGame()));
-        foreach (var u in Db.Course) yield return new Item("道", $"Юнит {u.Id}. {u.Title}", "Путь · " + u.Level, () => Shell.Open(new UnitPage(u)));
+        foreach (var u in Db.Course) yield return new Item("道", $"Юнит {u.Num}. {u.Title}", "Путь · " + u.Level, () => Shell.Open(new UnitPage(u)));
         foreach (var g in Db.Grammar) yield return new Item("文", g.Title, "Грамматика · урок " + Views.GrammarPage.Num(g), () => Shell.Open(new GrammarLessonPage(g)));
         foreach (var l in Db.SpeechLessons) yield return new Item("話", l.Title, "Говорение", () => Shell.Open(new SpeechLessonPage(l)));
         foreach (var d in Db.Dialogs) yield return new Item("対", d.Title, "Диалог · " + d.Level, () => Shell.Open(new DialogPage(d)));

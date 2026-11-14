@@ -183,6 +183,10 @@ public partial class MainView
         Try("numbers", () => new NumbersPage());
         Try("typing", () => new TypingPage());
         Try("player", () => new PlayerPage());
+        Try("quests", () => new QuestsPage());
+        Try("quest", () => new QuestRun(Db.Quests[0]));
+        Try("particles", () => new ParticlesPage());
+        Try("journal", () => new JournalPage());
         Try("similar", () => SimilarKanji.Quiz());
         Try("wordverb", () => new WordPage(JDict.Lookup("食べる")!));
         System.IO.File.WriteAllLines(outPath, log);
@@ -202,7 +206,7 @@ public partial class MainView
             screens.Add(("settings:" + t, () => { SettingsPage._tab = t; NavigateRoot("settings"); if (Shell.Compact) Push(new SettingsPage(t)); }));
         foreach (var o in new[] { "flash", "kanjiflash", "grammar", "grammar1", "onboard", "speech", "dialog", "dialogr", "unit", "reader", "writing", "mic", "pairs", "study", "report",
                                   "radicals", "textl", "word", "article", "match", "build", "listen", "gon", "book", "learn", "learnw", "learn1", "learnk", "learnq", "quiz",
-                                  "numbers", "numq", "numl", "typing", "player", "memory", "rain", "sprint", "similar", "wordv", "worda", "keys", "whatsnew", "grammarn2", "mini", "focusdone" })
+                                  "numbers", "numq", "numl", "typing", "player", "memory", "rain", "sprint", "similar", "wordv", "worda", "keys", "whatsnew", "grammarn2", "mini", "focusdone", "quests", "quest", "particles", "particlesq", "journal" })
             screens.Add(("open:" + o, () => { NavigateRoot("home"); DebugOpen(o); }));
         await JDict.LoadAsync();
         foreach (var (name, open) in screens)
@@ -433,6 +437,11 @@ public partial class MainView
             case "rail": ProgressStore.P.SidebarRail = true; ApplyRail(false); break;
             case "typing": Push(new TypingPage()); break;
             case "numbers": Push(new NumbersPage()); break;
+            case "quests": Push(new QuestsPage()); break;
+            case "quest": Push(new QuestRun(Db.Quests[0])); break;
+            case "particles": Push(new ParticlesPage()); break;
+            case "particlesq": Push(ParticlesPage.Quiz("Все частицы", Array.Empty<string>())); break;
+            case "journal": Push(new JournalPage()); break;
             case "numq": Push(NumbersPage.ReadNumbers()); break;
             case "numl": Push(NumbersPage.Prices()); break;
             case "build": Push(new WordBuilderGame()); break;

@@ -123,7 +123,7 @@ public class AuditTests
 
     [Fact]
     public void WordLevelsAreKnown() =>
-        Assert.All(Db.Words, w => Assert.Contains(w.Level, new[] { "N5", "N4", "N3", "N2", "N1", "1000", "Мои" }));
+        Assert.All(Db.Words, w => Assert.Contains(w.Level, new[] { "N5", "N4", "N3", "N2", "N1", "1000", "Живой", "Мои" }));
 }
 
 public class DictPrettyTests
