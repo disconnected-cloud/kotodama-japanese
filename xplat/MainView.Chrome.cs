@@ -29,7 +29,7 @@ public partial class MainView : UserControl
             Children =
             {
                 new TextBlock { Text = "Kotodama", FontSize = 15, FontWeight = FontWeight.SemiBold },
-                new TextBlock { Text = "日本語を学ぼう", FontFamily = U.R<FontFamily>("JpFont"), FontSize = 10.5, Foreground = U.B("Faint") },
+                new TextBlock { Text = "日本語を学ぼう", FontFamily = U.R<FontFamily>("JpFont"), FontSize = 12, Foreground = U.B("Faint") },
             },
         });
         DockPanel.SetDock(logo, Dock.Top);
@@ -38,14 +38,17 @@ public partial class MainView : UserControl
         // Сводка внизу: серия, уровень, цель дня
         _streak.FontWeight = FontWeight.SemiBold; _streak.FontSize = 13; _streak.Margin = new Thickness(8, 0, 0, 0); _streak.VerticalAlignment = VerticalAlignment.Center;
         _levelText.FontSize = 12; _levelText.Foreground = U.B("Muted"); _levelText.HorizontalAlignment = HorizontalAlignment.Right; _levelText.VerticalAlignment = VerticalAlignment.Center;
-        _goalText.FontSize = 11.5; _goalText.Foreground = U.B("Faint"); _goalText.HorizontalAlignment = HorizontalAlignment.Right;
+        _goalText.FontSize = 12; _goalText.Foreground = U.B("Faint"); _goalText.HorizontalAlignment = HorizontalAlignment.Right;
         _goalBar.Foreground = U.B("Gold");
+        // толще и со скруглением: тонкие полоски на тёмном фоне почти не читались (7.1)
+        foreach (var bar in new[] { _goalBar, _xpBar }) { bar.Height = 6; bar.MinHeight = 6; bar.CornerRadius = new CornerRadius(3); }
+        _xpBar.Margin = new Thickness(0, 5, 0, 0);
         _xpBar.Tip("Прогресс до следующего уровня");
         var top = new Grid();
         top.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { Controls.Art.Icon("flame", 22), _streak } });
         top.Children.Add(_levelText);
         var goalRow = new Grid { Margin = new Thickness(0, 8, 0, 5) };
-        goalRow.Children.Add(new TextBlock { Text = "Сегодня", FontSize = 11.5, Foreground = U.B("Faint") });
+        goalRow.Children.Add(new TextBlock { Text = "Сегодня", FontSize = 12, Foreground = U.B("Faint") });
         goalRow.Children.Add(_goalText);
         var summary = new Border
         {
@@ -73,17 +76,42 @@ public partial class MainView : UserControl
         _navIndicator.CornerRadius = new CornerRadius(10); _navIndicator.Background = U.B("SelectedTint"); _navIndicator.Opacity = 0; _navIndicator.IsHitTestVisible = false;
         _navIndicator.RenderTransform = _navShift;
         _navIndicator.Child = new Border { Width = 3, Height = 16, CornerRadius = new CornerRadius(2), Background = U.B("Accent"), HorizontalAlignment = HorizontalAlignment.Left };
+        string? group = null;
         void Item(string key, string icon, object content)
         {
-            var rb = new RadioButton { Tag = Controls.Art.Icon(icon, 24), Content = content, GroupName = "nav" };
+            // своя кисть у каждого пункта: серая, а у выбранного — цвет акцента
+            var brush = new SolidColorBrush(((ISolidColorBrush)U.B("Muted")).Color);
+            var rb = new RadioButton { Tag = Controls.Art.MonoIcon(icon, 24, brush), Content = content, GroupName = "nav" };
             _navLabels[rb] = content as string ?? "Повторение";
             rb.Classes.Add("NavItem");
-            rb.Checked += (_, _) => { MoveNavIndicator(rb); ShowRoot(key); };
+            rb.Checked += (_, _) => { brush.Color = ((ISolidColorBrush)U.B("Accent")).Color; MoveNavIndicator(rb); ShowRoot(key); };
+            rb.Unchecked += (_, _) => brush.Color = ((ISolidColorBrush)U.B("Muted")).Color;
             _navItems[key] = rb;
+            if (group != null) _navGroups[group].Add(rb);
             _nav.Children.Add(rb);
         }
-        void Header(string t) { var h = U.T(t, "Overline").M(28, 7, 0, 2); _navHeaders.Add(h); _nav.Children.Add(h); }
-        _dueText.FontSize = 11; _dueText.FontWeight = FontWeight.SemiBold; _dueText.Foreground = U.B("OnAccent");
+        // Заголовок группы сворачивает её; состояние запоминается (7.1)
+        void Header(string t)
+        {
+            group = t; _navGroups[t] = new();
+            var chevron = Controls.Art.Glyph("next", 9, U.B("Faint"));
+            var h = new Button
+            {
+                Classes = { "Ghost" }, Padding = new Thickness(0), Margin = new Thickness(16, 7, 12, 2), HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left,
+                Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Children = { U.T(t, "Overline").M(12, 0, 0, 0), chevron.Also(g => { g.VerticalAlignment = VerticalAlignment.Center; g.RenderTransformOrigin = RelativePoint.Center; }) } },
+            };
+            ToolTip.SetTip(h, "Свернуть или развернуть группу");
+            void Apply() { chevron.RenderTransform = new RotateTransform(Folded(t) ? 0 : 90); ApplyFolds(); }
+            h.Click += (_, _) =>
+            {
+                if (!ProgressStore.P.Flags.Add("navfold:" + t)) ProgressStore.P.Flags.Remove("navfold:" + t);
+                ProgressStore.Notify();
+                Apply();
+            };
+            Apply();
+            _navHeaders.Add(h); _nav.Children.Add(h);
+        }
+        _dueText.FontSize = 12; _dueText.FontWeight = FontWeight.SemiBold; _dueText.Foreground = U.B("OnAccent");
         _dueBadge.HorizontalAlignment = HorizontalAlignment.Right; _dueBadge.Background = U.B("Accent"); _dueBadge.CornerRadius = new CornerRadius(8);
         _dueBadge.Padding = new Thickness(6, 0); _dueBadge.IsVisible = false; _dueBadge.Child = _dueText;
         Item("home", "home", "Главная");
@@ -120,6 +148,17 @@ public partial class MainView : UserControl
     readonly TextBlock _railStreak = new();
     readonly List<Control> _navHeaders = new();
     readonly Dictionary<RadioButton, string> _navLabels = new();
+    readonly Dictionary<string, List<RadioButton>> _navGroups = new();
+
+    static bool Folded(string group) => ProgressStore.P.Flags.Contains("navfold:" + group);
+
+    /// <summary>Свёрнутая группа прячет пункты (кроме выбранного); в узком меню-«рельсе» видны все иконки.</summary>
+    void ApplyFolds()
+    {
+        foreach (var (g, items) in _navGroups)
+            foreach (var rb in items) rb.IsVisible = Rail || !Folded(g) || rb.IsChecked == true;
+        if (_navItems.TryGetValue(_rootKey, out var cur)) Dispatcher.UIThread.Post(() => MoveNavIndicator(cur), DispatcherPriority.Loaded);
+    }
     bool _narrow;   // окно уже 980 px — меню сворачивается само
     const double SideFull = 232, SideRail = 76;
 
@@ -153,6 +192,7 @@ public partial class MainView : UserControl
             ToolTip.SetPlacement(rb, PlacementMode.Right);
         }
         foreach (var h in _navHeaders) h.IsVisible = !rail;
+        ApplyFolds();
         if (_logoText != null) _logoText.IsVisible = !rail;
         if (_summary != null) _summary.IsVisible = !rail;
         if (_summaryRail != null) _summaryRail.IsVisible = rail;
@@ -223,14 +263,14 @@ public partial class MainView : UserControl
             var pillScale = new ScaleTransform(1, 1);
             var pill = new Border { Width = 60, Height = 32, CornerRadius = new CornerRadius(16), Background = U.B("AccentSoft"), Opacity = 0, RenderTransform = pillScale };
             var top = new Grid { Width = 60, Height = 32, HorizontalAlignment = HorizontalAlignment.Center, Children = { pill, off, on } };
-            var lab = new TextBlock { Text = label, FontSize = 11.5, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 4, 0, 0) };
+            var lab = new TextBlock { Text = label, FontSize = 12, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 4, 0, 0) };
             var cell = new Grid { Background = Brushes.Transparent, Cursor = Cursors.Hand, Height = 72 };
             cell.Children.Add(new StackPanel { VerticalAlignment = VerticalAlignment.Center, Children = { top, lab } });
             if (key == "review")
             {
                 // число карточек к повторению — на вкладке
                 var badge = new Border { Background = U.B("Accent"), CornerRadius = new CornerRadius(8), Padding = new Thickness(5, 0), MinWidth = 16, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(30, 8, 0, 0), IsVisible = false,
-                    Child = new TextBlock { FontSize = 10, FontWeight = FontWeight.SemiBold, Foreground = U.B("OnAccent"), HorizontalAlignment = HorizontalAlignment.Center } };
+                    Child = new TextBlock { FontSize = 12, FontWeight = FontWeight.SemiBold, Foreground = U.B("OnAccent"), HorizontalAlignment = HorizontalAlignment.Center } };
                 _tabBadge = badge;
                 cell.Children.Add(badge);
             }

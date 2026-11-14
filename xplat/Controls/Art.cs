@@ -170,6 +170,25 @@ public static class Art
 
 
     /// <summary>Цветная иконка-плитка. size — сторона плитки.</summary>
+    /// <summary>
+    /// Одноцветная иконка без плитки (боковое меню): цвет задаёт brush — серый у обычных пунктов, акцент у выбранного.
+    /// Пёстрые плитки каждого пункта мешали глазу найти, где ты сейчас (7.1).
+    /// </summary>
+    public static Control MonoIcon(string name, double size, IBrush brush)
+    {
+        if (!Icons.TryGetValue(name, out var d)) d = Icons["sparkle"];
+        if (d.Glyph != null)
+            return new TextBlock
+            {
+                Text = d.Glyph, FontFamily = U.R<FontFamily>("JpFont"), FontWeight = FontWeight.SemiBold, FontSize = size * 0.66, Foreground = brush,
+                Width = size, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+            };
+        var c = new Canvas { Width = 24, Height = 24 };
+        if (d.Fill != null) c.Children.Add(P(d.Fill, brush));
+        if (d.Path != null) c.Children.Add(P(d.Path, null, brush, 2.1));
+        return new Viewbox { Width = size * 0.8, Height = size * 0.8, Child = c, Margin = new Thickness(size * 0.1), VerticalAlignment = VerticalAlignment.Center };
+    }
+
     public static Control Icon(string name, double size = 32)
     {
         if (!Icons.TryGetValue(name, out var d)) d = Icons["sparkle"];
