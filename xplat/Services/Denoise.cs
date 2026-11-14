@@ -25,10 +25,14 @@ public static class Denoise
     }
 
     /// <summary>Чистит сигнал, если он шумный (SNR ниже порога). Возвращает true, если фильтр применён.</summary>
-    public static bool Apply(float[] x, double maxSnrDb = 28)
+    public static bool Apply(float[] src, double maxSnrDb = 28)
     {
+        if ((src.Length - N) / Hop + 1 < 8 || SnrDb(src) > maxSnrDb) return false;
+        // Края дополняем нулями: первые 16 мс иначе приглушены окном без пары, а хвост за последним окном
+        // обнулялся — страдали конечные «су» и «цу» (Г4)
+        var x = new float[Hop + src.Length + N];
+        Array.Copy(src, 0, x, Hop, src.Length);
         int frames = (x.Length - N) / Hop + 1;
-        if (frames < 8 || SnrDb(x) > maxSnrDb) return false;
 
         var win = new double[N];
         for (int i = 0; i < N; i++) win[i] = 0.5 - 0.5 * Math.Cos(2 * Math.PI * i / N);
@@ -70,7 +74,7 @@ public static class Denoise
             Fft(r, m, true);
             for (int i = 0; i < N; i++) y[f * Hop + i] += r[i];
         }
-        for (int i = 0; i < x.Length; i++) x[i] = (float)y[i];
+        for (int i = 0; i < src.Length; i++) src[i] = (float)y[Hop + i];
         return true;
     }
 
