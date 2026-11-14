@@ -402,3 +402,86 @@ public class GrammarRulesTests
         Assert.Equal("sushi o tabemasu ka?", Reading.RomajiWords("寿司を食べますか？"));
     }
 }
+
+public class AlgorithmFixTests
+{
+    [Theory]
+    [InlineData("きのうはきれいです", "きのうはきれいでした。")]
+    [InlineData("きのうはゆうめいです。", "きのうはゆうめいでした。")]
+    [InlineData("昨日は嫌いです", "昨日は嫌いでした。")]
+    [InlineData("きのうはいいです", "きのうはよかったです。")]
+    [InlineData("きのうはさむいです", "きのうはさむかったです。")]
+    [InlineData("  きのうたべます！", "きのうたべました！")]
+    public void GrammarRulesHandleNaAdjectivesAndIi(string wrong, string right) => Assert.Equal(right, GrammarRules.Check(wrong)?.fixedText);
+
+    [Theory]
+    [InlineData("tukue", "つくえ")]
+    [InlineData("tikara", "ちから")]
+    [InlineData("xtsu", "っ")]
+    [InlineData("ltu", "っ")]
+    [InlineData("kyoukai", "きょうかい")]
+    public void RomajiKunreiAndSmallKana(string r, string k) => Assert.Equal(k, Kana.FromRomaji(r));
+
+    [Fact]
+    public void NumbersReadCorrectly()
+    {
+        Assert.Equal("いっせんおく", Numbers.Read(100_000_000_000));
+        Assert.Equal("いっちょう", Numbers.Read(1_000_000_000_000));
+        Assert.Equal("三点五", Reading.DigitsToKanji("3.5"));
+        Assert.Equal("三時三十分", Reading.DigitsToKanji("3:30"));
+        Assert.Equal("一二三四五六七八九〇一二三四五六七", Reading.DigitsToKanji("12345678901234567")); // 17 цифр — по одной
+    }
+
+    [Fact]
+    public void DenoiseKeepsRecordingTail()
+    {
+        var r = new Random(1);
+        var x = new float[16000];
+        for (int i = 0; i < x.Length; i++) x[i] = 300 * (float)(r.NextDouble() - 0.5) + (i > 15000 ? 6000 * (float)Math.Sin(i * 0.3) : 0);
+        Matsubakira.Services.Denoise.Apply(x, 99);
+        double tail = 0; for (int i = x.Length - 200; i < x.Length; i++) tail += Math.Abs(x[i]);
+        Assert.True(tail / 200 > 500, $"хвост обнулён: {tail / 200}");
+    }
+
+    [Fact]
+    public void QuizOptionsSkipSynonyms()
+    {
+        for (int i = 0; i < 20; i++)
+        {
+            var o = Matsubakira.Controls.QuizSession.MakeOptions("кошка", new[] { "кошка, кот", "собака", "кот (животное)", "птица", "рыба" });
+            Assert.DoesNotContain("кошка, кот", o);
+            Assert.Equal(4, o.Length);
+        }
+    }
+
+    [Theory]
+    [InlineData("トウキョウ", "とうきょう")]
+    [InlineData("tōkyō", "toukyou")]
+    [InlineData("tookyoo", "toukyou")]
+    [InlineData("ｔｏｋｙｏ", "tokyo")]
+    public void TypedAnswersNormalize(string a, string b) => Assert.Equal(Matsubakira.Controls.QuizSession.StdAnswer(b), Matsubakira.Controls.QuizSession.StdAnswer(a));
+
+    [Fact]
+    public void ThemesAvoidFalsePrefixes()
+    {
+        Assert.False(Themes.Match(new Word("w:x|x", "x", "x", "радио", "t"), "Чувства и характер"));
+        Assert.False(Themes.Match(new Word("w:x|x", "x", "x", "руководитель", "t"), "Тело и здоровье"));
+        Assert.True(Themes.Match(new Word("w:x|x", "x", "x", "рука", "t"), "Тело и здоровье"));
+        Assert.False(Themes.Match(new Word("w:x|x", "x", "x", "рука", "t"), "нет такой темы"));
+    }
+
+    [Fact]
+    public void LevelsCompareByDifficulty()
+    {
+        Assert.True(Db.LevelRank("N5") < Db.LevelRank("N3"));
+        Assert.True(Db.LevelRank("1000") < Db.LevelRank("N2"));
+    }
+
+    [Fact]
+    public void ShiftJisPageDecodes()
+    {
+        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+        var sjis = System.Text.Encoding.GetEncoding("shift_jis").GetBytes("<meta charset=\"Shift_JIS\"><p>吾輩は猫である。名前はまだ無い。</p>");
+        Assert.Contains("吾輩は猫である", Matsubakira.Views.ReaderPage.Decode(sjis, null));
+    }
+}
