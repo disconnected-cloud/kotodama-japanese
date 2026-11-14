@@ -35,7 +35,9 @@
     <AvaloniaResource Include="../Assets/app.png" Link="Assets/app.png" />
     <AvaloniaResource Include="../Assets/emoji/*.png" Link="Assets/emoji/%(Filename)%(Extension)" />
     <AvaloniaResource Include="../Assets/anime/*.png" Link="Assets/anime/%(Filename)%(Extension)" />
-    <AvaloniaResource Include="Assets/fonts/*.ttf" />
+    <AvaloniaResource Include="Assets/fonts/*.ttf;Assets/fonts/*.otf" />
+    <!-- Noto Sans JP — тот же обрезанный шрифт, что в Android: кандзи одинаковы на любом компьютере (7.3) -->
+    <AvaloniaResource Include="../android/Assets/fonts/NotoSansJP-*.otf" Link="Assets/fonts/%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

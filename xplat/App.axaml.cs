@@ -103,7 +103,7 @@ public partial class App : Application
     /// <summary>Шрифты для японского: учебный (как в школьных прописях) удобнее для запоминания формы знаков.</summary>
     public static readonly (string name, string title, string family)[] JpFonts =
     {
-        ("", "Обычный", ""),
+        ("", "Noto Sans JP (встроенный)", ""),
         ("kyokasho", "Учебник", "UD Digi Kyokasho N-R"),
         ("ud", "Чёткий", "BIZ UDGothic"),
         ("meiryo", "Meiryo", "Meiryo"),
@@ -111,6 +111,9 @@ public partial class App : Application
     };
 
     const string AndroidJp = "avares://Kotodama/Assets/fonts#Noto Sans JP";
+
+    /// <summary>Встроенные шрифты (SIL OFL): японский текст выглядит одинаково на любом компьютере, Yu Gothic на тёмном фоне был тонким.</summary>
+    const string EmbeddedSans = "avares://Kotodama/Assets/fonts#Noto Sans JP", EmbeddedSerif = "avares://Kotodama/Assets/fonts#Noto Serif JP";
 
     const string JpFallback = "Yu Gothic UI, Meiryo, Noto Sans CJK JP, Noto Sans JP, Source Han Sans JP, IPAGothic, TakaoGothic, VL Gothic, sans-serif";
 
@@ -124,9 +127,9 @@ public partial class App : Application
             r["JpFont"] = r["JpSerif"] = new FontFamily(AndroidJp);
             return;
         }
+        r["JpSerif"] = new FontFamily(EmbeddedSerif + ", " + JpFallback);
         var f = JpFonts.FirstOrDefault(x => x.name == key).family;
-        if (string.IsNullOrEmpty(f) || !FontInstalled(f)) return;
-        r["JpFont"] = new FontFamily(f + ", " + JpFallback);
+        r["JpFont"] = string.IsNullOrEmpty(f) || !FontInstalled(f) ? new FontFamily(EmbeddedSans + ", " + JpFallback) : new FontFamily(f + ", " + JpFallback);
     }
 
     /// <summary>Цвета текста проверены на контраст WCAG: основной ≥ 10:1, второстепенный и цветной ≥ 4,5:1 на всех фонах.</summary>
