@@ -272,6 +272,7 @@ public sealed class TrainersPage : UserControl, IPage
         var listen = Group(
             Tile("播", "Аудиоплеер", "Слушай слова и фразы без экрана: японский — пауза — перевод", () => Shell.Open(new PlayerPage())),
             Tile("聞", "Диктант", "Слушай и записывай слово", () => Shell.Open(Dictation())),
+            Tile("調", "Питч-акцент на слух", "Слово звучит — узнай рисунок тона: ровный, падение в начале, в середине или после слова", () => Shell.Open(PitchListening())),
             Tile("耳", "Фразы на слух", "Целые фразы в обычном темпе, без текста — что сказали?", () => Shell.Open(PhraseListening())),
             Tile("対", "Минимальные пары", "おばさん или おばあさん? Слух и произношение", () => Shell.Open(new PairsPage())));
         var write = Group(
@@ -484,6 +485,33 @@ public sealed class TrainersPage : UserControl, IPage
             Explain = $"{x.Jp}\n{Reading.RomajiWords(x.Jp)}",
         });
         return new QuizSession("Фразы на слух", qs);
+    }
+
+    // ─────────── Питч-акцент на слух ───────────
+    static readonly string[] PitchKinds = { "хэйбан — ровный", "атамадака — падение после 1-го слога", "накадака — падение в середине", "одака — падение после слова" };
+
+    static int PitchKind(int accent, int moras) => accent == 0 ? 0 : accent == 1 ? 1 : accent == moras ? 3 : 2;
+
+    /// <summary>Тренировка питч-акцента (8.2): слово звучит, нужно узнать рисунок тона. Данные — Kanjium.</summary>
+    public static QuizSession PitchListening(int n = 12) => new("Питч-акцент на слух", PitchQuestions(n));
+
+    public static List<QuizQ> PitchQuestions(int n = 12)
+    {
+        var pool = Db.Words.Where(w => w.Level is "N5" or "N4" or "1000" && w.Kana.Length is >= 2 and <= 6)
+            .Select(w => (w, acc: Pitch.Accent(w.Jp, w.Kana))).Where(x => x.acc != null).ToList();
+        // поровну разных рисунков, чтобы ответ «ровный» не угадывался чаще других
+        var qs = pool.GroupBy(x => PitchKind(x.acc!.Value, Pitch.Moras(x.w.Kana).Count)).SelectMany(g => g.Shuffled().Take(n / 3 + 1)).Shuffled().Take(n).Select(x =>
+        {
+            int moras = Pitch.Moras(x.w.Kana).Count, kind = PitchKind(x.acc!.Value, moras);
+            var opts = (moras == 2 ? PitchKinds.Where((_, i) => i != 2) : PitchKinds).ToArray(); // в двухсложном слове середины нет
+            return new QuizQ
+            {
+                Prompt = "聞いて", PromptSize = 52, Sub = "Какой рисунок тона? · 🔊 повторить", SpeakOnShow = true, Speak = x.w.Kana,
+                Answer = PitchKinds[kind], Options = opts.Shuffled().ToArray(), Key = x.w.Id,
+                Explain = $"{x.w.Jp} — {x.w.Kana} ({x.w.Ru}): {Pitch.Describe(x.acc.Value, moras)}",
+            };
+        }).ToList();
+        return qs;
     }
 
     // ─────────── Диктант ───────────

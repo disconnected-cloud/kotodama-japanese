@@ -503,3 +503,14 @@ public class ReaderImportTests
         Assert.DoesNotContain("ねこ", text); // фуригана не попадает в текст
     }
 }
+
+public class PitchTrainerTests
+{
+    [Fact]
+    public void PitchQuizHasQuestionsWithCorrectOption()
+    {
+        var qs = Matsubakira.Views.TrainersPage.PitchQuestions();
+        Assert.True(qs.Count >= 8);
+        Assert.All(qs, x => Assert.Contains(x.Answer, x.Options!));
+    }
+}
