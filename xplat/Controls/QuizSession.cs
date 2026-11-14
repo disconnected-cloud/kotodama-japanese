@@ -262,7 +262,8 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
     void CheckTyped()
     {
         if (_locked) return;
-        var norm = Q.Norm ?? (x => x.Trim().ToLowerInvariant().Replace(" ", ""));
+        var own = Q.Norm ?? (x => x.Trim().ToLowerInvariant().Replace(" ", ""));
+        string norm(string x) => StdAnswer(own(StdAnswer(x)));
         var text = norm(_input.Text ?? "");
         if (text.Length == 0) return;
         var alts = Q.Answer.Split('|').Select(norm);
@@ -367,10 +368,43 @@ public sealed class QuizSession : Grid, IPage, IKeyTarget
         return false;
     }
 
-    /// <summary>Собирает вопрос с 4 вариантами: правильный + 3 случайных отвлекающих.</summary>
+    /// <summary>
+    /// Собирает вопрос с 4 вариантами: правильный + 3 случайных отвлекающих. Отвлекающий вариант не должен быть
+    /// тоже верным: синонимы («дом» и «дом, жилище»), то же чтение (はし и ハシ) отбрасываются (Г5).
+    /// </summary>
     public static string[] MakeOptions(string answer, IEnumerable<string> pool, int count = 4)
     {
-        var wrong = pool.Where(p => p != answer).Distinct().Shuffled().Take(count - 1);
+        var senses = Senses(answer);
+        var taken = new List<HashSet<string>> { senses };
+        var wrong = new List<string>();
+        foreach (var p in pool.Distinct().Shuffled())
+        {
+            if (wrong.Count >= count - 1) break;
+            var s = Senses(p);
+            if (taken.Any(t => t.Overlaps(s))) continue;
+            taken.Add(s); wrong.Add(p);
+        }
         return wrong.Append(answer).Shuffled().ToArray();
+    }
+
+    /// <summary>Значения варианта: «кошка, кот (животное)» → {кошка, кот}; кана — в хирагане.</summary>
+    static HashSet<string> Senses(string s)
+    {
+        var clean = System.Text.RegularExpressions.Regex.Replace(s, @"\([^)]*\)", "");
+        var set = clean.Split(new[] { ',', ';', '/', '、', '；' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(x => Kana.ToHiragana(x.ToLowerInvariant().Replace('ё', 'е'))).Where(x => x.Length > 0).ToHashSet();
+        if (set.Count == 0) set.Add(s);
+        return set;
+    }
+
+    /// <summary>
+    /// Ответ с клавиатуры: полноширинные символы (NFKC), катакана = хирагана, макроны (tōkyō = toukyou),
+    /// долгие гласные «ou» и «oo» равны (Г7).
+    /// </summary>
+    public static string StdAnswer(string s)
+    {
+        s = Kana.ToHiragana(s.Normalize(System.Text.NormalizationForm.FormKC)).ToLowerInvariant();
+        s = s.Replace("ā", "aa").Replace("ī", "ii").Replace("ū", "uu").Replace("ē", "ei").Replace("ō", "ou").Replace("â", "aa").Replace("ô", "ou").Replace("û", "uu");
+        return s.Replace("oo", "ou").Replace("ё", "е");
     }
 }
