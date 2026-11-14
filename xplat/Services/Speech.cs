@@ -65,6 +65,34 @@ public static class Speech
         return await PlayFileAsync(path, my, slow && !synthSlow ? 0.72 : 1.0);
     }
 
+    /// <summary>
+    /// Длинный текст (дневник) по предложениям: первое звучит, как только готово, а следующее синтезируется,
+    /// пока играет текущее — не нужно ждать озвучки всего текста. Stop() прерывает между предложениями.
+    /// </summary>
+    public static async void SayLong(string text, bool slow = false)
+    {
+        if (Platform.AudioPlayer.Muted) return;
+        var parts = System.Text.RegularExpressions.Regex.Split(text, @"(?<=[。！？!?
+])").Select(x => x.Trim()).Where(x => x.Length > 0).ToList();
+        if (parts.Count <= 1) { Say(text, slow); return; }
+        try
+        {
+            bool synthSlow = slow && Tts.UseOffline;
+            int start = ++_gen;
+            var next = Tts.GetAsync(parts[0], synthSlow);
+            for (int i = 0; i < parts.Count; i++)
+            {
+                var path = await next;
+                if (i + 1 < parts.Count) next = Tts.GetAsync(parts[i + 1], synthSlow);
+                if (_gen != start && i > 0) return; // нажали «стоп» или зазвучало другое
+                if (path == null) continue;
+                start = ++_gen;
+                if (!await PlayFileAsync(path, start, slow && !synthSlow ? 0.72 : 1.0)) return;
+            }
+        }
+        catch (Exception e) { CrashReport.Warn("Озвучка текста", e); }
+    }
+
     /// <summary>Произнести по-русски (перевод в аудиоплеере). false — нет русского голоса или прервано.</summary>
     public static async Task<bool> SayRuAsync(string text)
     {

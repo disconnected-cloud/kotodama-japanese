@@ -86,8 +86,8 @@ public sealed class JournalPage : UserControl, IPage
         _box.TextChanged += OnText;
         var acts = U.Row(8,
             U.Btn("Сохранить", Save, "Primary", ""),
-            U.Btn("Прочитать вслух", () => { if ((_box.Text ?? "").Trim() is { Length: > 0 } t) Speech.Say(Reading.DigitsToKanji(t)); }, "", ""),
-            U.Btn("Медленно", () => { if ((_box.Text ?? "").Trim() is { Length: > 0 } t) Speech.Say(Reading.DigitsToKanji(t), true); }, "", ""));
+            U.Btn("Прочитать вслух", () => { if ((_box.Text ?? "").Trim() is { Length: > 0 } t) Speech.SayLong(Reading.DigitsToKanji(t)); }, "", ""),
+            U.Btn("Медленно", () => { if ((_box.Text ?? "").Trim() is { Length: > 0 } t) Speech.SayLong(Reading.DigitsToKanji(t), true); }, "", ""));
         root.Children.Add(U.Card(U.Stack(U.T($"Запись за {DateTime.Today:d MMMM}", "H3", 15).M(0, 0, 0, 10), _box.Detach(), acts.M(0, 12, 0, 0)), new Thickness(22, 18, 22, 18)));
         root.Children.Add(_analysis.Detach().M(0, 14, 0, 0));
         Analyze();
