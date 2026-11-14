@@ -46,6 +46,38 @@ public static class Asr
     public static Task DownloadAsync(string id, IProgress<double> progress, CancellationToken ct) =>
         Downloader.FileAsync(UrlFor(id), PathFor(id), progress, ct, Models.First(m => m.id == id).size);
 
+    /// <summary>
+    /// Замер скорости (мастер первого запуска): распознавание трёхсекундной фразы на этом компьютере, секунды.
+    /// Образец — фраза курса голосом VOICEVOX или системным, иначе синтетический звук той же длины. Больше 2 с —
+    /// мастер предлагает модель поменьше (5.2).
+    /// </summary>
+    public static async Task<double> BenchmarkAsync(CancellationToken ct = default)
+    {
+        byte[] wav;
+        if (await Tts.GetAsync("こんにちは、よろしくお願いします。") is { } path)
+        {
+            var (x, rate) = Platform.Pcm.Decode(path);
+            wav = Recorder.ToWav(Platform.Pcm.ToPcm16(Platform.Pcm.Resample(x, rate, 16000)));
+        }
+        else
+        {
+            var x = new float[16000 * 3];
+            for (int i = 0; i < x.Length; i++) x[i] = 0.2f * (float)(Math.Sin(i * 0.05) * Math.Sin(i * 0.0021));
+            wav = Recorder.ToWav(Platform.Pcm.ToPcm16(x));
+        }
+        await TranscribeDetailedAsync(wav, ct); // первый проход загружает модель — не считаем
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        await TranscribeDetailedAsync(wav, ct);
+        return sw.Elapsed.TotalSeconds;
+    }
+
+    /// <summary>Следующая модель поменьше (для медленного компьютера) или null.</summary>
+    public static string? Smaller(string id)
+    {
+        int i = Array.FindIndex(Models, m => m.id == id);
+        return i >= 0 && i + 1 < Models.Length ? Models[i + 1].id : null;
+    }
+
     /// <summary>Заранее загрузить модель в память, чтобы первое распознавание было быстрым.</summary>
     public static void Warmup()
     {

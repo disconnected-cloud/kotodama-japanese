@@ -29,9 +29,9 @@ public sealed class OnboardingPage : UserControl, IPage, IFocusPage
     {
         var card = new StackPanel { MaxWidth = 640, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         var dots = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 24) };
-        for (int i = 0; i < 4; i++) dots.Children.Add(new Border { Width = i == _step ? 22 : 8, Height = 8, CornerRadius = new CornerRadius(4), Margin = new Thickness(3), Background = U.B(i <= _step ? "Accent" : "Surface3") });
+        for (int i = 0; i < 5; i++) dots.Children.Add(new Border { Width = i == _step ? 22 : 8, Height = 8, CornerRadius = new CornerRadius(4), Margin = new Thickness(3), Background = U.B(i <= _step ? "Accent" : "Surface3") });
         card.Children.Add(dots);
-        card.Children.Add(_step switch { 0 => Welcome(), 1 => Goal(), 2 => Level(), _ => Voice() });
+        card.Children.Add(_step switch { 0 => Welcome(), 1 => Goal(), 2 => Level(), 3 => Voices(), _ => Voice() });
         Content = new Grid { Children = { new ScrollViewer { Content = new Border { Padding = new Thickness(40), Child = card } } } };
         Anim.FadeUp(card, 0, 14, 380);
     }
@@ -138,15 +138,79 @@ public sealed class OnboardingPage : UserControl, IPage, IFocusPage
         ProgressStore.Notify();
     }
 
+    CancellationTokenSource? _cts;
+
+    /// <summary>Шаг «Голоса»: офлайн-озвучка VOICEVOX с размером загрузки. Можно пропустить и вернуться из Настроек.</summary>
+    Control Voices()
+    {
+        var sp = U.Stack(U.T("Голоса для озвучки", "H2").Center(),
+            U.T("Вся озвучка работает без интернета. Лучшее качество — нейросетевые голоса VOICEVOX.", "Muted").Center().M(0, 6, 0, 14).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.TextAlignment = TextAlignment.Center; }));
+        if (Voicevox.Installed)
+        {
+            sp.Children.Add(U.T("VOICEVOX уже установлен ✓", "Body", 14, U.B("Good")).Center());
+            sp.Children.Add(U.Btn("Послушать", () => Speech.Say("こんにちは、一緒に日本語を勉強しましょう。"), "", "").Center().M(0, 10, 0, 0));
+            sp.Children.Add(U.Btn("Дальше", Next, "Primary", "").Center().M(0, 20, 0, 0));
+            return sp;
+        }
+        long mb = (Voicevox.Catalog.Where(p => Voicevox.Recommended.Contains(p.File)).Sum(p => p.Size) + 30_000_000) / 1_000_000;
+        sp.Children.Add(U.T(Platform.SystemVoice.HasJa ? $"Сейчас звучит системный голос ({Platform.SystemVoice.JaName})." : "Японского голоса в системе нет — без VOICEVOX озвучки не будет.", "Body", 13.5).Center());
+        var bar = new ProgressBar { Maximum = 1, IsVisible = false, Margin = new Thickness(0, 12, 0, 0), MaxWidth = 420 };
+        var status = U.T("", "Muted").Center().M(0, 6, 0, 0);
+        var install = U.Btn($"Установить VOICEVOX (~{mb} МБ)", () => { }, "Primary", "");
+        var skip = U.Btn("Пропустить — можно позже в Настройках → «Голоса»", () => { _cts?.Cancel(); Next(); }, "Ghost", "");
+        install.Click += async (_, _) =>
+        {
+            install.IsEnabled = false; bar.IsVisible = true; _cts = new CancellationTokenSource();
+            var prog = new Progress<(double v, string what)>(x => { bar.Value = x.v; status.Text = $"{x.what}… {x.v * 100:0}%"; });
+            try
+            {
+                await Voicevox.InstallAsync(Voicevox.Recommended, prog, _cts.Token);
+                status.Text = "Проверяю синтез…";
+                var (ok, msg) = await Voicevox.SelfCheckAsync();
+                status.Text = ok ? "Готово!" : msg;
+                if (ok) { Speech.Say("こんにちは、一緒に日本語を勉強しましょう。"); Next(); }
+                else install.IsEnabled = true;
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex) { status.Text = "Ошибка: " + ex.Message; install.IsEnabled = true; }
+        };
+        sp.Children.Add(install.Center().M(0, 16, 0, 0));
+        sp.Children.Add(bar.Center());
+        sp.Children.Add(status);
+        sp.Children.Add(skip.Center().M(0, 10, 0, 0));
+        return sp;
+    }
+
+    /// <summary>Шаг «Микрофон и распознавание»: проверка микрофона, модель с замером скорости этого компьютера.</summary>
     Control Voice()
     {
-        var sp = U.Stack(U.T("Голос и микрофон", "H2").Center(),
-            U.T("Каждая фраза в приложении озвучена. Проверь звук:", "Muted").Center().M(0, 6, 0, 10),
-            U.Btn("Послушать: こんにちは", () => Speech.Say("こんにちは、一緒に日本語を勉強しましょう。"), "", "").Center());
-        sp.Children.Add(SpeechUi.ModelCard().M(0, 20, 0, 0));
-        sp.Children.Add(U.T("Офлайн-голоса VOICEVOX (работают без интернета) можно поставить позже: Настройки → «Офлайн-голоса».", "Muted").Center().M(0, 12, 0, 0));
-        sp.Children.Add(U.Row(10, U.Btn("Проверить микрофон", () => Shell.Open(new MicCheckPage()), "", ""), U.Btn("Готово — к обучению!", Finish, "Primary", "")).Center().M(0, 22, 0, 0));
+        var sp = U.Stack(U.T("Микрофон и проверка произношения", "H2").Center(),
+            U.T("Говорить можно смело: засчитывается всё, что понятно. Модели обучены на речи носителей, поэтому оценка акцента приблизительная.", "Muted").Center().M(0, 6, 0, 10).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.TextAlignment = TextAlignment.Center; }));
+        sp.Children.Add(SpeechUi.ModelCard(Render).M(0, 12, 0, 0));
+        if (Asr.Ready)
+        {
+            var bench = U.T("Проверяю скорость распознавания на этом компьютере…", "Muted").Center().M(0, 10, 0, 0);
+            sp.Children.Add(bench);
+            _ = Bench(bench);
+        }
+        sp.Children.Add(U.Row(10, U.Btn("Проверить микрофон", () => Shell.Open(new MicCheckPage()), "", ""), U.Btn("Готово — к обучению!", Finish, "Primary", "")).Center().M(0, 22, 0, 0));
+        sp.Children.Add(U.T("Всё это можно сделать позже: Настройки → «Микрофон».", "Muted", 12).Center().M(0, 8, 0, 0));
         return sp;
+    }
+
+    async Task Bench(TextBlock info)
+    {
+        try
+        {
+            double s = await Asr.BenchmarkAsync();
+            var smaller = Asr.Smaller(Asr.ModelId);
+            if (s <= 2 || smaller == null) { info.Text = $"Распознавание фразы — {s:0.0} с. Отлично!"; return; }
+            var title = Asr.Models.First(m => m.id == smaller).title;
+            info.Text = $"Фраза распознаётся {s:0.0} с — это долго. Модель «{title}» будет быстрее.";
+            if (info.Parent is Panel p)
+                p.Children.Insert(p.Children.IndexOf(info) + 1, U.Btn($"Выбрать «{title}»", () => { ProgressStore.P.AsrModel = smaller; ProgressStore.Notify(); _ = Asr.UnloadAsync(); Render(); }, "", "").Center().M(0, 6, 0, 0));
+        }
+        catch (Exception e) { info.Text = ""; CrashReport.Warn("Замер скорости распознавания", e); }
     }
 
     static void Finish()
