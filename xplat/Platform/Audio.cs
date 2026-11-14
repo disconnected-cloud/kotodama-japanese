@@ -240,15 +240,17 @@ public sealed class AudioPlayer
             if (cmd == null) return false;
             try
             {
-                _p = Process.Start(new ProcessStartInfo(cmd.Value.exe, cmd.Value.args) { RedirectStandardInput = true, UseShellExecute = false, CreateNoWindow = true, RedirectStandardError = true });
-                if (_p == null) return false;
+                // stderr не перенаправляем: непрочитанный канал заполнялся, и процесс зависал (Д4)
+                using var p = _p = Process.Start(new ProcessStartInfo(cmd.Value.exe, cmd.Value.args) { RedirectStandardInput = true, UseShellExecute = false, CreateNoWindow = true });
+                if (p == null) return false;
                 var pcm = Pcm.ToPcm16(x);
-                await _p.StandardInput.BaseStream.WriteAsync(pcm);
-                _p.StandardInput.Close();
-                await _p.WaitForExitAsync();
-                return !_stopped && _p.ExitCode == 0;
+                await p.StandardInput.BaseStream.WriteAsync(pcm);
+                p.StandardInput.Close();
+                await p.WaitForExitAsync();
+                return !_stopped && p.ExitCode == 0;
             }
-            catch { return false; }
+            catch (Exception e) { if (!_stopped) Services.CrashReport.Warn("Звук (Linux)", e); return false; }
+            finally { _p = null; }
         }
 
         public void Stop() { _stopped = true; try { if (_p is { HasExited: false }) _p.Kill(); } catch { } }
@@ -314,7 +316,7 @@ public static class Mic
         public void Start()
         {
             var cmd = Tools.Recorder() ?? throw new InvalidOperationException("Не найдена программа записи звука (parecord, pw-record или arecord). Установи пакет pulseaudio-utils, pipewire или alsa-utils.");
-            _p = Process.Start(new ProcessStartInfo(cmd.exe, cmd.args) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true })
+            _p = Process.Start(new ProcessStartInfo(cmd.exe, cmd.args) { RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true })
                  ?? throw new InvalidOperationException("Не удалось запустить запись звука");
             var stream = _p.StandardOutput.BaseStream;
             new Thread(() =>
@@ -336,7 +338,8 @@ public static class Mic
                     }
                 }
                 catch (Exception ex) { err = _stop ? null : ex; }
-                try { if (_p is { HasExited: false }) _p.Kill(); } catch { }
+                try { if (_p is { HasExited: false }) _p.Kill(); } catch { } // уже завершился — ничего страшного
+                try { _p?.Dispose(); } catch { }
                 Stopped?.Invoke(err);
             }) { IsBackground = true, Name = "mic" }.Start();
         }
@@ -358,7 +361,7 @@ static class Tools
             if (Found.TryGetValue(name, out var v)) return v;
             v = (Environment.GetEnvironmentVariable("PATH") ?? "/usr/bin:/bin").Split(':')
                 .Select(d => Path.Combine(d, name)).FirstOrDefault(File.Exists);
-            Found[name] = v;
+            if (v != null) Found[name] = v; // не нашли — проверим снова: пакет могли поставить, не перезапуская программу (Д4)
             return v;
         }
     }
