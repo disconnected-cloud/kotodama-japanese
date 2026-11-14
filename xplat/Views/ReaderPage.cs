@@ -411,10 +411,22 @@ public sealed class TextPage : UserControl, IPage, IResumable
         if (_romaji) col.Children.Add(U.T(Romaji(s), "Muted", 13));
         if (_ru && s.Ru.Length > 0) col.Children.Add(U.T(s.Ru, "Body", 14, U.B("Muted")).M(0, 4, 0, 0));
         g.Children.Add(col);
-        g.Children.Add(U.Row(2, U.SpeakBtn(() => s.Jp, true), U.SpeakBtn(() => s.Jp)).Col(1));
+        var learn = U.Btn("", () => LearnSentence(s), "Ghost", "").Tip("Учить это предложение — попадёт в повторения с переводом и озвучкой");
+        g.Children.Add(U.Row(2, learn, U.SpeakBtn(() => s.Jp, true), U.SpeakBtn(() => s.Jp)).Col(1));
         var card = U.Card(g, new Thickness(18, 12, 12, 12)).M(0, 0, 0, 8);
         _cards.Add((s, card));
         return card;
+    }
+
+    /// <summary>Предложение — в свои карточки (8.2): повторяется по FSRS вместе со словами, с переводом и озвучкой.</summary>
+    static void LearnSentence(RSentence s)
+    {
+        var kana = string.Concat(s.Tokens.Select(t => t.Reading.Length > 0 ? t.Reading : t.Surface)).Trim();
+        var list = ProgressStore.P.CustomWords;
+        if (list.Any(c => c[0] == s.Jp)) { Shell.Toast("Это предложение уже в карточках", "済"); return; }
+        list.Add(new[] { s.Jp, kana.Length > 0 ? kana : s.Jp, s.Ru.Length > 0 ? s.Ru : "(предложение из читалки)" });
+        ProgressStore.Notify();
+        Shell.Toast("Предложение добавлено в карточки", "+");
     }
 
     const double FuriH = 16;
