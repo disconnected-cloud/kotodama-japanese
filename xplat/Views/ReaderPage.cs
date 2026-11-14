@@ -223,9 +223,9 @@ public sealed class ReaderPage : UserControl, IPage
                     catch (Exception ex) { CrashReport.Warn("Загрузка статьи", ex); Shell.Toast("Не удалось открыть ссылку — проверь интернет или вставь текст", "!"); return; }
                     if (text.Length == 0) { Shell.Toast("На странице не нашлось японского текста", "!"); return; }
                 }
-                await JDict.LoadAsync();
-                Shell.Open(new TextPage(ParseOwn(text)));
-            }, "Primary", "").Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 10, 0, 0); }));
+                await OpenOwn(text, "Свой текст");
+            }, "Primary", "").Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 10, 0, 0); }),
+            U.Btn("Открыть файл TXT или EPUB", OpenFile, "", "").Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 8, 0, 0); }));
         root.Children.Add(U.Card(own).M(0, 18, 0, 0));
         Content = U.Page(root);
     }
@@ -286,6 +286,65 @@ public sealed class ReaderPage : UserControl, IPage
     }
 
     /// <summary>Разбор произвольного текста: предложения по 。！？, слова — самым длинным совпадением со словарём.</summary>
+    /// <summary>Свой текст из файла (8.2): TXT в любой японской кодировке или книга EPUB — без сети.</summary>
+    static async void OpenFile()
+    {
+        var sp = TopLevel.GetTopLevel(Shell.Main)?.StorageProvider;
+        if (sp == null) return;
+        var files = await sp.OpenFilePickerAsync(new() { Title = "Японский текст", FileTypeFilter = new[] { new Avalonia.Platform.Storage.FilePickerFileType("Текст или книга") { Patterns = new[] { "*.txt", "*.epub" } } } });
+        if (files.Count == 0) return;
+        try
+        {
+            await using var st = await files[0].OpenReadAsync();
+            var ms = new MemoryStream(); await st.CopyToAsync(ms);
+            var text = files[0].Name.EndsWith(".epub", StringComparison.OrdinalIgnoreCase) ? FromEpub(ms.ToArray()) : Decode(ms.ToArray(), null);
+            if (text.Length > 200_000) text = text[..200_000]; // глава-другая, а не вся «Война и мир»: разбор идёт по словарю
+            if (text.Trim().Length == 0) { Shell.Toast("В файле нет текста", "!"); return; }
+            await OpenOwn(text, System.IO.Path.GetFileNameWithoutExtension(files[0].Name));
+        }
+        catch (Exception e) { CrashReport.Warn("Открытие файла", e); Shell.Toast("Не удалось открыть файл: " + e.Message, "!"); }
+    }
+
+    /// <summary>Текст книги EPUB: страницы XHTML по порядку архива, без разметки и фуриганы (rt).</summary>
+    public static string FromEpub(byte[] epub)
+    {
+        using var zip = new System.IO.Compression.ZipArchive(new MemoryStream(epub));
+        var sb = new System.Text.StringBuilder();
+        foreach (var e in zip.Entries.Where(e => e.FullName.EndsWith(".xhtml", StringComparison.OrdinalIgnoreCase) || e.FullName.EndsWith(".html", StringComparison.OrdinalIgnoreCase)).OrderBy(e => e.FullName, StringComparer.Ordinal))
+        {
+            using var r = new StreamReader(e.Open());
+            sb.AppendLine(ExtractJapanese(r.ReadToEnd()));
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Открыть свой текст. Сначала — доля знакомых слов (8.2): если незнакомых много, предлагаем выучить
+    /// 5–10 из них перед чтением.
+    /// </summary>
+    static async Task OpenOwn(string text, string title)
+    {
+        await JDict.LoadAsync();
+        var t = ParseOwn(text) with { Title = title };
+        var words = t.Sentences.SelectMany(s => s.Tokens).Where(x => x.Pos != "記号" && x.Surface.Any(Reading.IsKanji)).Select(x => x.Surface).Distinct().ToList();
+        var known = Db.Words.Where(w => ProgressStore.Card(w.Id) is { Reps: > 0 }).Select(w => w.Jp).ToHashSet();
+        var unknown = words.Where(w => !known.Contains(w)).ToList();
+        int pct = words.Count == 0 ? 100 : 100 * (words.Count - unknown.Count) / words.Count;
+        if (unknown.Count >= 5 && pct < 85)
+        {
+            var pick = unknown.Select(w => JDict.Lookup(w)).OfType<DictEntry>().Where(e => e.Common).Take(10).ToList();
+            if (pick.Count >= 3 && await Shell.Confirm($"Знакомых слов в тексте — {pct} %. Выучить сначала {pick.Count} незнакомых? Читать станет намного легче.", "Выучить слова", "Сразу читать"))
+            {
+                foreach (var e in pick) JDict.AddToStudy(e);
+                var ids = pick.Select(e => "w:" + (e.Kanji.Length > 0 ? e.Kanji.Split('、')[0] : e.Kana) + "|" + e.Kana).ToHashSet();
+                Shell.Open(new TextPage(t));
+                Shell.Open(LearnSession.Words("Слова из текста", Db.Words.Where(w => ids.Contains(w.Id)).ToList()));
+                return;
+            }
+        }
+        Shell.Open(new TextPage(t));
+    }
+
     static RText ParseOwn(string text)
     {
         var sents = new List<RSentence>();

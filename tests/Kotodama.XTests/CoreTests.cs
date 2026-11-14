@@ -486,3 +486,20 @@ public class AlgorithmFixTests
         Assert.Contains("吾輩は猫である", Matsubakira.Views.ReaderPage.Decode(sjis, null));
     }
 }
+
+public class ReaderImportTests
+{
+    [Fact]
+    public void EpubTextIsExtracted()
+    {
+        var ms = new MemoryStream();
+        using (var zip = new System.IO.Compression.ZipArchive(ms, System.IO.Compression.ZipArchiveMode.Create, true))
+        {
+            using var w = new StreamWriter(zip.CreateEntry("OEBPS/ch1.xhtml").Open());
+            w.Write("<html><body><p>吾輩は<ruby>猫<rt>ねこ</rt></ruby>である。名前はまだ無い。</p></body></html>");
+        }
+        var text = Matsubakira.Views.ReaderPage.FromEpub(ms.ToArray());
+        Assert.Contains("吾輩は猫である", text);
+        Assert.DoesNotContain("ねこ", text); // фуригана не попадает в текст
+    }
+}
