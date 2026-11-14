@@ -19,16 +19,21 @@ public static class Numbers
         return s + Digit[u];
     }
 
-    /// <summary>Чтение числа каной (0 — ゼロ). До 9 9999 9999.</summary>
+    /// <summary>1000 перед 万, 億 и 兆 читается с いっ: いっせんまん, いっせんおく.</summary>
+    static string Group(int n) => n >= 1000 && n / 1000 == 1 ? "いっ" + Below10k(n) : Below10k(n);
+
+    /// <summary>Чтение числа каной (0 — ゼロ). До 9999 兆.</summary>
     public static string Read(long n)
     {
         if (n == 0) return "ゼロ";
         if (n < 0) return "マイナス" + Read(-n);
         var s = "";
-        int oku = (int)(n / 100_000_000), man = (int)(n / 10_000 % 10_000), rest = (int)(n % 10_000);
-        if (oku > 0) s += Below10k(oku) + "おく";
+        int cho = (int)(n / 1_000_000_000_000 % 10_000), oku = (int)(n / 100_000_000 % 10_000), man = (int)(n / 10_000 % 10_000), rest = (int)(n % 10_000);
+        // 兆: 1 — いっちょう, 8 — はっちょう, 10 — じゅっちょう
+        if (cho > 0) s += (Group(cho) + "ちょう").Replace("いちちょう", "いっちょう").Replace("はちちょう", "はっちょう").Replace("じゅうちょう", "じゅっちょう");
+        if (oku > 0) s += Group(oku) + "おく";
         // 1000万 — いっせんまん (а не せんまん): тысяча перед 万 читается с いっ
-        if (man > 0) s += (man == 1 ? "いち" : man >= 1000 && man / 1000 == 1 ? "いっ" + Below10k(man) : Below10k(man)) + "まん";
+        if (man > 0) s += (man == 1 ? "いち" : Group(man)) + "まん";
         if (rest > 0) s += Below10k(rest);
         return s;
     }
@@ -99,7 +104,7 @@ public static class Numbers
             ("じゅっぷん", "じゅうふん"), ("いっぷん", "いちふん"), ("さんぷん", "さんふん"), ("ろっぷん", "ろくふん"), ("はっぷん", "はちふん"), ("よんぷん", "よんふん"),
             ("よじ", "よんじ"), ("しちじ", "ななじ"), ("くじ", "きゅうじ"), ("しがつ", "よんがつ"), ("くがつ", "きゅうがつ"), ("しちがつ", "なながつ"),
             ("ついたち", "いちにち"), ("ふつか", "ににち"), ("みっか", "さんにち"), ("よっか", "よんにち"), ("はつか", "にじゅうにち"), ("ようか", "はちにち"), ("なのか", "なのにち"),
-            ("よえん", "よんえん"), ("いっせんまん", "せんまん"),
+            ("よえん", "よんえん"), ("いっせんまん", "せんまん"), ("いっせんおく", "せんおく"),
         };
         foreach (var (a, b) in swaps)
             if (reading.Contains(a)) yield return reading.Replace(a, b);

@@ -302,21 +302,40 @@ public static class Reading
         return sb.ToString().Normalize(NormalizationForm.FormC);
     }
 
-    /// <summary>«3時» → «三時», «25» → «二十五»: дальше читается как обычные кандзи.</summary>
+    /// <summary>
+    /// «3時» → «三時», «25» → «二十五», «3.5» → «三点五», «3:30» → «三時三十分»: дальше читается как обычные кандзи.
+    /// Числа длиннее 16 цифр (за пределами 兆) читаются по цифрам, а не обрезаются.
+    /// </summary>
     public static string DigitsToKanji(string s)
     {
         if (!s.Any(c => c is >= '0' and <= '9' or >= '０' and <= '９')) return s;
+        const string D = "〇一二三四五六七八九";
         var sb = new StringBuilder(s.Length + 4);
         for (int i = 0; i < s.Length;)
         {
             if (Digit(s[i]) < 0) { sb.Append(s[i]); i++; continue; }
-            long n = 0; int e = i;
+            var digits = new StringBuilder(); int e = i;
             while (e < s.Length && (Digit(s[e]) >= 0 || (s[e] is ',' or '，' && e + 1 < s.Length && Digit(s[e + 1]) >= 0)))
             {
-                if (Digit(s[e]) >= 0 && n < 1_000_000_000_000L) n = n * 10 + Digit(s[e]);
+                if (Digit(s[e]) >= 0) digits.Append((char)('0' + Digit(s[e])));
                 e++;
             }
-            sb.Append(NumberKanji(n));
+            sb.Append(digits.Length > 16 ? string.Concat(digits.ToString().Select(c => D[c - '0'])) : NumberKanji(long.Parse(digits.ToString())));
+            // время 3:30 → 三時三十分
+            if (e + 2 < s.Length && s[e] is ':' or '：' && Digit(s[e + 1]) >= 0 && Digit(s[e + 2]) >= 0)
+            {
+                int m = Digit(s[e + 1]) * 10 + Digit(s[e + 2]);
+                sb.Append('時');
+                if (m > 0) sb.Append(NumberKanji(m)).Append('分');
+                e += 3;
+            }
+            // дробь 3.5 → 三点五 (цифры после точки — по одной)
+            else if (e + 1 < s.Length && s[e] is '.' or '．' && Digit(s[e + 1]) >= 0)
+            {
+                sb.Append('点');
+                e++;
+                while (e < s.Length && Digit(s[e]) >= 0) { sb.Append(D[Digit(s[e])]); e++; }
+            }
             i = e;
         }
         return sb.ToString();
