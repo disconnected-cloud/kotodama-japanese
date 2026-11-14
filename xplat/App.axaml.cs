@@ -58,7 +58,7 @@ public partial class App : Application
                 }
                 else Shell.Toast("Что-то пошло не так — записал в журнал, продолжаем", "!"); // некритичное — коротким уведомлением
             }
-            catch { }
+            catch { } // уведомление об ошибке не показалось — ошибка уже в журнале
         };
 
         if (ApplicationLifetime is ISingleViewApplicationLifetime single)

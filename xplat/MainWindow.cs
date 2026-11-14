@@ -28,7 +28,7 @@ public class MainWindow : Window
         };
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Background = U.B("Bg");
-        try { Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://Kotodama/Assets/app.ico"))); } catch { }
+        try { Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://Kotodama/Assets/app.ico"))); } catch { } // иконка не загрузилась — у окна будет стандартная
         if (OperatingSystem.IsWindows())
         {
             ExtendClientAreaToDecorationsHint = true;

@@ -165,7 +165,7 @@ public static class ProgressStore
             catch (Exception e)
             {
                 CrashReport.Warn("Прогресс: файл повреждён", e);
-                try { File.Copy(FilePath, Path.Combine(Folder, $"progress.corrupt-{DateTime.Now:yyyyMMdd-HHmmss}.json"), true); } catch { }
+                try { File.Copy(FilePath, Path.Combine(Folder, $"progress.corrupt-{DateTime.Now:yyyyMMdd-HHmmss}.json"), true); } catch { } // копия на всякий случай: без неё прогресс всё равно восстанавливается
                 return Backups().Select(TryRead).FirstOrDefault(x => x != null);
             }
         }
@@ -330,7 +330,7 @@ public static class ProgressStore
     public static bool RestoreBackup(string path)
     {
         if (TryRead(path) is not { } p) return false;
-        try { File.Copy(FilePath, FilePath + ".before-restore", true); } catch { }
+        try { File.Copy(FilePath, FilePath + ".before-restore", true); } catch { } // копия на всякий случай: без неё прогресс всё равно восстанавливается
         Replace(p);
         return true;
     }
@@ -460,7 +460,7 @@ public static class ProgressStore
     {
         try { if (Directory.Exists(BackupDir)) Directory.Delete(BackupDir, true); } catch (Exception e) { CrashReport.Warn("Сброс: автокопии", e); }
         foreach (var f in Directory.Exists(Folder) ? Directory.GetFiles(Folder, "progress*") : Array.Empty<string>())
-            if (!f.EndsWith("progress.json")) try { File.Delete(f); } catch { }
+            if (!f.EndsWith("progress.json")) try { File.Delete(f); } catch { } // временный или лишний файл: не удалился сейчас — не мешает работе
     }
 
     public static void Reset() { P = new Progress(); Touch(); Replaced?.Invoke(); }

@@ -93,7 +93,7 @@ public partial class MainView
     /// </summary>
     async void DebugVoicevoxTest()
     {
-        void Log(string s) { Console.WriteLine("VVTEST: " + s); try { System.IO.File.AppendAllText(System.IO.Path.Combine(ProgressStore.Folder, "vvtest.txt"), s + "\n"); } catch { } }
+        void Log(string s) { Console.WriteLine("VVTEST: " + s); try { System.IO.File.AppendAllText(System.IO.Path.Combine(ProgressStore.Folder, "vvtest.txt"), s + "\n"); } catch { } } // журнал недоступен (диск, права) — сообщить об этом некуда
         Platform.AudioPlayer.Muted = false; // синтез нужен по-настоящему (звук не играем)
         try
         {

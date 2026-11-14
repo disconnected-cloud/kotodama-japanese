@@ -102,11 +102,11 @@ public static class Voicevox
         try
         {
             var resultFile = Path.Combine(Dir, "check.txt");
-            try { File.Delete(resultFile); } catch { }
+            try { File.Delete(resultFile); } catch { } // временный или лишний файл: не удалился сейчас — не мешает работе
             var psi = new System.Diagnostics.ProcessStartInfo(Environment.ProcessPath!, "--vv-check") { UseShellExecute = false, CreateNoWindow = true };
             using var proc = System.Diagnostics.Process.Start(psi)!;
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
-            try { await proc.WaitForExitAsync(cts.Token); } catch (OperationCanceledException) { try { proc.Kill(); } catch { } return (false, "проверка зависла"); }
+            try { await proc.WaitForExitAsync(cts.Token); } catch (OperationCanceledException) { try { proc.Kill(); } catch { } return (false, "проверка зависла"); } // процесс или запись уже остановлены
             var output = File.Exists(resultFile) ? await File.ReadAllTextAsync(resultFile) : "";
             bool ok = proc.ExitCode == 0;
             // прогресс меняется только в потоке интерфейса (проверка идёт в фоне)
@@ -156,7 +156,7 @@ public static class Voicevox
             msg = code == 0 ? "ok" : LastError ?? "пустой результат";
         }
         catch (Exception ex) { code = 2; msg = ex.Message; }
-        try { File.WriteAllText(Path.Combine(Dir, "check.txt"), msg); } catch { }
+        try { File.WriteAllText(Path.Combine(Dir, "check.txt"), msg); } catch { } // журнал недоступен (диск, права) — сообщить об этом некуда
         return code;
     }
 
@@ -278,7 +278,7 @@ public static class Voicevox
             await Downloader.FileAsync(VvmUrl + pack, Path.Combine(ModelsDir, pack), P("голоса " + pack), ct, Catalog.FirstOrDefault(c => c.File == pack)?.Size ?? 0);
             step++;
         }
-        try { Directory.Delete(Path.Combine(Dir, "download"), true); } catch { }
+        try { Directory.Delete(Path.Combine(Dir, "download"), true); } catch { } // временный или лишний файл: не удалился сейчас — не мешает работе
         progress.Report((1, "готово"));
         Reset();
     }

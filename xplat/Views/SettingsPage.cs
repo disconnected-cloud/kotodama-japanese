@@ -199,7 +199,7 @@ public sealed partial class SettingsPage : UserControl, IPage
             default:
                 var report = U.Row(10,
                     U.Btn("Сообщить об ошибке", () => CrashReport.Open(), "", ""),
-                    U.Btn("Предложить идею", () => { try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo($"https://github.com/{Updater.Repo}/issues/new?labels=enhancement") { UseShellExecute = true }); } catch { } }, "Ghost", ""));
+                    U.Btn("Предложить идею", () => { try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo($"https://github.com/{Updater.Repo}/issues/new?labels=enhancement") { UseShellExecute = true }); } catch (Exception e) { CrashReport.Warn("Открытие ссылки", e); } }, "Ghost", ""));
                 yield return U.Card(Art.Say($"Kotodama {Updater.Current.ToString(3)} · 言霊 — «душа слова»: правильно произнесённое слово обретает силу. Я Википе-тан — буду помогать тебе учиться!", Mood.Joy, 120)).M(0, 0, 0, 16);
                 yield return Section("Обратная связь", CrashReport.LastEntry() is { } ? "В журнале есть ошибка — отчёт откроется на GitHub уже заполненным, ты только нажмёшь «Submit»." : "Нашёл ошибку или есть идея? Откроется форма на GitHub.", report);
                 yield return Section("Открытые данные", null, U.Stack(

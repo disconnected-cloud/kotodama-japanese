@@ -174,7 +174,7 @@ public sealed class Recorder : IDisposable
 
     public void Dispose()
     {
-        try { _in?.Dispose(); } catch { }
+        try { _in?.Dispose(); } catch { } // уже освобождён — повторное освобождение не нужно
     }
 }
 

@@ -197,7 +197,7 @@ public sealed class AudioPlayer
     {
         IPlayback? p;
         lock (_lock) { p = _cur; _cur = null; }
-        try { p?.Stop(); } catch { }
+        try { p?.Stop(); } catch { } // процесс или запись уже остановлены
     }
 
 
@@ -217,7 +217,7 @@ public sealed class AudioPlayer
                 var src = new NAudio.Wave.RawSourceWaveStream(new MemoryStream(pcm), new NAudio.Wave.WaveFormat(rate, 16, 1));
                 _out = new NAudio.Wave.WaveOutEvent { DesiredLatency = 120 };
                 if (Muted) _out.Volume = 0;
-                _out.PlaybackStopped += (_, _) => { _tcs.TrySetResult(!_stopped); try { _out?.Dispose(); } catch { } };
+                _out.PlaybackStopped += (_, _) => { _tcs.TrySetResult(!_stopped); try { _out?.Dispose(); } catch { } }; // уже освобождён — повторное освобождение не нужно
                 _out.Init(src);
                 _out.Play();
             }
@@ -225,7 +225,7 @@ public sealed class AudioPlayer
             return _tcs.Task;
         }
 
-        public void Stop() { _stopped = true; try { _out?.Stop(); } catch { } _tcs.TrySetResult(false); }
+        public void Stop() { _stopped = true; try { _out?.Stop(); } catch { } _tcs.TrySetResult(false); } // процесс или запись уже остановлены
     }
 
     /// <summary>Linux: PulseAudio/PipeWire (paplay, pw-play) или ALSA (aplay); звук подаётся в stdin.</summary>
@@ -253,7 +253,7 @@ public sealed class AudioPlayer
             finally { _p = null; }
         }
 
-        public void Stop() { _stopped = true; try { if (_p is { HasExited: false }) _p.Kill(); } catch { } }
+        public void Stop() { _stopped = true; try { if (_p is { HasExited: false }) _p.Kill(); } catch { } } // процесс или запись уже остановлены
     }
 }
 
@@ -276,7 +276,7 @@ public static class Mic
     {
         var list = new List<string>();
         if (!OperatingSystem.IsWindows()) return list;
-        try { for (int i = 0; i < NAudio.Wave.WaveInEvent.DeviceCount; i++) list.Add(NAudio.Wave.WaveInEvent.GetCapabilities(i).ProductName); } catch { }
+        try { for (int i = 0; i < NAudio.Wave.WaveInEvent.DeviceCount; i++) list.Add(NAudio.Wave.WaveInEvent.GetCapabilities(i).ProductName); } catch { } // драйвер звука не отвечает — список микрофонов просто пуст
         return list;
     }
 
@@ -302,7 +302,7 @@ public static class Mic
 
         public void Start() => _in.StartRecording();
         public void Stop() { try { _in.StopRecording(); } catch { Stopped?.Invoke(null); } }
-        public void Dispose() { try { _in.Dispose(); } catch { } }
+        public void Dispose() { try { _in.Dispose(); } catch { } } // уже освобождён — повторное освобождение не нужно
     }
 
     /// <summary>Linux: parecord / pw-record / arecord пишут сырой PCM в stdout, мы читаем его кусками.</summary>
@@ -339,12 +339,12 @@ public static class Mic
                 }
                 catch (Exception ex) { err = _stop ? null : ex; }
                 try { if (_p is { HasExited: false }) _p.Kill(); } catch { } // уже завершился — ничего страшного
-                try { _p?.Dispose(); } catch { }
+                try { _p?.Dispose(); } catch { } // уже освобождён — повторное освобождение не нужно
                 Stopped?.Invoke(err);
             }) { IsBackground = true, Name = "mic" }.Start();
         }
 
-        public void Stop() { _stop = true; try { if (_p is { HasExited: false }) _p.Kill(); } catch { } }
+        public void Stop() { _stop = true; try { if (_p is { HasExited: false }) _p.Kill(); } catch { } } // процесс или запись уже остановлены
         public void Dispose() => Stop();
     }
 }

@@ -63,6 +63,6 @@ static class Program
 
     public static void LogCrash(Exception? ex)
     {
-        try { File.AppendAllText(Path.Combine(ProgressStore.Folder, "crash.log"), $"[{DateTime.Now}] {ex}\n\n"); } catch { }
+        try { File.AppendAllText(Path.Combine(ProgressStore.Folder, "crash.log"), $"[{DateTime.Now}] {ex}\n\n"); } catch { } // журнал недоступен (диск, права) — сообщить об этом некуда
     }
 }

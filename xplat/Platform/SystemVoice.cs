@@ -103,7 +103,7 @@ public static class SystemVoice
                     fs.Close();
                     return File.Exists(tmp) ? File.ReadAllBytes(tmp) : null;
                 }
-                finally { try { File.Delete(tmp); } catch { } }
+                finally { try { File.Delete(tmp); } catch { } } // временный или лишний файл: не удалился сейчас — не мешает работе
             }
         }
     }
@@ -127,7 +127,7 @@ public static class SystemVoice
                 Run("open_jtalk", "-x", Dic!, "-m", Voice!, "-r", slow ? "0.8" : "1.0", "-ow", tmp + ".wav", tmp + ".txt");
                 return File.Exists(tmp + ".wav") ? File.ReadAllBytes(tmp + ".wav") : null;
             }
-            finally { foreach (var f in new[] { tmp + ".txt", tmp + ".wav" }) try { File.Delete(f); } catch { } }
+            finally { foreach (var f in new[] { tmp + ".txt", tmp + ".wav" }) try { File.Delete(f); } catch { } } // временный или лишний файл: не удалился сейчас — не мешает работе
         }
     }
 
@@ -145,7 +145,7 @@ public static class SystemVoice
                 else Run("espeak-ng", "-v", "ru", "-w", tmp, text);
                 return File.Exists(tmp) ? File.ReadAllBytes(tmp) : null;
             }
-            finally { try { File.Delete(tmp); } catch { } }
+            finally { try { File.Delete(tmp); } catch { } } // временный или лишний файл: не удалился сейчас — не мешает работе
         }
     }
 
@@ -161,6 +161,6 @@ public static class SystemVoice
         using var p = Process.Start(psi)!;
         if (stdin != null) { p.StandardInput.Write(stdin); p.StandardInput.Close(); }
         _ = p.StandardOutput.ReadToEndAsync(); _ = p.StandardError.ReadToEndAsync();
-        if (!p.WaitForExit(30_000)) { try { p.Kill(true); } catch { } }
+        if (!p.WaitForExit(30_000)) { try { p.Kill(true); } catch { } } // процесс или запись уже остановлены
     }
 }

@@ -135,7 +135,7 @@ public static class Reading
                     if (y.Length > 0) cands.Add(y);
                 }
         }
-        catch { }
+        catch { } // не нашли чтения в KANJIDIC — подбираем без него
         return cands.Where(x => targetHira.Contains(x, StringComparison.Ordinal)).OrderByDescending(x => x.Length).FirstOrDefault();
     }
 

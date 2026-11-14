@@ -134,7 +134,7 @@ public static class Speech
     {
         if (!OperatingSystem.IsWindows()) return;
         try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("ms-settings:privacy-microphone") { UseShellExecute = true }); }
-        catch { }
+        catch { } // не открылись настройки Windows — кнопка просто ничего не делает
     }
 
     // ─────────── Оценка произношения ───────────

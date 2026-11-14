@@ -104,7 +104,7 @@ public sealed class MicCheckPage : UserControl, IPage
 
     static void Open(string uri)
     {
-        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(uri) { UseShellExecute = true }); } catch { }
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(uri) { UseShellExecute = true }); } catch (Exception e) { CrashReport.Warn("Открытие ссылки", e); }
     }
 
     async void Record()

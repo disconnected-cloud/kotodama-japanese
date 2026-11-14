@@ -64,7 +64,7 @@ public static class Storage
         }
     }
 
-    static void TryDelete(string f) { try { if (File.Exists(f)) File.Delete(f); } catch { } }
+    static void TryDelete(string f) { try { if (File.Exists(f)) File.Delete(f); } catch { } } // временный или лишний файл: не удалился сейчас — не мешает работе
 
     static bool TryDeleteDir(string d)
     {

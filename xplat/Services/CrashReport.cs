@@ -13,7 +13,7 @@ public static class CrashReport
     /// <summary>Записать ошибку в журнал (папка данных, crash.log).</summary>
     public static void Log(Exception? ex)
     {
-        try { File.AppendAllText(LogPath, $"[{DateTime.Now}] {ex}\n\n"); } catch { }
+        try { File.AppendAllText(LogPath, $"[{DateTime.Now}] {ex}\n\n"); } catch { } // журнал недоступен (диск, права) — сообщить об этом некуда
     }
 
     static string WarnPath => Path.Combine(ProgressStore.Folder, "warn.log");
@@ -38,7 +38,7 @@ public static class CrashReport
                 File.AppendAllText(WarnPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {where}: {ex.GetType().Name}: {ex.Message}\n");
             }
         }
-        catch { }
+        catch { } // журнал предупреждений недоступен — сообщить об этом некуда
     }
 
     static string WarnTail(int lines)
@@ -112,11 +112,11 @@ public static class CrashReport
         // GitHub не принимает адреса длиннее ~8 КБ: длинный отчёт — в буфер обмена, в адресе только просьба вставить
         if (url.Length > 7000)
         {
-            try { _ = Avalonia.Controls.TopLevel.GetTopLevel(Shell.Main)?.Clipboard?.SetTextAsync(body); } catch { }
+            try { _ = Avalonia.Controls.TopLevel.GetTopLevel(Shell.Main)?.Clipboard?.SetTextAsync(body); } catch { } // буфер обмена или уведомление недоступны — отчёт всё равно откроется
             url = $"https://github.com/{Updater.Repo}/issues/new?labels=bug&title={title}&body={Uri.EscapeDataString("Отчёт скопирован в буфер обмена — вставь его сюда (Ctrl+V).")}";
-            try { Shell.Toast("Отчёт скопирован — вставь его в открывшуюся страницу", "!"); } catch { }
+            try { Shell.Toast("Отчёт скопирован — вставь его в открывшуюся страницу", "!"); } catch { } // буфер обмена или уведомление недоступны — отчёт всё равно откроется
         }
-        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); } catch { }
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); } catch (Exception e) { CrashReport.Warn("Открытие ссылки", e); }
         MarkSeen();
     }
 

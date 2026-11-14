@@ -111,7 +111,7 @@ public static class Tray
         if (!OperatingSystem.IsWindows())
         {
             Sfx.Reminder();
-            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("notify-send", new[] { "-a", "Kotodama", "-i", "kotodama", title, text }) { UseShellExecute = false }); } catch { }
+            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("notify-send", new[] { "-a", "Kotodama", "-i", "kotodama", title, text }) { UseShellExecute = false }); } catch (Exception e) { CrashReport.Warn("Открытие ссылки", e); }
             return;
         }
         if (!_added) return;
