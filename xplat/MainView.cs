@@ -397,7 +397,7 @@ public partial class MainView : UserControl
         _goalBar.Maximum = Math.Max(1, p.DailyGoal);
         _goalBar.Value = Math.Min(p.DailyGoal, ProgressStore.TodayXp);
         _goalText.Text = $"{ProgressStore.TodayXp} / {p.DailyGoal} XP";
-        int due = p.Cards.Count(kv => kv.Value.Due <= DateTime.Now);
+        int due = ProgressStore.DueCount();
         _dueBadge.IsVisible = due > 0;
         _dueText.Text = due > 99 ? "99+" : due.ToString();
         if (_tabBadge != null) { _tabBadge.IsVisible = due > 0; ((TextBlock)_tabBadge.Child!).Text = _dueText.Text; }

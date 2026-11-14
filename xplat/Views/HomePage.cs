@@ -38,7 +38,7 @@ public sealed class HomePage : UserControl, IPage
         // ─────────── Баннер: Википе-тан + продолжить путь ───────────
         var u = Course.Current;
         int d = Course.DoneCount(u), t = Course.Total(u);
-        int due = p.Cards.Count(kv => kv.Value.Due <= DateTime.Now);
+        int due = ProgressStore.DueCount();
         var (say, mood) = due >= 10 ? ($"На повторение {due} {MainView.Plural(due, "карточка", "карточки", "карточек")} — пара минут, и память снова свежая!", Mood.Think)
             : p.Streak >= 3 ? ($"Уже {p.Streak} {MainView.Plural(p.Streak, "день", "дня", "дней")} подряд! すごい！ Продолжаем?", Mood.Joy)
             : d == 0 ? ("Новый юнит! Сначала коротко объясню, потом потренируемся.", Mood.Happy)

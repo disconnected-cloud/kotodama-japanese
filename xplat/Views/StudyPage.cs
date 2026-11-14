@@ -129,7 +129,7 @@ public sealed class StudyPage : UserControl, IPage, IKeyTarget
         var list = new List<StudyStage>();
         int cap = mode switch { 0 => 12, 1 => 30, _ => 60 };
 
-        int due = p.Cards.Count(kv => kv.Value.Due <= DateTime.Now);
+        int due = ProgressStore.DueCount();
         if (due > 0)
             list.Add(new("review", "Повторение", $"{Math.Min(due, cap)} {MainView.Plural(Math.Min(due, cap), "карточка", "карточки", "карточек")} — память вот-вот начнёт их забывать", Math.Max(2, Math.Min(due, cap) / 5), () =>
             {

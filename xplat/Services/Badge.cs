@@ -76,7 +76,7 @@ public static class Badge
     /// <summary>Обновить иконку окна (панель задач) и трея, если число карточек или тема изменились.</summary>
     public static void Update(Window w)
     {
-        int due = ProgressStore.P.Cards.Values.Count(c => c.Due <= DateTime.Now);
+        int due = ProgressStore.DueCount();
         bool light = LightTaskbar();
         if (due == _lastCount && light == _lastLight) return;
         _lastCount = due; _lastLight = light;

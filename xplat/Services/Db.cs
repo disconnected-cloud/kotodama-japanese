@@ -89,6 +89,32 @@ public static class Db
         }
     }
     public static KanjiInfo[] Kanji => _kanji.Value;
+
+    static (Word[] words, HashSet<string> ids)? _reviewable;
+    /// <summary>ID карточек, которые можно повторить: слова (с добавленными из словаря) и кандзи.</summary>
+    public static HashSet<string> ReviewableIds
+    {
+        get
+        {
+            var words = Words;
+            if (_reviewable is { } r && ReferenceEquals(r.words, words)) return r.ids;
+            var ids = words.Select(w => w.Id).Concat(Kanji.Select(k => k.Id)).ToHashSet();
+            _reviewable = (words, ids);
+            return ids;
+        }
+    }
+
+    static readonly Lazy<Dictionary<string, string>> _aliases = new(() =>
+    {
+        try
+        {
+            using var doc = Open("id_aliases.json");
+            return doc.RootElement.EnumerateObject().Where(p => !p.Name.StartsWith("//") && p.Value.ValueKind == JsonValueKind.String).ToDictionary(p => p.Name, p => p.Value.GetString()!);
+        }
+        catch (Exception e) { CrashReport.Warn("Алиасы ID", e); return new(); }
+    });
+    /// <summary>Старый ID карточки → новый (после исправления написания слова или фразы).</summary>
+    public static IReadOnlyDictionary<string, string> IdAliases => _aliases.Value;
     public static GrammarLesson[] Grammar => _grammar.Value;
     public static SpeechLesson[] SpeechLessons => _speech.Value;
     public static Dialog[] Dialogs => _dialogs.Value;

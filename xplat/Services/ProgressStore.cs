@@ -234,8 +234,26 @@ public static class ProgressStore
         // 2.0: число сессий — счётчиком; дневные флаги старше двух недель больше не нужны (файл не растёт)
         if (p.StudySessions == 0) p.StudySessions = p.Flags.Count(f => f.StartsWith("study:"));
         DropOldDayFlags(p, DateTime.Today.AddDays(-14));
+        ApplyIdAliases(p, Db.IdAliases);
         // 4.1: онлайн-голоса убраны — «Авто» и «Онлайн» становятся офлайн-режимом
         if (p.TtsEngine != "offline") p.TtsEngine = "offline";
+    }
+
+    /// <summary>
+    /// Переименованные карточки (исправлена опечатка в слове): прогресс переезжает со старого ID на новый —
+    /// карточки, лучшие оценки речи, заметки и ошибки (Data/id_aliases.json, А8). Если новый ID уже есть, берётся
+    /// более продвинутая карточка.
+    /// </summary>
+    public static void ApplyIdAliases(Progress p, IReadOnlyDictionary<string, string> aliases)
+    {
+        foreach (var (from, to) in aliases)
+        {
+            if (from == to) continue;
+            if (p.Cards.Remove(from, out var c) && (!p.Cards.TryGetValue(to, out var have) || c.Reps > have.Reps)) p.Cards[to] = c;
+            if (p.SpeechBest.Remove(from, out var b)) p.SpeechBest[to] = Math.Max(b, p.SpeechBest.GetValueOrDefault(to));
+            if (p.Notes.Remove(from, out var n) && !p.Notes.ContainsKey(to)) p.Notes[to] = n;
+            if (p.Mistakes.Remove(from, out var m)) p.Mistakes[to] = m + p.Mistakes.GetValueOrDefault(to);
+        }
     }
 
     /// <summary>Убрать дневные флаги («study:2026-01-01», «ch:…») старше даты; флаги без даты и короткие не трогаются.</summary>
@@ -354,6 +372,17 @@ public static class ProgressStore
 
     // ─────────── SRS (FSRS-4.5, см. Fsrs.cs) ───────────
     public static SrsCard? Card(string id) => P.Cards.TryGetValue(id, out var c) ? c : null;
+    /// <summary>
+    /// Сколько карточек ждут повторения — только тех, что можно повторить (слова и кандзи из материалов).
+    /// «Осиротевшие» карточки (слово переименовано без алиаса) не попадают в значок, трей и напоминания (А8).
+    /// </summary>
+    public static int DueCount()
+    {
+        var now = DateTime.Now;
+        var ok = Db.ReviewableIds;
+        return P.Cards.Count(kv => kv.Value.Due <= now && ok.Contains(kv.Key));
+    }
+
     public static bool IsDue(string id) => P.Cards.TryGetValue(id, out var c) && c.Due <= DateTime.Now;
     /// <summary>Интервал (дни), который получит карточка при данной оценке — для подписей на кнопках (FSRS).</summary>
     public static double Preview(SrsCard? c, Rating r) => Fsrs.Next(c, r).days;

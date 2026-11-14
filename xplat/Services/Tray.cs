@@ -142,7 +142,7 @@ public static class Tray
             if ((int)lParam == NIN_BALLOONUSERCLICK)
             {
                 if (_clickTarget == "word") WordOfDay.Show(force: true);
-                else if (ProgressStore.P.Cards.Values.Any(c => c.Due <= DateTime.Now)) Shell.Go("review");
+                else if (ProgressStore.DueCount() > 0) Shell.Go("review");
             }
             handled = true;
         }
@@ -160,7 +160,7 @@ public static class Tray
         Badge.Update(_win);
         if (_win.IsActive || (DateTime.Now - _lastReminder).TotalHours < 2) return;
         var p = ProgressStore.P;
-        int due = p.Cards.Values.Count(c => c.Due <= DateTime.Now);
+        int due = ProgressStore.DueCount();
         if (DateTime.Now.Hour >= 20 && p.Streak > 0 && ProgressStore.TodayXp == 0)
         {
             Notify("Серия под угрозой 🔥", $"Серия {p.Streak} {MainView.Plural(p.Streak, "день", "дня", "дней")} сгорит в полночь. Хватит 5 минут!");
