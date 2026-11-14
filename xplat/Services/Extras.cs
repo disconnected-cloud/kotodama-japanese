@@ -180,8 +180,12 @@ public static class Achievements
         new("study10", "学", "Ученик", "Пройди 10 сессий «Учиться»", p => p.StudySessions >= 10),
     };
 
+    static int _checked = -1;
+
     public static void CheckNew()
     {
+        if (_checked == ProgressStore.Version) return; // сводка зовёт это на каждый переход — без изменений проверять нечего
+        _checked = ProgressStore.Version;
         var p = ProgressStore.P;
         foreach (var a in All)
             if (!p.Achievements.Contains(a.Id) && a.Check(p))

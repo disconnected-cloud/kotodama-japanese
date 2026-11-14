@@ -17,15 +17,22 @@ public static class Badge
     static bool _lastLight;
 
     /// <summary>Тема панели задач Windows: светлая или тёмная (в Linux берём тему приложения наоборот — панели обычно тёмные).</summary>
+    static (long at, bool light) _theme = (long.MinValue, false);
+
+    /// <summary>Светлая ли панель задач. Реестр читается не чаще раза в минуту: значок обновляется на каждый ответ (раздел 6).</summary>
     public static bool LightTaskbar()
     {
         if (!OperatingSystem.IsWindows()) return false;
+        if (Environment.TickCount64 - _theme.at < 60_000) return _theme.light;
+        bool light;
         try
         {
             using var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
-            return k?.GetValue("SystemUsesLightTheme") is int v && v == 1;
+            light = k?.GetValue("SystemUsesLightTheme") is int v && v == 1;
         }
-        catch { return false; }
+        catch { light = false; } // реестр недоступен — тёмная панель по умолчанию
+        _theme = (Environment.TickCount64, light);
+        return light;
     }
 
     /// <summary>PNG-картинка иконки size×size.</summary>

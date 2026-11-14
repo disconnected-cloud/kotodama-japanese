@@ -91,6 +91,7 @@ public sealed class Progress
     public List<string> StudySkipped { get; set; } = new();
     public int StudySeconds { get; set; }
     public int StudyXpStart { get; set; }
+    public bool PrefetchVoice { get; set; } = true;               // готовить озвучку сессии заранее (VOICEVOX в фоне)
     public int Schema { get; set; }                                // номер схемы прогресса: применённые миграции (ProgressStore.Migrations)
     public int StudySessions { get; set; }                         // всего пройдено сессий
 }
@@ -396,10 +397,16 @@ public static class ProgressStore
     /// </summary>
     public static int DueCount()
     {
+        // Один пересчёт на изменение прогресса и не чаще раза в минуту: сводка, значок и трей зовут это на каждый ответ (раздел 6)
+        long minute = Environment.TickCount64 / 60_000;
+        if (_due is { } d && d.version == Version && d.minute == minute && ReferenceEquals(d.p, P)) return d.count;
         var now = DateTime.Now;
         var ok = Db.ReviewableIds;
-        return P.Cards.Count(kv => kv.Value.Due <= now && ok.Contains(kv.Key));
+        int count = P.Cards.Count(kv => kv.Value.Due <= now && ok.Contains(kv.Key));
+        _due = (Version, minute, P, count);
+        return count;
     }
+    static (int version, long minute, Progress p, int count)? _due;
 
     public static bool IsDue(string id) => P.Cards.TryGetValue(id, out var c) && c.Due <= DateTime.Now;
     /// <summary>Интервал (дни), который получит карточка при данной оценке — для подписей на кнопках (FSRS).</summary>
