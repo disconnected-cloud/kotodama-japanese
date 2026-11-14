@@ -365,7 +365,8 @@ public static class ProgressStore
         Version++;
         Changed?.Invoke();
         // Сохранение через 2 с после последнего изменения (серия правок — одна запись на диск)
-        _saveTimer ??= new Timer(_ => Avalonia.Threading.Dispatcher.UIThread.Post(Save), null, Timeout.Infinite, Timeout.Infinite);
+        if (_saveTimer == null) // Touch зовётся и из фоновых потоков — второй таймер не нужен (Д2)
+            Interlocked.CompareExchange(ref _saveTimer, new Timer(_ => Avalonia.Threading.Dispatcher.UIThread.Post(Save), null, Timeout.Infinite, Timeout.Infinite), null);
         _saveTimer.Change(TimeSpan.FromSeconds(2), Timeout.InfiniteTimeSpan);
     }
 

@@ -389,7 +389,7 @@ public static class U
         return el;
     }
 
-    public static Random Rng { get; } = new();
+    public static Random Rng => Random.Shared; // потокобезопасный: зовётся и из фоновых потоков (Д2)
 
     public static List<T> Shuffled<T>(this IEnumerable<T> src)
     {
