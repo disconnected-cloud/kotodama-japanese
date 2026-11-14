@@ -116,10 +116,7 @@ public static class Challenges
         }
         // старые флаги испытаний не копим: оставляем последние 2 недели
         if (DateTime.Today.Day == 1 || p.Flags.Count > 4000)
-        {
-            var cutoff = DateTime.Today.AddDays(-14).ToString("yyyy-MM-dd");
-            p.Flags.RemoveWhere(f => (f.StartsWith("ch:") || f.StartsWith("plan:")) && string.CompareOrdinal(f.Substring(f.IndexOf(':') + 1, 10), cutoff) < 0);
-        }
+            ProgressStore.DropOldDayFlags(p, DateTime.Today.AddDays(-14), "ch:", "plan:");
     }
 
     /// <summary>

@@ -69,20 +69,23 @@ public static class Db
     static readonly Lazy<Dictionary<string, string[]>> _strokes = new(LoadStrokes);
     static readonly Lazy<Dictionary<string, string>> _romaji = new(LoadRomaji);
 
-    static Word[]? _merged; static int _mergedCustom = -1;
+    sealed record Merged(List<string[]> Custom, int Count, Word[] Words);
+    static volatile Merged? _merged;
     /// <summary>Базовые слова курса + слова, добавленные из большого словаря (пересобирается при изменении).</summary>
     public static Word[] Words
     {
         get
         {
+            // свои слова только добавляются; импорт прогресса меняет сам список — тогда собираем заново
             var custom = ProgressStore.P.CustomWords;
-            if (_merged != null && _mergedCustom == custom.Count) return _merged;
+            var m = _merged;
+            if (m != null && ReferenceEquals(m.Custom, custom) && m.Count == custom.Count) return m.Words;
             var baseW = _words.Value;
             var set = new HashSet<string>(baseW.Select(w => w.Id));
-            var extra = custom.Where(c => c.Length >= 3).Select(c => new Word("w:" + c[0] + "|" + c[1], c[0], c[1], c[2], "Мои слова", "Мои")).Where(w => set.Add(w.Id));
-            _merged = baseW.Concat(extra).ToArray();
-            _mergedCustom = custom.Count;
-            return _merged;
+            var extra = custom.ToArray().Where(c => c is { Length: >= 3 }).Select(c => new Word("w:" + c[0] + "|" + c[1], c[0], c[1], c[2], "Мои слова", "Мои")).Where(w => set.Add(w.Id));
+            var words = baseW.Concat(extra).ToArray();
+            _merged = new Merged(custom, custom.Count, words);
+            return words;
         }
     }
     public static KanjiInfo[] Kanji => _kanji.Value;

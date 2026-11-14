@@ -108,8 +108,9 @@ public static class ProgressStore
     /// хранятся в папке data рядом с программой — её можно носить на флешке.
     /// </summary>
     public static readonly bool Portable = File.Exists(Path.Combine(AppContext.BaseDirectory, "portable"));
-    public static readonly string Folder = Portable
-        ? Path.Combine(AppContext.BaseDirectory, "data")
+    /// <summary>KOTODAMA_DATA_DIR — своя папка данных (тесты, отладка), иначе портативная или %AppData%.</summary>
+    public static readonly string Folder = Environment.GetEnvironmentVariable("KOTODAMA_DATA_DIR") is { Length: > 0 } custom ? custom
+        : Portable ? Path.Combine(AppContext.BaseDirectory, "data")
         : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Matsubakira"); // старое имя папки — ради совместимости прогресса
     static readonly string FilePath = Path.Combine(Folder, "progress.json");
 
@@ -122,35 +123,138 @@ public static class ProgressStore
     /// <summary>Сколько щитов серии потрачено при запуске (пропущенные дни) — для уведомления.</summary>
     public static int ShieldsUsedOnLoad { get; private set; }
 
+    /// <summary>Почему прогресс открыт только для чтения (файл занят другой программой) — для сообщения пользователю.</summary>
+    public static string? LoadProblem { get; private set; }
+
     public static void Load()
     {
         IsLoaded = true;
         Directory.CreateDirectory(Folder);
-        try
-        {
-            if (File.Exists(FilePath))
-                P = JsonSerializer.Deserialize(File.ReadAllBytes(FilePath), ProgressJson.Default.Progress) ?? new();
-            DailyBackup();
-        }
-        catch
-        {
-            // Повреждённый файл — сохраняем копию и берём последнюю целую автокопию (если есть)
-            try { File.Copy(FilePath, FilePath + ".bak", true); } catch { }
-            P = Backups().Select(TryRead).FirstOrDefault(x => x != null) ?? new();
-        }
-        // v0.3: декор по умолчанию выключен (лепестки заметно нагружали CPU) — сбрасываем один раз
-        if (P.Flags.Add("mig-v3")) P.Petals = false;
-        // Голоса 女声/男声 звучали с придыханием — переключаем на чёткий голос по умолчанию
-        if (P.Flags.Add("mig-vv2") && P.OfflineStyleId >= 10000) P.OfflineStyleId = -1;
-        if (P.Xp > 0) P.Flags.Add("onboarded");
-        // 2.0: число сессий — счётчиком; дневные флаги старше двух недель больше не нужны (файл не растёт)
-        if (P.StudySessions == 0) P.StudySessions = P.Flags.Count(f => f.StartsWith("study:"));
-        var cutoff = DateTime.Today.AddDays(-14).ToString("yyyy-MM-dd");
-        P.Flags.RemoveWhere(f => (f.StartsWith("study:") || f.StartsWith("perfect:") || f.StartsWith("ch:") || f.StartsWith("plan:") || f.StartsWith("week:"))
-            && f.IndexOf(':') is var c && f.Length >= c + 11 && string.CompareOrdinal(f.Substring(c + 1, 10), cutoff) < 0); // у кого уже есть прогресс — помощник первого запуска не нужен
+        P = ReadMain() ?? new();
+        Prepare(P);
+        DailyBackup();
         // Серия сгорает, если пропущен день — если нет щита
         ShieldsUsedOnLoad = Challenges.UseShields(P);
         if (P.LastStudy.Date < DateTime.Today.AddDays(-1)) P.Streak = 0;
+    }
+
+    /// <summary>
+    /// Чтение progress.json. Занятый файл (антивирус, облако, вторая копия) — не повреждение: несколько повторов,
+    /// потом режим только чтения, чтобы не затереть настоящий прогресс. Битый JSON сохраняется под именем с датой
+    /// и временем, а прогресс берётся из последней целой автокопии.
+    /// </summary>
+    static Progress? ReadMain()
+    {
+        if (!File.Exists(FilePath)) return null;
+        for (int attempt = 0; ; attempt++)
+        {
+            byte[] bytes;
+            try { bytes = ReadShared(FilePath); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                if (attempt < 5) { Thread.Sleep(300); continue; }
+                CrashReport.Warn("Прогресс: файл занят", e);
+                ReadOnly = true;
+                LoadProblem = "Файл прогресса занят другой программой (антивирус, облачная синхронизация или вторая копия Kotodama). " +
+                              "Изменения в этот раз не сохраняются — закрой мешающую программу и перезапусти Kotodama.";
+                return Backups().Select(TryRead).FirstOrDefault(x => x != null);
+            }
+            try { return JsonSerializer.Deserialize(bytes, ProgressJson.Default.Progress); }
+            catch (Exception e)
+            {
+                CrashReport.Warn("Прогресс: файл повреждён", e);
+                try { File.Copy(FilePath, Path.Combine(Folder, $"progress.corrupt-{DateTime.Now:yyyyMMdd-HHmmss}.json"), true); } catch { }
+                return Backups().Select(TryRead).FirstOrDefault(x => x != null);
+            }
+        }
+    }
+
+    /// <summary>Чтение без запрета чужой записи: замок другой программы не должен мешать, если она разрешает читать.</summary>
+    static byte[] ReadShared(string path)
+    {
+        using var f = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var ms = new MemoryStream();
+        f.CopyTo(ms);
+        return ms.ToArray();
+    }
+
+    /// <summary>Нормализация и миграции — для загрузки, импорта и восстановления из копии одинаково.</summary>
+    public static void Prepare(Progress p)
+    {
+        Normalize(p);
+        Migrate(p);
+    }
+
+    /// <summary>
+    /// Чужой или старый файл может содержать null вместо коллекций и испорченные записи — они роняли десятки экранов.
+    /// null → пустая коллекция, битые записи выбрасываются, числа ограничиваются разумными пределами.
+    /// </summary>
+    public static void Normalize(Progress p)
+    {
+        p.Cards ??= new(); p.KanaScore ??= new(); p.SpeechBest ??= new(); p.GrammarDone ??= new(); p.History ??= new();
+        p.GameBest ??= new(); p.Mistakes ??= new(); p.Achievements ??= new(); p.Flags ??= new(); p.DictHistory ??= new();
+        p.CustomWords ??= new(); p.Journal ??= new(); p.Notes ??= new(); p.DayCounts ??= new(); p.DayLog ??= new();
+        p.Badges ??= new(); p.StudyDone ??= new(); p.StudySkipped ??= new();
+        foreach (var k in p.Cards.Where(kv => kv.Value == null).Select(kv => kv.Key).ToList()) p.Cards.Remove(k);
+        foreach (var c in p.Cards.Values)
+        {
+            if (double.IsNaN(c.Ease) || c.Ease is < 1 or > 10) c.Ease = 2.5;
+            if (double.IsNaN(c.Interval) || c.Interval < 0) c.Interval = 0;
+            if (double.IsNaN(c.Stability) || c.Stability < 0) c.Stability = 0;
+            c.Difficulty = double.IsNaN(c.Difficulty) ? 0 : Math.Clamp(c.Difficulty, 0, 10);
+            c.Reps = Math.Max(0, c.Reps); c.Lapses = Math.Max(0, c.Lapses);
+        }
+        p.CustomWords.RemoveAll(w => w == null || w.Length < 3 || w.Take(3).Any(string.IsNullOrEmpty));
+        p.DictHistory.RemoveAll(string.IsNullOrEmpty);
+        p.Flags.RemoveWhere(string.IsNullOrEmpty);
+        p.Badges.RemoveAll(string.IsNullOrEmpty);
+        p.StudyDone.RemoveAll(string.IsNullOrEmpty); p.StudySkipped.RemoveAll(string.IsNullOrEmpty);
+        foreach (var k in p.Journal.Where(kv => kv.Value == null).Select(kv => kv.Key).ToList()) p.Journal.Remove(k);
+        foreach (var k in p.Notes.Where(kv => kv.Value == null).Select(kv => kv.Key).ToList()) p.Notes.Remove(k);
+        foreach (var k in p.DayLog.Where(kv => kv.Value == null).Select(kv => kv.Key).ToList()) p.DayLog.Remove(k);
+        foreach (var k in p.SpeechBest.Keys.ToList()) p.SpeechBest[k] = Math.Clamp(p.SpeechBest[k], 0, 100);
+        foreach (var k in p.KanaScore.Keys.ToList()) p.KanaScore[k] = Math.Clamp(p.KanaScore[k], 0, 5);
+        p.Xp = Math.Max(0, p.Xp); p.Streak = Math.Max(0, p.Streak); p.Shields = Math.Clamp(p.Shields, 0, 10);
+        p.DailyGoal = Math.Clamp(p.DailyGoal, 10, 1000); p.NewPerSession = Math.Clamp(p.NewPerSession, 1, 100);
+        p.UiScale = double.IsNaN(p.UiScale) ? 1 : Math.Clamp(p.UiScale, 0.7, 2); p.JpScale = double.IsNaN(p.JpScale) ? 1 : Math.Clamp(p.JpScale, 0.7, 2.5);
+        p.MicPause = double.IsNaN(p.MicPause) ? 1.5 : Math.Clamp(p.MicPause, 0.5, 5);
+        p.JpFontName ??= ""; p.NotifyTone ??= "bell"; p.TtsEngine ??= "auto"; p.SpeechMode ??= "easy"; p.MicMode ??= "auto";
+        p.AccentColor ??= "sakura"; p.Goal ??= ""; p.WordOfDayTime ??= "09:00"; p.LastPlace ??= ""; p.LastPlaceTitle ??= "";
+        p.AsrModel ??= ""; p.Level ??= "N5"; p.DayDate ??= ""; p.StudyDay ??= "";
+    }
+
+    /// <summary>Миграции старых версий прогресса (каждая — один раз, по флагу).</summary>
+    static void Migrate(Progress p)
+    {
+        // v0.3: декор по умолчанию выключен (лепестки заметно нагружали CPU) — сбрасываем один раз
+        if (p.Flags.Add("mig-v3")) p.Petals = false;
+        // Голоса 女声/男声 звучали с придыханием — переключаем на чёткий голос по умолчанию
+        if (p.Flags.Add("mig-vv2") && p.OfflineStyleId >= 10000) p.OfflineStyleId = -1;
+        if (p.Xp > 0) p.Flags.Add("onboarded"); // у кого уже есть прогресс — помощник первого запуска не нужен
+        // 2.0: число сессий — счётчиком; дневные флаги старше двух недель больше не нужны (файл не растёт)
+        if (p.StudySessions == 0) p.StudySessions = p.Flags.Count(f => f.StartsWith("study:"));
+        DropOldDayFlags(p, DateTime.Today.AddDays(-14));
+    }
+
+    /// <summary>Убрать дневные флаги («study:2026-01-01», «ch:…») старше даты; флаги без даты и короткие не трогаются.</summary>
+    public static void DropOldDayFlags(Progress p, DateTime before, params string[] prefixes)
+    {
+        if (prefixes.Length == 0) prefixes = new[] { "study:", "perfect:", "ch:", "plan:", "week:" };
+        var cutoff = before.ToString("yyyy-MM-dd");
+        p.Flags.RemoveWhere(f => prefixes.Any(f.StartsWith) && f.IndexOf(':') is var c && f.Length >= c + 11
+            && string.CompareOrdinal(f, c + 1, cutoff, 0, 10) < 0);
+    }
+
+    /// <summary>Прогресс заменён целиком (импорт, восстановление из копии): страницы и кэши данных надо построить заново.</summary>
+    public static event Action? Replaced;
+
+    static void Replace(Progress p)
+    {
+        Prepare(p);
+        P = p;
+        Save();
+        Touch();
+        Replaced?.Invoke();
     }
 
     /// <summary>Отладочные снимки экрана не должны менять настоящий прогресс.</summary>
@@ -193,9 +297,7 @@ public static class ProgressStore
     {
         if (TryRead(path) is not { } p) return false;
         try { File.Copy(FilePath, FilePath + ".before-restore", true); } catch { }
-        P = p;
-        Save();
-        Touch();
+        Replace(p);
         return true;
     }
 
@@ -297,14 +399,13 @@ public static class ProgressStore
             var np = JsonSerializer.Deserialize(File.ReadAllBytes(path), ProgressJson.Default.Progress);
             if (np == null) return false;
             Save();
-            File.Copy(FilePath, FilePath + ".before-import", true);
-            P = np;
-            Touch();
+            if (File.Exists(FilePath)) File.Copy(FilePath, FilePath + ".before-import", true);
+            Replace(np);
             return true;
         }
-        catch { return false; }
+        catch (Exception e) { CrashReport.Warn("Импорт прогресса", e); return false; }
     }
 
-    public static void Reset() { P = new Progress(); Touch(); }
+    public static void Reset() { P = new Progress(); Touch(); Replaced?.Invoke(); }
     public static void Notify() => Touch();
 }
